@@ -347,9 +347,57 @@ typedef NestedScrollViewHeaderSliversBuilder = List<Widget> Function(BuildContex
 ///
 /// ### Stretching [SliverAppBar]s
 ///
-// TODO(Piinks): Support stretching, https://github.com/flutter/flutter/issues/54059
-/// Currently, [NestedScrollView] does not support stretching the outer
-/// scrollable, e.g. when using [SliverAppBar.stretch].
+/// When placed in the outer scrollable, or the [headerSliverBuilder],
+/// a [SliverAppBar] that stretches, using [SliverAppBar.stretch] will not be
+/// triggered to stretch when overscrolled automatically.
+///
+/// This is because the inner scrollable overscrolls by default. Being two
+/// separate inner and outer [Scrollable]s, a [SliverAppBar] in the outer header
+/// is not aware of the overscroll of the inner body.
+///
+/// In order to overscroll and stretch the outer, use
+/// [NestedScrollView.stretchHeaderSlivers]. When set to true, the nested
+/// scrolling coordinator will prioritize overscrolling the header slivers.
+///
+/// {@tool sample --template=stateless_widget_material}
+///
+/// This simple example shows a [NestedScrollView] whose header contains a
+/// stretching [SliverAppBar]. By using the [stretchHeaderSlivers] property, the
+/// stretching behavior is coordinated between the outer and inner [Scrollable]s,
+/// so it behaves as it would in a single scrollable.
+///
+/// ```dart
+/// Widget build(BuildContext context) {
+///   return Scaffold(
+///     body: NestedScrollView(
+///       // Setting stretchHeaderSlivers to true is required in order to
+///       // overscroll and stretch the outer sliver.
+///       stretchHeaderSlivers: true,
+///       headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+///         return <Widget>[
+///           SliverAppBar(
+///             title: const Text('Stretching Nested SliverAppBar'),
+///             stretch: true,
+///             expandedHeight: 200.0,
+///             forceElevated: innerBoxIsScrolled,
+///           ),
+///         ];
+///       },
+///       body: ListView.builder(
+///         padding: const EdgeInsets.all(8),
+///         itemCount: 30,
+///         itemBuilder: (BuildContext context, int index) {
+///           return Container(
+///             height: 50,
+///             child: Center(child: Text('Item $index')),
+///           );
+///         }
+///       )
+///     )
+///   );
+/// }
+/// ```
+/// {@end-tool}
 ///
 /// See also:
 ///
@@ -374,6 +422,7 @@ class NestedScrollView extends StatefulWidget {
     required this.body,
     this.dragStartBehavior = DragStartBehavior.start,
     this.floatHeaderSlivers = false,
+    this.stretchHeaderSlivers = false,
     this.clipBehavior = Clip.hardEdge,
     this.restorationId,
   }) : assert(scrollDirection != null),
@@ -381,6 +430,7 @@ class NestedScrollView extends StatefulWidget {
        assert(headerSliverBuilder != null),
        assert(body != null),
        assert(floatHeaderSlivers != null),
+       assert(stretchHeaderSlivers != null),
        assert(clipBehavior != null),
        super(key: key);
 
@@ -451,6 +501,13 @@ class NestedScrollView extends StatefulWidget {
   /// This is useful for an outer scrollable containing a [SliverAppBar] that
   /// is expected to float. This cannot be null.
   final bool floatHeaderSlivers;
+
+  /// Whether or not the [NestedScrollView]'s coordinator should send overscroll
+  /// to the outer or inner position.
+  ///
+  /// This is useful for an outer scrollable containing a [SliverAppBar] that
+  /// is expected to stretch. This cannot be null.
+  final bool stretchHeaderSlivers;
 
   /// {@macro flutter.widgets.Clip}
   ///
@@ -578,6 +635,7 @@ class NestedScrollViewState extends State<NestedScrollView> {
       widget.controller,
       _handleHasScrolledBodyChanged,
       widget.floatHeaderSlivers,
+      widget.stretchHeaderSlivers,
     );
   }
 
@@ -629,9 +687,7 @@ class NestedScrollViewState extends State<NestedScrollView> {
             dragStartBehavior: widget.dragStartBehavior,
             scrollDirection: widget.scrollDirection,
             reverse: widget.reverse,
-            physics: widget.physics != null
-              ? widget.physics!.applyTo(const ClampingScrollPhysics())
-              : const ClampingScrollPhysics(),
+            physics: widget.physics,
             controller: _coordinator!._outerController,
             slivers: widget._buildSlivers(
               context,
@@ -652,7 +708,7 @@ class _NestedScrollViewCustomScrollView extends CustomScrollView {
   const _NestedScrollViewCustomScrollView({
     required Axis scrollDirection,
     required bool reverse,
-    required ScrollPhysics physics,
+    required ScrollPhysics? physics,
     required ScrollController controller,
     required List<Widget> slivers,
     required this.handle,
@@ -761,6 +817,7 @@ class _NestedScrollCoordinator implements ScrollActivityDelegate, ScrollHoldCont
     this._parent,
     this._onHasScrolledBodyChanged,
     this._floatHeaderSlivers,
+    this._stretchHeaderSlivers,
   ) {
     final double initialScrollOffset = _parent?.initialScrollOffset ?? 0.0;
     _outerController = _NestedScrollController(
@@ -779,6 +836,7 @@ class _NestedScrollCoordinator implements ScrollActivityDelegate, ScrollHoldCont
   ScrollController? _parent;
   final VoidCallback _onHasScrolledBodyChanged;
   final bool _floatHeaderSlivers;
+  final bool _stretchHeaderSlivers;
 
   late _NestedScrollController _outerController;
   late _NestedScrollController _innerController;
@@ -1163,14 +1221,21 @@ class _NestedScrollCoordinator implements ScrollActivityDelegate, ScrollHoldCont
           outerDelta -= _outerPosition!.applyClampedDragUpdate(outerDelta);
 
         // Now deal with any overscroll
-        // TODO(Piinks): Configure which scrollable receives overscroll to
-        // support stretching app bars. createOuterBallisticScrollActivity will
-        // need to be updated as it currently assumes the outer position will
-        // never overscroll, https://github.com/flutter/flutter/issues/54059
-        for (int i = 0; i < innerPositions.length; ++i) {
-          final double remainingDelta = overscrolls[i] - outerDelta;
+        // _stretchHeaderSlivers indicates whether the inner or outer position
+        // should receive the overscroll.
+        double remainingDelta = 0.0;
+        if (_stretchHeaderSlivers) {
+          // Send overscroll to outer position.
+          remainingDelta = overscrolls.reduce(math.max) - outerDelta;
           if (remainingDelta > 0.0)
-            innerPositions[i].applyFullDragUpdate(remainingDelta);
+            _outerPosition!.applyFullDragUpdate(remainingDelta);
+        } else {
+          // Send overscroll to inner positions.
+          for (int i = 0; i < innerPositions.length; ++i) {
+            remainingDelta = overscrolls[i] - outerDelta;
+            if (remainingDelta > 0.0)
+              innerPositions[i].applyFullDragUpdate(remainingDelta);
+          }
         }
       }
     }

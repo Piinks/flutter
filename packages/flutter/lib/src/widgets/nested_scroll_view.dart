@@ -930,10 +930,6 @@ class _NestedScrollCoordinator implements ScrollActivityDelegate, ScrollHoldCont
   ScrollActivity createOuterBallisticScrollActivity(double velocity) {
     // This function creates a ballistic scroll for the outer scrollable.
     //
-    // It assumes that the outer scrollable can't be overscrolled, and sets up a
-    // ballistic scroll over the combined space of the innerPositions and the
-    // outerPosition.
-
     // First we must pick a representative inner position that we will care
     // about. This is somewhat arbitrary. Ideally we'd pick the one that is "in
     // the center" but there isn't currently a good way to do that so we
@@ -968,6 +964,9 @@ class _NestedScrollCoordinator implements ScrollActivityDelegate, ScrollHoldCont
     }
 
     final _NestedScrollMetrics metrics = _getMetrics(innerPosition, velocity);
+    print('Metrics -  minScrollExtent: ${metrics.minScrollExtent}, '
+      'maxScrollExtent: ${metrics.maxScrollExtent}, '
+      'pixels: ${metrics.pixels}');
 
     return _outerPosition!.createBallisticScrollActivity(
       _outerPosition!.physics.createBallisticSimulation(metrics, velocity),
@@ -992,10 +991,7 @@ class _NestedScrollCoordinator implements ScrollActivityDelegate, ScrollHoldCont
     double pixels, minRange, maxRange, correctionOffset;
     double extra = 0.0;
     if (innerPosition.pixels == innerPosition.minScrollExtent) {
-      pixels = _outerPosition!.pixels.clamp(
-        _outerPosition!.minScrollExtent,
-        _outerPosition!.maxScrollExtent,
-      ); // TODO(ianh): gracefully handle out-of-range outer positions
+      pixels = _outerPosition!.pixels;
       minRange = _outerPosition!.minScrollExtent;
       maxRange = _outerPosition!.maxScrollExtent;
       assert(minRange <= maxRange);
@@ -1650,28 +1646,27 @@ class _NestedOuterBallisticScrollActivity extends BallisticScrollActivity {
 
   @override
   bool applyMoveTo(double value) {
-    bool done = false;
-    if (velocity > 0.0) {
-      if (value < metrics.minRange)
-        return true;
-      if (value > metrics.maxRange) {
-        value = metrics.maxRange;
-        done = true;
-      }
-    } else if (velocity < 0.0) {
-      if (value > metrics.maxRange)
-        return true;
-      if (value < metrics.minRange) {
-        value = metrics.minRange;
-        done = true;
-      }
-    } else {
-      value = value.clamp(metrics.minRange, metrics.maxRange);
-      done = true;
-    }
+    // if (velocity > 0.0) {
+    //   if (value < metrics.minRange)
+    //     return true;
+    //   if (value > metrics.maxRange) {
+    //     value = metrics.maxRange;
+    //     done = true;
+    //   }
+    // } else if (velocity < 0.0) {
+    //   if (value > metrics.maxRange)
+    //     return true;
+    //   if (value < metrics.minRange) {
+    //     value = metrics.minRange;
+    //     done = true;
+    //   }
+    // } else {
+    //   value = value.clamp(metrics.minRange, metrics.maxRange);
+    //   done = true;
+    // }
     final bool result = super.applyMoveTo(value + metrics.correctionOffset);
-    assert(result); // since we tried to pass an in-range value, it shouldn't ever overflow
-    return !done;
+    // assert(result); // since we tried to pass an in-range value, it shouldn't ever overflow
+    return result;
   }
 
   @override

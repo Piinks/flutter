@@ -163,6 +163,9 @@ class _ScrollbarState extends State<Scrollbar> with SingleTickerProviderStateMix
   ScrollbarPainter _buildMaterialScrollbarPainter() {
     return ScrollbarPainter(
       color: _themeColor,
+      trackColor: const Color(0xFF424242).withOpacity(0.04),
+      trackBorderColor: const Color(0xFFE0E0E0),
+      showTrack: true,
       textDirection: _textDirection,
       thickness: widget.thickness ?? _kScrollbarThickness,
       radius: widget.radius,

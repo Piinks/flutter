@@ -6,6 +6,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/animation.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import 'scroll_metrics.dart';
@@ -45,6 +46,8 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
   /// Creates a scrollbar with customizations given by construction arguments.
   ScrollbarPainter({
     required Color color,
+    Color trackColor = const Color(0x00000000),
+    Color trackBorderColor = const Color(0x00000000),
     required TextDirection textDirection,
     required this.thickness,
     required this.fadeoutOpacityAnimation,
@@ -53,8 +56,11 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
     this.crossAxisMargin = 0.0,
     this.radius,
     this.minLength = _kMinThumbExtent,
+    this.showTrack = false,
     double? minOverscrollLength,
   }) : assert(color != null),
+       assert(trackColor != null),
+       assert(trackBorderColor != null),
        assert(textDirection != null),
        assert(thickness != null),
        assert(fadeoutOpacityAnimation != null),
@@ -66,7 +72,10 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
        assert(minOverscrollLength == null || minOverscrollLength >= 0),
        assert(padding != null),
        assert(padding.isNonNegative),
+       assert(showTrack != null),
        _color = color,
+       _trackColor = trackColor,
+       _trackBorderColor = trackBorderColor,
        _textDirection = textDirection,
        _padding = padding,
        minOverscrollLength = minOverscrollLength ?? minLength {
@@ -82,6 +91,33 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
       return;
 
     _color = value;
+    notifyListeners();
+  }
+
+  /// Whether or not the track should be painted as part of the scrollbar.
+  final bool showTrack;
+
+  /// [Color] of the track. Mustn't be null.
+  Color get trackColor => _trackColor;
+  Color _trackColor;
+  set trackColor(Color value) {
+    assert(value != null);
+    if (trackColor == value)
+      return;
+
+    _trackColor = value;
+    notifyListeners();
+  }
+
+  /// [Color] of the track border. Mustn't be null.
+  Color get trackBorderColor => _trackBorderColor;
+  Color _trackBorderColor;
+  set trackBorderColor(Color value) {
+    assert(value != null);
+    if (trackBorderColor == value)
+      return;
+
+    _trackBorderColor = value;
     notifyListeners();
   }
 
@@ -192,47 +228,79 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
     notifyListeners();
   }
 
-  Paint get _paint {
+  Paint get _thumbPaint {
     return Paint()
       ..color = color.withOpacity(color.opacity * fadeoutOpacityAnimation.value);
   }
 
-  void _paintThumbCrossAxis(Canvas canvas, Size size, double thumbOffset, double thumbExtent, AxisDirection direction) {
+  Paint _trackPaint({ bool isBorder = false }) {
+    if (isBorder)
+      return Paint()
+        ..color = _trackBorderColor.withOpacity(trackBorderColor.opacity * fadeoutOpacityAnimation.value)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0;
+    return Paint()
+      ..color = _trackColor.withOpacity(trackColor.opacity * fadeoutOpacityAnimation.value);
+  }
+
+  void _paintScrollbar(Canvas canvas, Size size, double thumbOffset, double thumbExtent, AxisDirection direction) {
     final double x, y;
-    final Size thumbSize;
+    final Size thumbSize, trackSize;
+    final Offset trackOffset;
 
     switch (direction) {
       case AxisDirection.down:
         thumbSize = Size(thickness, thumbExtent);
+        trackSize = Size(thickness, _trackExtent);
         x = textDirection == TextDirection.rtl
           ? crossAxisMargin + padding.left
           : size.width - thickness - crossAxisMargin - padding.right;
         y = thumbOffset;
+        trackOffset = Offset(x, 0.0);
         break;
       case AxisDirection.up:
         thumbSize = Size(thickness, thumbExtent);
+        trackSize = Size(thickness, _trackExtent);
         x = textDirection == TextDirection.rtl
           ? crossAxisMargin + padding.left
           : size.width - thickness - crossAxisMargin - padding.right;
         y = thumbOffset;
+        trackOffset = Offset(x, 0.0);
         break;
       case AxisDirection.left:
         thumbSize = Size(thumbExtent, thickness);
+        trackSize = Size(_trackExtent, thickness);
         x = thumbOffset;
         y = size.height - thickness - crossAxisMargin - padding.bottom;
+        trackOffset = Offset(0.0, y);
         break;
       case AxisDirection.right:
         thumbSize = Size(thumbExtent, thickness);
+        trackSize = Size(_trackExtent, thickness);
         x = thumbOffset;
         y = size.height - thickness - crossAxisMargin - padding.bottom;
+        trackOffset = Offset(0.0, y);
         break;
     }
-
+    print('showTrack: $showTrack');
+    if (showTrack) {
+      print('Going to paint track');
+      print('track at: ${trackOffset & trackSize}');
+      canvas.drawRect(trackOffset & trackSize, _trackPaint());
+      print('border from : $trackOffset to ${Offset(trackOffset.dx, trackOffset.dy + _trackExtent)}');
+      canvas.drawLine(
+        trackOffset,
+        Offset(trackOffset.dx, trackOffset.dy + _trackExtent),
+        _trackPaint(isBorder: true),
+      );
+    }
+    print('Going to paint thumb');
     _thumbRect = Offset(x, y) & thumbSize;
+    print('thumb at: $_thumbRect');
     if (radius == null)
-      canvas.drawRect(_thumbRect!, _paint);
+      canvas.drawRect(_thumbRect!, _thumbPaint);
     else
-      canvas.drawRRect(RRect.fromRectAndRadius(_thumbRect!, radius!), _paint);
+      canvas.drawRRect(RRect.fromRectAndRadius(_thumbRect!, radius!), _thumbPaint);
   }
 
   double _thumbExtent() {
@@ -334,7 +402,7 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
     final double thumbOffsetLocal = _getScrollToTrack(_lastMetrics!, thumbExtent);
     final double thumbOffset = thumbOffsetLocal + mainAxisMargin + beforePadding;
 
-    return _paintThumbCrossAxis(canvas, size, thumbOffset, thumbExtent, _lastAxisDirection!);
+    return _paintScrollbar(canvas, size, thumbOffset, thumbExtent, _lastAxisDirection!);
   }
 
   /// Same as hitTest, but includes some padding to make sure that the region

@@ -8,4 +8,12 @@ void main() {
   // Change made in https://github.com/flutter/flutter/pull/41859
   const CupertinoTextThemeData themeData = CupertinoTextThemeData(brightness: Brightness.dark);
   themeData.copyWith(brightness: Brightness.light);
+
+  // Change made in https://github.com/flutter/flutter/pull/23759
+  const CupertinoNavigationBar navigationBar = CupertinoNavigationBar();
+  final Color? myColor = navigationBar.actionsForegroundColor;
+
+  // Change made in https://github.com/flutter/flutter/pull/23759
+  const CupertinoSliverNavigationBar sliverNavigationBar = CupertinoSliverNavigationBar();
+  final Color? myOtherColor = sliverNavigationBar.actionsForegroundColor;
 }

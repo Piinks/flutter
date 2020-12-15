@@ -1013,8 +1013,8 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
-
     final ScrollMetrics metrics = notification.metrics;
+
     if (metrics.maxScrollExtent <= metrics.minScrollExtent)
       return false;
 

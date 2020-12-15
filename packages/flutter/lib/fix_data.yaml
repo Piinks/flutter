@@ -11,6 +11,38 @@
 version: 1
 transforms:
 
+  # Changes made in https://github.com/flutter/flutter/pull/23759
+  - title: 'Replace CupertinoNavigationBar.actionsForegroundColor'
+      date: 2020-12-15
+      element:
+        uris: [ 'cupertino.dart' ]
+        getter: 'actionsForegroundColor'
+        inClass: 'CupertinoNavigationBar'
+      changes:
+        - kind: 'replace'
+          value:
+            expression: 'CupertinoTheme.of({% context %}).primaryColor'
+            variables:
+              context:
+                kind: variable
+                ofType: 'BuildContext'
+
+  # Changes made in https://github.com/flutter/flutter/pull/23759
+  - title: 'Replace CupertinoSliverNavigationBar.actionsForegroundColor'
+      date: 2020-12-15
+      element:
+        uris: [ 'cupertino.dart' ]
+        getter: 'actionsForegroundColor'
+        inClass: 'CupertinoSliverNavigationBar'
+      changes:
+        - kind: 'replace'
+          value:
+            expression: 'CupertinoTheme.of({% context %}).primaryColor'
+            variables:
+              context:
+                kind: variable
+                ofType: 'BuildContext'
+
   # Changes made in https://github.com/flutter/flutter/pull/41859
   - title: 'Remove brightness'
     date: 2020-12-10

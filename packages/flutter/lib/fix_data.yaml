@@ -18,10 +18,10 @@ transforms:
     element:
       uris: [ 'material.dart' ]
       method: 'showSnackBar'
-      inClass: 'Scaffold'
+      inClass: 'ScaffoldState'
     changes:
       - kind: 'rename'
-        newName: 'ScaffoldMessenger'
+        newName: 'ScaffoldMessengerState'
 
   # Changes made in https://github.com/flutter/flutter/pull/67947
   - title: "Migrate to 'ScaffoldMessenger'"
@@ -29,10 +29,10 @@ transforms:
     element:
       uris: [ 'material.dart' ]
       method: 'removeCurrentSnackBar'
-      inClass: 'Scaffold'
+      inClass: 'ScaffoldState'
     changes:
       - kind: 'rename'
-        newName: 'ScaffoldMessenger'
+        newName: 'ScaffoldMessengerState'
 
   # Changes made in https://github.com/flutter/flutter/pull/67947
   - title: "Migrate to 'ScaffoldMessenger'"
@@ -40,10 +40,10 @@ transforms:
     element:
       uris: [ 'material.dart' ]
       method: 'hideCurrentSnackBar'
-      inClass: 'Scaffold'
+      inClass: 'ScaffoldState'
     changes:
       - kind: 'rename'
-        newName: 'ScaffoldMessenger'
+        newName: 'ScaffoldMessengerState'
 
   # Changes made in https://github.com/flutter/flutter/pull/59127
   - title: "Migrate to 'label'"

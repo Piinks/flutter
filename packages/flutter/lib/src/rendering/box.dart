@@ -12,6 +12,7 @@ import 'package:vector_math/vector_math_64.dart';
 
 import 'debug.dart';
 import 'object.dart';
+import 'viewport.dart';
 
 // This class should only be used in debug builds.
 class _DebugSize extends Size {
@@ -2301,6 +2302,9 @@ abstract class RenderBox extends RenderObject {
 
   @override
   void markNeedsLayout() {
+    final bool shouldPrint = this is RenderViewport;
+    if (shouldPrint)
+      // print('markNeedsLayout');
     if ((_cachedBaselines != null && _cachedBaselines!.isNotEmpty) ||
         (_cachedIntrinsicDimensions != null && _cachedIntrinsicDimensions!.isNotEmpty) ||
         (_cachedDryLayoutSizes != null && _cachedDryLayoutSizes!.isNotEmpty)) {
@@ -2312,11 +2316,15 @@ abstract class RenderBox extends RenderObject {
       _cachedBaselines?.clear();
       _cachedIntrinsicDimensions?.clear();
       _cachedDryLayoutSizes?.clear();
+      if (shouldPrint)
+        // print('marking parent, out');
       if (parent is RenderObject) {
         markParentNeedsLayout();
         return;
       }
     }
+    if (shouldPrint)
+      // print('calling super.markNeedsLayout');
     super.markNeedsLayout();
   }
 

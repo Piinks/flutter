@@ -124,6 +124,12 @@ mixin ScrollMetrics {
   /// The quantity of content conceptually "below" the viewport in the scrollable.
   /// This is the content below the content described by [extentInside].
   double get extentAfter => math.max(maxScrollExtent - pixels, 0.0);
+
+  /// This notifier's value allows for listening to changes in the [maxScrollExtent].
+  ///
+  /// Listeners added by stateful widgets should be removed in the widget's
+  /// [State.dispose] method.
+  final ValueNotifier<double> maxScrollExtentChangedNotifier = ValueNotifier<double>(0.0);
 }
 
 /// An immutable snapshot of values associated with a [Scrollable] viewport.

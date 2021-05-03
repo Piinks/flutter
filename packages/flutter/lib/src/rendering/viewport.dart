@@ -268,9 +268,10 @@ abstract class RenderViewportBase<ParentDataClass extends ContainerParentDataMix
   ViewportOffset get offset => _offset;
   ViewportOffset _offset;
   set offset(ViewportOffset value) {
+    // print('Setting offset');
     assert(value != null);
-    if (value == _offset)
-      return;
+    // if (value == _offset)
+    //   return;
     if (attached)
       _offset.removeListener(markNeedsLayout);
     _offset = value;
@@ -279,6 +280,7 @@ abstract class RenderViewportBase<ParentDataClass extends ContainerParentDataMix
     // We need to go through layout even if the new offset has the same pixels
     // value as the old offset so that we will apply our viewport and content
     // dimensions.
+    // print('calling markNeedsLayout');
     markNeedsLayout();
   }
 
@@ -506,7 +508,7 @@ abstract class RenderViewportBase<ParentDataClass extends ContainerParentDataMix
       assert(correctedCacheOrigin <= 0.0);
       assert(sliverScrollOffset >= 0.0);
       assert(cacheExtentCorrection <= 0.0);
-
+      print('laying out $child');
       child.layout(SliverConstraints(
         axisDirection: axisDirection,
         growthDirection: growthDirection,
@@ -523,6 +525,7 @@ abstract class RenderViewportBase<ParentDataClass extends ContainerParentDataMix
       ), parentUsesSize: true);
 
       final SliverGeometry childLayoutGeometry = child.geometry!;
+      print(childLayoutGeometry);
       assert(childLayoutGeometry.debugAssertIsValid());
 
       // If there is a correction to apply, we'll have to start over.
@@ -1440,6 +1443,7 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
 
   @override
   void performLayout() {
+    // print('performLayout');
     // Ignore the return value of applyViewportDimension because we are
     // doing a layout regardless.
     switch (axis) {
@@ -1482,8 +1486,10 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
       assert(offset.pixels != null);
       correction = _attemptLayout(mainAxisExtent, crossAxisExtent, offset.pixels + centerOffsetAdjustment);
       if (correction != 0.0) {
+        // print('correction');
         offset.correctBy(correction);
       } else {
+        // print('applyingContentDimensions, _maxScrollExtent: $_maxScrollExtent, mainAxisExtent: $mainAxisExtent');
         if (offset.applyContentDimensions(
               math.min(0.0, _minScrollExtent + mainAxisExtent * anchor),
               math.max(0.0, _maxScrollExtent - mainAxisExtent * (1.0 - anchor)),
@@ -1519,6 +1525,7 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
   }
 
   double _attemptLayout(double mainAxisExtent, double crossAxisExtent, double correctedOffset) {
+    // print('_attemptLayout');
     assert(!mainAxisExtent.isNaN);
     assert(mainAxisExtent >= 0.0);
     assert(crossAxisExtent.isFinite);
@@ -1553,6 +1560,7 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
 
     if (leadingNegativeChild != null) {
       // negative scroll offsets
+      // print('negative');
       final double result = layoutChildSequence(
         child: leadingNegativeChild,
         scrollOffset: math.max(mainAxisExtent, centerOffset) - mainAxisExtent,
@@ -1570,6 +1578,7 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
         return -result;
     }
 
+    // print('positive');
     // positive scroll offsets
     return layoutChildSequence(
       child: center,
@@ -1591,6 +1600,7 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
 
   @override
   void updateOutOfBandData(GrowthDirection growthDirection, SliverGeometry childLayoutGeometry) {
+    print('updateOutOfBandData');
     switch (growthDirection) {
       case GrowthDirection.forward:
         _maxScrollExtent += childLayoutGeometry.scrollExtent;

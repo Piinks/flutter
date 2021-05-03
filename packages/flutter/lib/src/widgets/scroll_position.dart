@@ -217,7 +217,9 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
     assert(_pixels == null);
     if (other.hasContentDimensions) {
       _minScrollExtent = other.minScrollExtent;
+      print('absorb');
       _maxScrollExtent = other.maxScrollExtent;
+      maxScrollExtentChangedNotifier.value = _maxScrollExtent!;
     }
     if (other.hasPixels) {
       _pixels = other.pixels;
@@ -494,6 +496,7 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
 
   @override
   bool applyViewportDimension(double viewportDimension) {
+    // print('applyViewportDimension: $_viewportDimension');
     if (_viewportDimension != viewportDimension) {
       _viewportDimension = viewportDimension;
       _didChangeViewportDimensionOrReceiveCorrection = true;
@@ -509,6 +512,7 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
 
   @override
   bool applyContentDimensions(double minScrollExtent, double maxScrollExtent) {
+    // print('Incoming: $minScrollExtent, $maxScrollExtent');
     assert(minScrollExtent != null);
     assert(maxScrollExtent != null);
     assert(haveDimensions == (_lastMetrics != null));
@@ -524,6 +528,7 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
       _didChangeViewportDimensionOrReceiveCorrection = false;
       _pendingDimensions = true;
       if (haveDimensions && !correctForNewDimensions(_lastMetrics!, currentMetrics!)) {
+        // print('off ramp');
         return false;
       }
       _haveDimensions = true;
@@ -534,6 +539,14 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
       _pendingDimensions = false;
     }
     assert(!_didChangeViewportDimensionOrReceiveCorrection, 'Use correctForNewDimensions() (and return true) to change the scroll offset during applyContentDimensions().');
+
+    // print('applyContentDimensions');
+    // print('*** Last time: $_lastMetrics');
+    // print('*** New: ${copyWith()}');
+    if (_lastMetrics?.maxScrollExtent != null && _lastMetrics!.maxScrollExtent != _maxScrollExtent) {
+      // print('Changed, updating notifier');
+      maxScrollExtentChangedNotifier.value = _maxScrollExtent!;
+    }
     _lastMetrics = copyWith();
     return true;
   }

@@ -872,6 +872,8 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
   late Animation<double> _fadeoutOpacityAnimation;
   final GlobalKey  _scrollbarPainterKey = GlobalKey();
   bool _hoverIsActive = false;
+  ScrollPosition? _position;
+  double? _lastKnownMaxExtent;
 
 
   /// Used to paint the scrollbar.
@@ -931,6 +933,25 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
   void didChangeDependencies() {
     super.didChangeDependencies();
     _maybeTriggerScrollbar();
+    // print('didChangeDependencies');
+    // Set up a listener to inform if the content of the scrollable changes,
+    // meaning the scrollbar should be updated to reflect a new extent.
+    if (_position != null)
+      _position!.maxScrollExtentChangedNotifier.removeListener(_maxExtentListener);
+    WidgetsBinding.instance!.addPostFrameCallback((Duration duration) {
+      _position = PrimaryScrollController.of(context)!.position;
+      if (_position != null)
+        _position!.maxScrollExtentChangedNotifier.addListener(_maxExtentListener);
+    });
+  }
+
+  void _maxExtentListener() {
+    // print('Scrollbar notified!');
+    // final double newMaxExtent = _position!.maxScrollExtentChangedNotifier.value;
+    // if (_lastKnownMaxExtent == null || newMaxExtent != _lastKnownMaxExtent) {
+    //   _maybeTriggerScrollbar();
+    //   _lastKnownMaxExtent = newMaxExtent;
+    //}
   }
 
   // Waits one frame and cause an empty scroll event (zero delta pixels).
@@ -1199,6 +1220,7 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
+    print(notification.metrics);
     if (!widget.notificationPredicate(notification))
       return false;
 

@@ -15,6 +15,7 @@ import 'package:vector_math/vector_math_64.dart';
 import 'binding.dart';
 import 'debug.dart';
 import 'layer.dart';
+import 'sliver_padding.dart';
 
 export 'package:flutter/foundation.dart' show FlutterError, InformationCollector, DiagnosticsNode, ErrorSummary, ErrorDescription, ErrorHint, DiagnosticsProperty, StringProperty, DoubleProperty, EnumProperty, FlagProperty, IntProperty, DiagnosticPropertiesBuilder;
 export 'package:flutter/gestures.dart' show HitTestEntry, HitTestResult;
@@ -1683,7 +1684,7 @@ abstract class RenderObject extends AbstractNode with DiagnosticableTreeMixin im
   void layout(Constraints constraints, { bool parentUsesSize = false }) {
     if (!kReleaseMode && debugProfileLayoutsEnabled)
       Timeline.startSync('$runtimeType',  arguments: timelineArgumentsIndicatingLandmarkEvent);
-
+    final bool shouldPrint = this is RenderSliverPadding;
     assert(constraints != null);
     assert(constraints.debugAssertIsValid(
       isAppliedConstraint: true,
@@ -1764,6 +1765,8 @@ abstract class RenderObject extends AbstractNode with DiagnosticableTreeMixin im
         return true;
       }());
       try {
+        if (shouldPrint)
+          print('performingResize');
         performResize();
         assert(() {
           debugAssertDoesMeetConstraints();
@@ -1785,6 +1788,8 @@ abstract class RenderObject extends AbstractNode with DiagnosticableTreeMixin im
       return true;
     }());
     try {
+      if (shouldPrint)
+        print('calling perform layout');
       performLayout();
       markNeedsSemanticsUpdate();
       assert(() {

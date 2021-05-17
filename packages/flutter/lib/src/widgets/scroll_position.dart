@@ -10,6 +10,7 @@ import 'package:flutter/scheduler.dart';
 
 import 'basic.dart';
 import 'framework.dart';
+import 'notification_listener.dart';
 import 'page_storage.dart';
 import 'scroll_activity.dart';
 import 'scroll_context.dart';
@@ -507,6 +508,17 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
   bool _pendingDimensions = false;
   ScrollMetrics? _lastMetrics;
 
+  bool _isContentMetricsChanged() {
+    assert(haveDimensions);
+    final ScrollMetrics currentMetrics = copyWith();
+
+    return _lastMetrics == null ||
+      !(currentMetrics.extentBefore == _lastMetrics!.extentBefore
+      && currentMetrics.extentInside == _lastMetrics!.extentInside
+      && currentMetrics.extentAfter == _lastMetrics!.extentAfter
+      && currentMetrics.axisDirection == _lastMetrics!.axisDirection);
+  }
+
   @override
   bool applyContentDimensions(double minScrollExtent, double maxScrollExtent) {
     assert(minScrollExtent != null);
@@ -534,6 +546,10 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
       _pendingDimensions = false;
     }
     assert(!_didChangeViewportDimensionOrReceiveCorrection, 'Use correctForNewDimensions() (and return true) to change the scroll offset during applyContentDimensions().');
+
+    if (_isContentMetricsChanged()) {
+      didUpdateScrollContentMetrics();
+    }
     _lastMetrics = copyWith();
     return true;
   }
@@ -895,6 +911,11 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
     UserScrollNotification(metrics: copyWith(), context: context.notificationContext!, direction: direction).dispatch(context.notificationContext);
   }
 
+  /// Dispatches a notification that the contents metrics has changed.
+  void didUpdateScrollContentMetrics() {
+    ScrollContentMetricsNotification(metrics: copyWith(), context: context.notificationContext!).dispatch(context.notificationContext);
+  }
+
   /// Provides a heuristic to determine if expensive frame-bound tasks should be
   /// deferred.
   ///
@@ -937,5 +958,29 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
     super.debugFillDescription(description);
     description.add('range: ${_minScrollExtent?.toStringAsFixed(1)}..${_maxScrollExtent?.toStringAsFixed(1)}');
     description.add('viewport: ${_viewportDimension?.toStringAsFixed(1)}');
+  }
+}
+
+/// A notification that a [Scrollable] widget's contents metrics has changed.
+class ScrollContentMetricsNotification extends LayoutChangedNotification with ViewportNotificationMixin {
+  /// Creates a notification that the [Scrollable] widget's contents metrics has changed.
+  ScrollContentMetricsNotification({
+    required this.metrics,
+    required this.context,
+  });
+
+  /// Description of a [Scrollable]'s contents.
+  final ScrollMetrics metrics;
+
+  /// The build context of the widget that fired this notification.
+  ///
+  /// This can be used to find the scrollable's render objects to determine the
+  /// size of the viewport, for instance.
+  final BuildContext context;
+
+  @override
+  void debugFillDescription(List<String> description) {
+    super.debugFillDescription(description);
+    description.add('$metrics');
   }
 }

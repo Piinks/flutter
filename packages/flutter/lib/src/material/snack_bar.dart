@@ -511,7 +511,7 @@ class _SnackBarState extends State<SnackBar> {
         children: <Widget>[
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: _singleLineVerticalPadding),
+              padding: widget.padding == null ? const EdgeInsets.symmetric(vertical: _singleLineVerticalPadding) : null,
               child: DefaultTextStyle(
                 style: contentTextStyle!,
                 child: widget.content,

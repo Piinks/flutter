@@ -15,6 +15,10 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) {
   // package can benefit from the additional validations.
   debugCheckIntrinsicSizes = true;
 
+  // Configure tests to run across all platforms by default. This can be
+  // overridden for a given test using the `variant` argument of `testWidgets`.
+  debugTargetPlatformVariant = TargetPlatformVariant.all();
+
   // Make tap() et al fail if the given finder specifies a widget that would not
   // receive the event.
   WidgetController.hitTestWarningShouldBeFatal = true;

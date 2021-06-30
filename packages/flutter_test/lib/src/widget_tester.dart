@@ -125,14 +125,16 @@ void testWidgets(
   test_package.Timeout? timeout,
   Duration? initialTimeout,
   bool semanticsEnabled = true,
-  TestVariant<Object?> variant = const DefaultTestVariant(),
+  TestVariant<Object?>? variant,
   dynamic tags,
 }) {
+  print(debugTargetPlatformVariant!.values);
+  variant ??= debugTargetPlatformVariant;
   assert(variant != null);
-  assert(variant.values.isNotEmpty, 'There must be at least one value to test in the testing variant.');
+  assert(variant!.values.isNotEmpty, 'There must be at least one value to test in the testing variant.');
   final TestWidgetsFlutterBinding binding = TestWidgetsFlutterBinding.ensureInitialized() as TestWidgetsFlutterBinding;
   final WidgetTester tester = WidgetTester._(binding);
-  for (final dynamic value in variant.values) {
+  for (final dynamic value in variant!.values) {
     final String variationDescription = variant.describeValue(value);
     final String combinedDescription = variationDescription.isNotEmpty ? '$description ($variationDescription)' : description;
     test(
@@ -151,10 +153,10 @@ void testWidgets(
             debugResetSemanticsIdCounter();
             Object? memento;
             try {
-              memento = await variant.setUp(value);
+              memento = await variant!.setUp(value);
               await callback(tester);
             } finally {
-              await variant.tearDown(value, memento);
+              await variant!.tearDown(value, memento);
             }
             semanticsHandle?.dispose();
           },
@@ -169,6 +171,8 @@ void testWidgets(
     );
   }
 }
+
+TargetPlatformVariant? debugTargetPlatformVariant;
 
 /// An abstract base class for describing test environment variants.
 ///

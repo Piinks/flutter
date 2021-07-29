@@ -55,6 +55,9 @@ class ListWheelParentData extends ContainerBoxParentData<RenderBox> {
   ///
   /// This must be maintained by the [ListWheelChildManager].
   int? index;
+
+  ///
+  Matrix4? lastTransform;
 }
 
 /// Render, onto a wheel, a bigger sequential set of objects inside this viewport.
@@ -1025,7 +1028,37 @@ class RenderListWheelViewport
   }
 
   @override
-  bool hitTestChildren(BoxHitTestResult result, { required Offset position }) => false;
+  bool hitTestChildren(BoxHitTestResult result, { required Offset position }) {
+    print(position);
+    RenderBox? child = lastChild;
+    while (child != null) {
+      final ListWheelParentData childParentData = child.parentData! as ListWheelParentData;
+      print(childParentData.index);
+      // print(childParentData.offset.dy - _topScrollMarginExtent - offset.pixels);
+      final bool isHit = result.addWithPaintTransform(
+        transform: getTransformTo(child),
+        position: position,
+        hitTest: (BoxHitTestResult result, Offset transformed) {
+          return child!.hitTest(result, position: transformed);
+        },
+      );
+      // result.addWithPaintOffset(
+      //     offset: Offset(
+      //         childParentData.offset.dx,
+      //         _getUntransformedPaintingCoordinateY(childParentData.offset.dy),
+      //     ),
+      //     position: position,
+      //     hitTest: (BoxHitTestResult result, Offset transformed) {
+      //       return child!.hitTest(result, position: transformed);
+      //     },
+      //   );
+      if (isHit)
+        return true;
+      child = childParentData.previousSibling;
+    }
+    return false;
+
+  }
 
   @override
   RevealedOffset getOffsetToReveal(RenderObject target, double alignment, { Rect? rect }) {

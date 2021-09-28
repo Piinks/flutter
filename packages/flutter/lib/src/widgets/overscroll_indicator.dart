@@ -12,6 +12,7 @@ import 'package:flutter/scheduler.dart';
 
 import 'basic.dart';
 import 'framework.dart';
+import 'media_query.dart';
 import 'notification_listener.dart';
 import 'scroll_notification.dart';
 import 'ticker_provider.dart';
@@ -737,6 +738,8 @@ class _StretchingOverscrollIndicatorState extends State<StretchingOverscrollIndi
 
   @override
   Widget build(BuildContext context) {
+    final Size size = MediaQuery.of(context).size;
+    double mainAxisSize;
     return NotificationListener<ScrollNotification>(
       onNotification: _handleScrollNotification,
       child: AnimatedBuilder(
@@ -749,9 +752,11 @@ class _StretchingOverscrollIndicatorState extends State<StretchingOverscrollIndi
           switch (widget.axis) {
             case Axis.horizontal:
               x += stretch;
+              mainAxisSize = size.width;
               break;
             case Axis.vertical:
               y += stretch;
+              mainAxisSize = size.height;
               break;
           }
 
@@ -759,13 +764,26 @@ class _StretchingOverscrollIndicatorState extends State<StretchingOverscrollIndi
             _lastOverscrollNotification?.overscroll ?? 0.0
           );
 
-          return ClipRect(
-            child: Transform(
-              alignment: alignment,
-              transform: Matrix4.diagonal3Values(x, y, 1.0),
-              child: widget.child,
-            ),
-          );
+          print('''
+            stretch: $stretch,
+            mainAxisSize: $mainAxisSize,
+            viewportDimension: ${_lastOverscrollNotification?.metrics.viewportDimension}
+          ''');
+
+          final double viewportDimension = _lastOverscrollNotification?.metrics.viewportDimension ?? mainAxisSize;
+
+          if (stretch != 0.0 && viewportDimension != mainAxisSize) {
+            print('clipping');
+            return ClipRect(
+              child: Transform(
+                alignment: alignment,
+                transform: Matrix4.diagonal3Values(x, y, 1.0),
+                child: widget.child,
+              ),
+            );
+          }
+
+          return widget.child!;
         },
       ),
     );

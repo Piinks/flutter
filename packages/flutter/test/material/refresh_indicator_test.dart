@@ -417,6 +417,40 @@ void main() {
     expect(refreshCalled, isTrue);
   }, variant: const TargetPlatformVariant(<TargetPlatform>{ TargetPlatform.iOS,  TargetPlatform.macOS }));
 
+  testWidgets('RefreshIndicator position can  be reversed relative to scroll direction', (WidgetTester tester) async {
+    refreshCalled = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: RefreshIndicator(
+          reverse: true,
+          onRefresh: refresh,
+          child: SizedBox(
+            width: 600.0,
+            child: ListView(
+              reverse: true,
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: <String>['A', 'B', 'C', 'D', 'E', 'F'].map<Widget>((String item) {
+                return SizedBox(
+                  height: 200.0,
+                  child: Text(item),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.fling(find.byType(ListView), const Offset(0.0, 1300), 1000.0);
+    await tester.pumpAndSettle();
+
+    await tester.fling(find.byType(ListView), const Offset(0.0, 100), 1000.0);
+    await tester.pump(const Duration(seconds: 1)); // finish the scroll animation
+    await tester.pump(const Duration(seconds: 1)); // finish the indicator settle animation
+    await tester.pump(const Duration(seconds: 1)); // finish the indicator hide animation
+    expect(refreshCalled, true);
+  });
+
   testWidgets('RefreshIndicator does not force child to relayout', (WidgetTester tester) async {
     int layoutCount = 0;
 

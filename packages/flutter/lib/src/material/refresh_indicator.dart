@@ -118,6 +118,7 @@ class RefreshIndicator extends StatefulWidget {
     this.color,
     this.backgroundColor,
     this.notificationPredicate = defaultScrollNotificationPredicate,
+    this.reverse = false,
     this.semanticsLabel,
     this.semanticsValue,
     this.strokeWidth = RefreshProgressIndicator.defaultStrokeWidth,
@@ -125,6 +126,7 @@ class RefreshIndicator extends StatefulWidget {
   }) : assert(child != null),
        assert(onRefresh != null),
        assert(notificationPredicate != null),
+       assert(reverse != null),
        assert(strokeWidth != null),
        assert(triggerMode != null),
        super(key: key);
@@ -181,6 +183,11 @@ class RefreshIndicator extends StatefulWidget {
   /// By default, checks whether `notification.depth == 0`. Set it to something
   /// else for more complicated layouts.
   final ScrollNotificationPredicate notificationPredicate;
+
+  /// Weather the refresh indicator should be positioned opposite of the scroll direction.
+  ///
+  /// Defaults to false.
+  final bool reverse;
 
   /// {@macro flutter.progress_indicator.ProgressIndicator.semanticsLabel}
   ///
@@ -288,7 +295,7 @@ class RefreshIndicatorState extends State<RefreshIndicator> with TickerProviderS
     // In this case, we don't want to trigger the refresh indicator.
     return ((notification is ScrollStartNotification && notification.dragDetails != null)
             || (notification is ScrollUpdateNotification && notification.dragDetails != null && widget.triggerMode == RefreshIndicatorTriggerMode.anywhere))
-      && notification.metrics.extentBefore == 0.0
+      && (widget.reverse ? notification.metrics.extentAfter == 0.0 : notification.metrics.extentBefore == 0.0)
       && _mode == null
       && _start(notification.metrics.axisDirection);
   }
@@ -308,7 +315,7 @@ class RefreshIndicatorState extends State<RefreshIndicator> with TickerProviderS
         indicatorAtTopNow = true;
         break;
       case AxisDirection.up:
-        indicatorAtTopNow = false;
+        indicatorAtTopNow = widget.reverse;
         break;
       case AxisDirection.left:
       case AxisDirection.right:
@@ -320,7 +327,7 @@ class RefreshIndicatorState extends State<RefreshIndicator> with TickerProviderS
         _dismiss(_RefreshIndicatorMode.canceled);
     } else if (notification is ScrollUpdateNotification) {
       if (_mode == _RefreshIndicatorMode.drag || _mode == _RefreshIndicatorMode.armed) {
-        if (notification.metrics.extentBefore > 0.0) {
+        if (widget.reverse ? notification.metrics.extentAfter > 0.0 : notification.metrics.extentBefore > 0.0) {
           _dismiss(_RefreshIndicatorMode.canceled);
         } else {
           _dragOffset = _dragOffset! - notification.scrollDelta!;
@@ -341,10 +348,10 @@ class RefreshIndicatorState extends State<RefreshIndicator> with TickerProviderS
     } else if (notification is ScrollEndNotification) {
       switch (_mode) {
         case _RefreshIndicatorMode.armed:
-          _show();
+          widget.reverse ?  _dismiss(_RefreshIndicatorMode.canceled) :_show(); 
           break;
         case _RefreshIndicatorMode.drag:
-          _dismiss(_RefreshIndicatorMode.canceled);
+          widget.reverse ? _show() : _dismiss(_RefreshIndicatorMode.canceled);
           break;
         case _RefreshIndicatorMode.canceled:
         case _RefreshIndicatorMode.done:
@@ -377,7 +384,7 @@ class RefreshIndicatorState extends State<RefreshIndicator> with TickerProviderS
         _isIndicatorAtTop = true;
         break;
       case AxisDirection.up:
-        _isIndicatorAtTop = false;
+        _isIndicatorAtTop = widget.reverse;
         break;
       case AxisDirection.left:
       case AxisDirection.right:

@@ -348,7 +348,7 @@ class RefreshIndicatorState extends State<RefreshIndicator> with TickerProviderS
     } else if (notification is ScrollEndNotification) {
       switch (_mode) {
         case _RefreshIndicatorMode.armed:
-          widget.reverse ?  _dismiss(_RefreshIndicatorMode.canceled) :_show(); 
+          widget.reverse ?  _dismiss(_RefreshIndicatorMode.canceled) :_show();
           break;
         case _RefreshIndicatorMode.drag:
           widget.reverse ? _show() : _dismiss(_RefreshIndicatorMode.canceled);

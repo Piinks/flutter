@@ -441,9 +441,11 @@ void main() {
       ),
     );
 
+    // Scroll to the top.
     await tester.fling(find.byType(ListView), const Offset(0.0, 1300), 1000.0);
     await tester.pumpAndSettle();
 
+    // Trigger the refresh indicator.
     await tester.fling(find.byType(ListView), const Offset(0.0, 100), 1000.0);
     await tester.pump(const Duration(seconds: 1)); // finish the scroll animation
     await tester.pump(const Duration(seconds: 1)); // finish the indicator settle animation

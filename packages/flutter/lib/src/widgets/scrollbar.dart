@@ -1602,8 +1602,9 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
     if (_shouldUpdatePainter(metrics.axis)) {
       scrollbarPainter.update(metrics, metrics.axisDirection);
     }
-    // Scrollbar is informed by ScrollMetrics.scrollInsets, and also contributes
-    // to them.
+    // Scrollbar is informed by ScrollMetrics.scrollInsets, but also contributes
+    // to them. The scrollbar is always positioned along the edge of the
+    // viewport, so if there are already larger insets along that edge, defer.
     late final EdgeInsets scrollInsets;
     late final ScrollbarOrientation resolvedOrientation;
     if (widget.scrollbarOrientation == null) {
@@ -1641,7 +1642,9 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
         );
         break;
     }
-    Scrollable.of(notification.context)!.position.applyContentInsets(scrollInsets);
+    if (scrollInsets != metrics.scrollInsets!) {
+      Scrollable.of(notification.context)!.position.applyContentInsets(scrollInsets);
+    }
 
     return false;
   }

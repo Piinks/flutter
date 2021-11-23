@@ -144,10 +144,7 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
   double? _maxScrollExtent;
 
   @override
-  EdgeInsets get scrollInsets {
-    // print('getting scroll insets: $_scrollInsets');
-    return _scrollInsets!;
-  }
+  EdgeInsets get scrollInsets => _scrollInsets!;
   EdgeInsets? _scrollInsets;
 
   @override
@@ -522,7 +519,6 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
   Axis? _lastAxis;
 
   bool _isMetricsChanged() {
-    // print('isMetricsChanged');
     assert(haveDimensions);
     final ScrollMetrics currentMetrics = copyWith();
 
@@ -536,7 +532,6 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
 
   @override
   bool applyContentDimensions(double minScrollExtent, double maxScrollExtent) {
-    // print('applyContentDimensions');
     assert(minScrollExtent != null);
     assert(maxScrollExtent != null);
     assert(haveDimensions == (_lastMetrics != null));
@@ -569,13 +564,10 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
 
   @override
   bool applyContentInsets(EdgeInsets scrollInsets) {
-    // print('applyContentInsets, insets: $scrollInsets, compared to: $_scrollInsets');
     if (_scrollInsets == null || _scrollInsets != scrollInsets) {
-      // print('setting');
       _scrollInsets = scrollInsets;
     }
     if (_isMetricsChanged()) {
-      // print('metrics changed!');
       // It isn't safe to trigger the ScrollMetricsNotification if we are in
       // the middle of rendering the frame, the developer is likely to schedule
       // a new frame(build scheduled during frame is illegal).

@@ -1495,7 +1495,6 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
         math.min(0.0, _minScrollExtent + mainAxisExtent * anchor),
         math.max(0.0, _maxScrollExtent - mainAxisExtent * (1.0 - anchor)),
       )) {
-        // print('RenderViewport.performLayout, _scrollInsets: $_scrollInsets');
         offset.applyContentInsets(_scrollInsets);
         break;
       }
@@ -1609,7 +1608,6 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
         _minScrollExtent -= childLayoutGeometry.scrollExtent;
         break;
     }
-    // print('RenderViewport.updateOutOfBandData, _scrollInsets: ${childLayoutGeometry.scrollInsets}');
     _scrollInsets += childLayoutGeometry.scrollInsets;
     if (childLayoutGeometry.hasVisualOverflow)
       _hasVisualOverflow = true;

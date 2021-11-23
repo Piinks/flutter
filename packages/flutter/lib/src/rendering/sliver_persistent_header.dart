@@ -450,7 +450,6 @@ abstract class RenderSliverPinnedPersistentHeader extends RenderSliverPersistent
         scrollInsets = EdgeInsets.only(right: paintExtent);
         break;
     }
-    print('RenderSliverPinnedPersistentHeader, scrollInsets: $scrollInsets');
     geometry = SliverGeometry(
       scrollExtent: maxExtent,
       paintOrigin: constraints.overlap,
@@ -462,7 +461,6 @@ abstract class RenderSliverPinnedPersistentHeader extends RenderSliverPersistent
       scrollInsets: scrollInsets,
       hasVisualOverflow: true, // Conservatively say we do have overflow to avoid complexity.
     );
-    print('GEOMETRY: $geometry');
   }
 
   @override
@@ -639,7 +637,6 @@ abstract class RenderSliverFloatingPersistentHeader extends RenderSliverPersiste
         scrollInsets = EdgeInsets.only(right: clampedPaintExtent + stretchOffset);
         break;
     }
-    print('Insets: $scrollInsets');
     geometry = SliverGeometry(
       scrollExtent: maxExtent,
       paintOrigin: math.min(constraints.overlap, 0.0),

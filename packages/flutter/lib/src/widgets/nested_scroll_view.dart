@@ -546,6 +546,7 @@ class _NestedScrollMetrics extends FixedScrollMetrics {
     double? minRange,
     double? maxRange,
     double? correctionOffset,
+    EdgeInsets? scrollInsets,
   }) {
     return _NestedScrollMetrics(
       minScrollExtent: minScrollExtent ?? (hasContentDimensions ? this.minScrollExtent : null),

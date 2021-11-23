@@ -86,6 +86,9 @@ class ViewportOffsetSpy extends ViewportOffset {
   bool applyContentDimensions(double minScrollExtent, double maxScrollExtent) => true;
 
   @override
+  bool applyContentInsets(EdgeInsetsGeometry? scrollInsets) => true;
+
+  @override
   void correctBy(double correction) {
     _pixels += correction;
     corrected = true;

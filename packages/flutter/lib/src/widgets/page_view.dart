@@ -288,6 +288,7 @@ class PageMetrics extends FixedScrollMetrics {
     double? viewportDimension,
     AxisDirection? axisDirection,
     double? viewportFraction,
+    EdgeInsets? scrollInsets,
   }) {
     return PageMetrics(
       minScrollExtent: minScrollExtent ?? (hasContentDimensions ? this.minScrollExtent : null),
@@ -484,6 +485,7 @@ class _PagePosition extends ScrollPositionWithSingleContext implements PageMetri
     double? viewportDimension,
     AxisDirection? axisDirection,
     double? viewportFraction,
+    EdgeInsets? scrollInsets,
   }) {
     return PageMetrics(
       minScrollExtent: minScrollExtent ?? (hasContentDimensions ? this.minScrollExtent : null),

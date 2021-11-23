@@ -433,16 +433,36 @@ abstract class RenderSliverPinnedPersistentHeader extends RenderSliverPersistent
     final double stretchOffset = stretchConfiguration != null ?
       constraints.overlap.abs() :
       0.0;
+    final double paintExtent =  math.min(childExtent, effectiveRemainingPaintExtent);
+    late final EdgeInsets scrollInsets;
+
+    switch (constraints.axisDirection) {
+      case AxisDirection.up:
+        scrollInsets = EdgeInsets.only(bottom: paintExtent);
+        break;
+      case AxisDirection.right:
+        scrollInsets = EdgeInsets.only(left: paintExtent);
+        break;
+      case AxisDirection.down:
+        scrollInsets = EdgeInsets.only(top: paintExtent);
+        break;
+      case AxisDirection.left:
+        scrollInsets = EdgeInsets.only(right: paintExtent);
+        break;
+    }
+    print('RenderSliverPinnedPersistentHeader, scrollInsets: $scrollInsets');
     geometry = SliverGeometry(
       scrollExtent: maxExtent,
       paintOrigin: constraints.overlap,
-      paintExtent: math.min(childExtent, effectiveRemainingPaintExtent),
+      paintExtent: paintExtent,
       layoutExtent: layoutExtent,
       maxPaintExtent: maxExtent + stretchOffset,
       maxScrollObstructionExtent: minExtent,
       cacheExtent: layoutExtent > 0.0 ? -constraints.cacheOrigin + layoutExtent : layoutExtent,
+      scrollInsets: scrollInsets,
       hasVisualOverflow: true, // Conservatively say we do have overflow to avoid complexity.
     );
+    print('GEOMETRY: $geometry');
   }
 
   @override
@@ -602,12 +622,31 @@ abstract class RenderSliverFloatingPersistentHeader extends RenderSliverPersiste
     final double maxExtent = this.maxExtent;
     final double paintExtent = maxExtent - _effectiveScrollOffset!;
     final double layoutExtent = maxExtent - constraints.scrollOffset;
+    final double clampedPaintExtent = paintExtent.clamp(0.0, constraints.remainingPaintExtent);
+    late final EdgeInsets scrollInsets;
+
+    switch (constraints.axisDirection) {
+      case AxisDirection.up:
+        scrollInsets = EdgeInsets.only(bottom: clampedPaintExtent + stretchOffset);
+        break;
+      case AxisDirection.right:
+        scrollInsets = EdgeInsets.only(left: clampedPaintExtent + stretchOffset);
+        break;
+      case AxisDirection.down:
+        scrollInsets = EdgeInsets.only(top: clampedPaintExtent + stretchOffset);
+        break;
+      case AxisDirection.left:
+        scrollInsets = EdgeInsets.only(right: clampedPaintExtent + stretchOffset);
+        break;
+    }
+    print('Insets: $scrollInsets');
     geometry = SliverGeometry(
       scrollExtent: maxExtent,
       paintOrigin: math.min(constraints.overlap, 0.0),
-      paintExtent: paintExtent.clamp(0.0, constraints.remainingPaintExtent),
+      paintExtent: clampedPaintExtent,
       layoutExtent: layoutExtent.clamp(0.0, constraints.remainingPaintExtent),
       maxPaintExtent: maxExtent + stretchOffset,
+      scrollInsets: scrollInsets,
       hasVisualOverflow: true, // Conservatively say we do have overflow to avoid complexity.
     );
     return stretchOffset > 0 ? 0.0 : math.min(0.0, paintExtent - childExtent);
@@ -830,6 +869,22 @@ abstract class RenderSliverFloatingPinnedPersistentHeader extends RenderSliverFl
     final double stretchOffset = stretchConfiguration != null ?
       constraints.overlap.abs() :
       0.0;
+    late final EdgeInsets scrollInsets;
+
+    switch (constraints.axisDirection) {
+      case AxisDirection.up:
+        scrollInsets = EdgeInsets.only(bottom: clampedPaintExtent + stretchOffset);
+        break;
+      case AxisDirection.right:
+        scrollInsets = EdgeInsets.only(left: clampedPaintExtent + stretchOffset);
+        break;
+      case AxisDirection.down:
+        scrollInsets = EdgeInsets.only(top: clampedPaintExtent + stretchOffset);
+        break;
+      case AxisDirection.left:
+        scrollInsets = EdgeInsets.only(right: clampedPaintExtent + stretchOffset);
+        break;
+    }
     geometry = SliverGeometry(
       scrollExtent: maxExtent,
       paintOrigin: math.min(constraints.overlap, 0.0),
@@ -837,6 +892,7 @@ abstract class RenderSliverFloatingPinnedPersistentHeader extends RenderSliverFl
       layoutExtent: layoutExtent.clamp(0.0, clampedPaintExtent),
       maxPaintExtent: maxExtent + stretchOffset,
       maxScrollObstructionExtent: minExtent,
+      scrollInsets: scrollInsets,
       hasVisualOverflow: true, // Conservatively say we do have overflow to avoid complexity.
     );
     return 0.0;

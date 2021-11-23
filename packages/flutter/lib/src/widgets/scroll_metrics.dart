@@ -43,6 +43,7 @@ mixin ScrollMetrics {
   ScrollMetrics copyWith({
     double? minScrollExtent,
     double? maxScrollExtent,
+    EdgeInsets? scrollInsets,
     double? pixels,
     double? viewportDimension,
     AxisDirection? axisDirection,
@@ -50,6 +51,7 @@ mixin ScrollMetrics {
     return FixedScrollMetrics(
       minScrollExtent: minScrollExtent ?? (hasContentDimensions ? this.minScrollExtent : null),
       maxScrollExtent: maxScrollExtent ?? (hasContentDimensions ? this.maxScrollExtent : null),
+      scrollInsets: scrollInsets ?? (hasContentDimensions ? this.scrollInsets : null),
       pixels: pixels ?? (hasPixels ? this.pixels : null),
       viewportDimension: viewportDimension ?? (hasViewportDimension ? this.viewportDimension : null),
       axisDirection: axisDirection ?? this.axisDirection,
@@ -71,6 +73,9 @@ mixin ScrollMetrics {
   /// This value should typically be non-null and greater than or equal to
   /// [minScrollExtent]. It can be infinity, if the scroll is unbounded.
   double get maxScrollExtent;
+
+  /// Doc me!
+  EdgeInsets? get scrollInsets;
 
   /// Whether the [minScrollExtent] and the [maxScrollExtent] properties are available.
   bool get hasContentDimensions;
@@ -137,10 +142,12 @@ class FixedScrollMetrics with ScrollMetrics {
     required double? pixels,
     required double? viewportDimension,
     required this.axisDirection,
+    EdgeInsets? scrollInsets,
   }) : _minScrollExtent = minScrollExtent,
        _maxScrollExtent = maxScrollExtent,
        _pixels = pixels,
-       _viewportDimension = viewportDimension;
+       _viewportDimension = viewportDimension,
+       _scrollInsets = scrollInsets;
 
   @override
   double get minScrollExtent => _minScrollExtent!;
@@ -149,6 +156,10 @@ class FixedScrollMetrics with ScrollMetrics {
   @override
   double get maxScrollExtent => _maxScrollExtent!;
   final double? _maxScrollExtent;
+
+  @override
+  EdgeInsets? get scrollInsets => _scrollInsets;
+  final EdgeInsets? _scrollInsets;
 
   @override
   bool get hasContentDimensions => _minScrollExtent != null && _maxScrollExtent != null;

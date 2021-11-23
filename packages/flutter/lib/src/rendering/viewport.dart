@@ -1442,6 +1442,7 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
   // Out-of-band data computed during layout.
   late double _minScrollExtent;
   late double _maxScrollExtent;
+  late EdgeInsets _scrollInsets;
   bool _hasVisualOverflow = false;
 
   @override
@@ -1461,6 +1462,7 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
       assert(firstChild == null);
       _minScrollExtent = 0.0;
       _maxScrollExtent = 0.0;
+      _scrollInsets = EdgeInsets.zero;
       _hasVisualOverflow = false;
       offset.applyContentDimensions(0.0, 0.0);
       return;
@@ -1489,12 +1491,13 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
       correction = _attemptLayout(mainAxisExtent, crossAxisExtent, offset.pixels + centerOffsetAdjustment);
       if (correction != 0.0) {
         offset.correctBy(correction);
-      } else {
-        if (offset.applyContentDimensions(
-              math.min(0.0, _minScrollExtent + mainAxisExtent * anchor),
-              math.max(0.0, _maxScrollExtent - mainAxisExtent * (1.0 - anchor)),
-           ))
-          break;
+      } else if (offset.applyContentDimensions(
+        math.min(0.0, _minScrollExtent + mainAxisExtent * anchor),
+        math.max(0.0, _maxScrollExtent - mainAxisExtent * (1.0 - anchor)),
+      )) {
+        // print('RenderViewport.performLayout, _scrollInsets: $_scrollInsets');
+        offset.applyContentInsets(_scrollInsets);
+        break;
       }
       count += 1;
     } while (count < _maxLayoutCycles);
@@ -1532,6 +1535,7 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
     assert(correctedOffset.isFinite);
     _minScrollExtent = 0.0;
     _maxScrollExtent = 0.0;
+    _scrollInsets = EdgeInsets.zero;
     _hasVisualOverflow = false;
 
     // centerOffset is the offset from the leading edge of the RenderViewport
@@ -1605,6 +1609,8 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
         _minScrollExtent -= childLayoutGeometry.scrollExtent;
         break;
     }
+    // print('RenderViewport.updateOutOfBandData, _scrollInsets: ${childLayoutGeometry.scrollInsets}');
+    _scrollInsets += childLayoutGeometry.scrollInsets;
     if (childLayoutGeometry.hasVisualOverflow)
       _hasVisualOverflow = true;
   }

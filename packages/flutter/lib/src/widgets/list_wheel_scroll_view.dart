@@ -329,6 +329,7 @@ class FixedExtentMetrics extends FixedScrollMetrics {
     double? viewportDimension,
     AxisDirection? axisDirection,
     int? itemIndex,
+    EdgeInsets? scrollInsets,
   }) {
     return FixedExtentMetrics(
       minScrollExtent: minScrollExtent ?? (hasContentDimensions ? this.minScrollExtent : null),
@@ -409,6 +410,7 @@ class _FixedExtentScrollPosition extends ScrollPositionWithSingleContext impleme
     double? viewportDimension,
     AxisDirection? axisDirection,
     int? itemIndex,
+    EdgeInsets? scrollInsets,
   }) {
     return FixedExtentMetrics(
       minScrollExtent: minScrollExtent ?? (hasContentDimensions ? this.minScrollExtent : null),

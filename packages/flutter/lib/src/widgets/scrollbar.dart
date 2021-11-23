@@ -371,17 +371,22 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
         _lastMetrics!.extentBefore == metrics.extentBefore &&
         _lastMetrics!.extentInside == metrics.extentInside &&
         _lastMetrics!.extentAfter == metrics.extentAfter &&
-        _lastAxisDirection == axisDirection)
+        _lastAxisDirection == axisDirection &&
+        _lastMetrics!.scrollInsets != metrics.scrollInsets
+    ) {
       return;
+    }
 
     final ScrollMetrics? oldMetrics = _lastMetrics;
     _lastMetrics = metrics;
     _lastAxisDirection = axisDirection;
 
     bool _needPaint(ScrollMetrics? metrics) => metrics != null && metrics.maxScrollExtent > metrics.minScrollExtent;
-    if (!_needPaint(oldMetrics) && !_needPaint(metrics))
+    if (!_needPaint(oldMetrics) && !_needPaint(metrics)) {
       return;
+    }
 
+    // print('Notify!');
     notifyListeners();
   }
 
@@ -437,18 +442,18 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
       case ScrollbarOrientation.left:
         thumbSize = Size(thickness, thumbExtent);
         trackSize = Size(thickness + 2 * crossAxisMargin, _trackExtent);
-        x = crossAxisMargin + padding.left;
+        x = crossAxisMargin + padding.left + _scrollInsets.left;
         y = _thumbOffset;
-        trackOffset = Offset(x - crossAxisMargin, mainAxisMargin);
+        trackOffset = Offset(x - crossAxisMargin, mainAxisMargin + _scrollInsets.top);
         borderStart = trackOffset + Offset(trackSize.width, 0.0);
         borderEnd = Offset(trackOffset.dx + trackSize.width, trackOffset.dy + _trackExtent);
         break;
       case ScrollbarOrientation.right:
         thumbSize = Size(thickness, thumbExtent);
         trackSize = Size(thickness + 2 * crossAxisMargin, _trackExtent);
-        x = size.width - thickness - crossAxisMargin - padding.right;
+        x = size.width - thickness - crossAxisMargin - padding.right - _scrollInsets.right;
         y = _thumbOffset;
-        trackOffset = Offset(x - crossAxisMargin, mainAxisMargin);
+        trackOffset = Offset(x - crossAxisMargin, mainAxisMargin + _scrollInsets.top);
         borderStart = trackOffset;
         borderEnd = Offset(trackOffset.dx, trackOffset.dy + _trackExtent);
         break;
@@ -465,8 +470,8 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
         thumbSize = Size(thumbExtent, thickness);
         trackSize = Size(_trackExtent, thickness + 2 * crossAxisMargin);
         x = _thumbOffset;
-        y = size.height - thickness - crossAxisMargin - padding.bottom;
-        trackOffset = Offset(mainAxisMargin, y - crossAxisMargin);
+        y = size.height - thickness - crossAxisMargin - padding.bottom - _scrollInsets.bottom;
+        trackOffset = Offset(mainAxisMargin + _scrollInsets.left, y - crossAxisMargin);
         borderStart = trackOffset;
         borderEnd = Offset(trackOffset.dx + _trackExtent, trackOffset.dy);
         break;
@@ -548,8 +553,14 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
   double get _afterExtent => _isReversed ? _lastMetrics!.extentBefore : _lastMetrics!.extentAfter;
   // Padding of the thumb track.
   double get _mainAxisPadding => _isVertical ? padding.vertical : padding.horizontal;
+  EdgeInsets get _scrollInsets => _lastMetrics?.scrollInsets ?? EdgeInsets.zero;
   // The size of the thumb track.
-  double get _trackExtent => _lastMetrics!.viewportDimension - 2 * mainAxisMargin - _mainAxisPadding;
+  double get _trackExtent {
+    // print('_trackExtent, scrollInsets? $_scrollInsets');
+    final double mainAxisInsets = _isVertical ? _scrollInsets.vertical : _scrollInsets.horizontal;
+    // print('_trackExtent: ${_lastMetrics!.viewportDimension - 2 * mainAxisMargin - _mainAxisPadding - mainAxisInsets}');
+    return _lastMetrics!.viewportDimension - 2 * mainAxisMargin - _mainAxisPadding - mainAxisInsets;
+  }
 
   // The total size of the scrollable content.
   double get _totalContentExtent {
@@ -594,10 +605,25 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
       return;
     }
 
-    final double beforePadding = _isVertical ? padding.top : padding.left;
+    late double leadingThumbSpace;
+    switch (_lastMetrics!.axisDirection) {
+      case AxisDirection.up:
+        leadingThumbSpace = padding.bottom + _scrollInsets.bottom + mainAxisMargin;
+        break;
+      case AxisDirection.right:
+        leadingThumbSpace = padding.left + _scrollInsets.left + mainAxisMargin;
+        break;
+      case AxisDirection.down:
+        leadingThumbSpace = padding.top + _scrollInsets.top + mainAxisMargin;
+        break;
+      case AxisDirection.left:
+        leadingThumbSpace = padding.right + _scrollInsets.right + mainAxisMargin;
+        break;
+    }
+
     final double thumbExtent = _thumbExtent();
     final double thumbOffsetLocal = _getScrollToTrack(_lastMetrics!, thumbExtent);
-    _thumbOffset = thumbOffsetLocal + mainAxisMargin + beforePadding;
+    _thumbOffset = thumbOffsetLocal + leadingThumbSpace;
 
     // Do not paint a scrollbar if the scroll view is infinitely long.
     // TODO(Piinks): Special handling for infinite scroll views, https://github.com/flutter/flutter/issues/41434
@@ -1562,6 +1588,7 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
   }
 
   bool _handleScrollMetricsNotification(ScrollMetricsNotification notification) {
+    // print('_handleScrollMetricsNotification, insets: ${notification.metrics.scrollInsets}');
     if (!widget.notificationPredicate(ScrollUpdateNotification(
           metrics: notification.metrics,
           context: notification.context,
@@ -1579,6 +1606,23 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
     if (_shouldUpdatePainter(metrics.axis)) {
       scrollbarPainter.update(metrics, metrics.axisDirection);
     }
+    // Scrollbar is informed by ScrollMetrics.scrollInsets, and also contributes
+    // to them.
+    late EdgeInsets scrollInsets;
+    switch (metrics.axisDirection) {
+
+      case AxisDirection.up:
+        scrollInsets = metrics.scrollInsets!.copyWith();
+        break;
+      case AxisDirection.right:
+        break;
+      case AxisDirection.down:
+        break;
+      case AxisDirection.left:
+        break;
+    }
+    Scrollable.of(notification.context)!.position.applyContentInsets(scrollInsets);
+
     return false;
   }
 

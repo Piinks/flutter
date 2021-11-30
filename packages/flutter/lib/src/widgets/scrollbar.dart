@@ -1645,7 +1645,6 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
     if (scrollInsets != metrics.scrollInsets!) {
       Scrollable.of(notification.context)!.position.applyContentInsets(scrollInsets);
     }
-
     return false;
   }
 

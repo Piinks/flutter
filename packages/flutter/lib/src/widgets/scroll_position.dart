@@ -144,8 +144,8 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
   double? _maxScrollExtent;
 
   @override
-  EdgeInsets get scrollInsets => _scrollInsets!;
-  EdgeInsets? _scrollInsets;
+  EdgeInsets get scrollInsets => _scrollInsets;
+  EdgeInsets _scrollInsets = EdgeInsets.zero;
 
   @override
   bool get hasContentDimensions => _minScrollExtent != null && _maxScrollExtent != null;
@@ -564,13 +564,29 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
 
   @override
   bool applyContentInsets(EdgeInsets scrollInsets) {
+    print('applyContentInsets');
+    print('current Insets: $_scrollInsets');
+    print('new Insets: $scrollInsets');
     if (_scrollInsets == null || _scrollInsets != scrollInsets) {
+      // Insets can come from multiple sources, such as a Scrollbar, or a
+      // SliverAppBar. If the incoming scrollInsets have a negative edge, then
+      // the incoming information does not care about that edge. In this case,
+      // defer to existing insets, less that edge will be zero.
+      // TODO(Piinks): This^ isn't great. The scrollbar can use copyWith and
+      //  update the edges it cares about, we should find a way to let the
+      //  Rendering layer contribute in a better way.
       _scrollInsets = scrollInsets;
+      //  EdgeInsets.fromLTRB(
+      //     left:
+      //     top:
+      //     right:
+      //     bottom:
+      // );
     }
     if (_isMetricsChanged()) {
       // It isn't safe to trigger the ScrollMetricsNotification if we are in
       // the middle of rendering the frame, the developer is likely to schedule
-      // a new frame(build scheduled during frame is illegal).
+      // a new frame (build scheduled during frame is illegal).
       if (!_haveScheduledUpdateNotification) {
         scheduleMicrotask(didUpdateScrollMetrics);
         _haveScheduledUpdateNotification = true;

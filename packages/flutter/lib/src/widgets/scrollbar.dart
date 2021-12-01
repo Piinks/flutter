@@ -1585,6 +1585,7 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
   }
 
   bool _handleScrollMetricsNotification(ScrollMetricsNotification notification) {
+    print(notification.metrics.axis);
     if (!widget.notificationPredicate(ScrollUpdateNotification(
           metrics: notification.metrics,
           context: notification.context,
@@ -1643,6 +1644,7 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
         break;
     }
     if (scrollInsets != metrics.scrollInsets!) {
+      print('RawScrollbar._handleScrollMetricsNotification');
       Scrollable.of(notification.context)!.position.applyContentInsets(scrollInsets);
     }
     return false;

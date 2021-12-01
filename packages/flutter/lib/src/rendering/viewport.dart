@@ -1491,12 +1491,18 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
       correction = _attemptLayout(mainAxisExtent, crossAxisExtent, offset.pixels + centerOffsetAdjustment);
       if (correction != 0.0) {
         offset.correctBy(correction);
-      } else if (offset.applyContentDimensions(
-        math.min(0.0, _minScrollExtent + mainAxisExtent * anchor),
-        math.max(0.0, _maxScrollExtent - mainAxisExtent * (1.0 - anchor)),
-      )) {
+      } else {
+        final bool completed = offset.applyContentDimensions(
+          math.min(0.0, _minScrollExtent + mainAxisExtent * anchor),
+          math.max(0.0, _maxScrollExtent - mainAxisExtent * (1.0 - anchor)),
+        );
+        print('RenderViewport.performLayout');
+        print('Sending scrollInsets: $_scrollInsets');
+        // Apply any insets if there are any
         offset.applyContentInsets(_scrollInsets);
-        break;
+        if (completed) {
+          break;
+        }
       }
       count += 1;
     } while (count < _maxLayoutCycles);

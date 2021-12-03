@@ -1442,7 +1442,7 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
   // Out-of-band data computed during layout.
   late double _minScrollExtent;
   late double _maxScrollExtent;
-  late EdgeInsets _scrollInsets;
+  EdgeInsets _scrollInsets = EdgeInsets.zero;
   bool _hasVisualOverflow = false;
 
   @override
@@ -1614,7 +1614,9 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
         _minScrollExtent -= childLayoutGeometry.scrollExtent;
         break;
     }
-    _scrollInsets += childLayoutGeometry.scrollInsets;
+    if (childLayoutGeometry.scrollInsets != null) {
+      _scrollInsets += childLayoutGeometry.scrollInsets!;
+    }
     if (childLayoutGeometry.hasVisualOverflow)
       _hasVisualOverflow = true;
   }

@@ -313,12 +313,14 @@ class FixedExtentMetrics extends FixedScrollMetrics {
     required double? viewportDimension,
     required AxisDirection axisDirection,
     required this.itemIndex,
+    EdgeInsets? scrollInsets,
   }) : super(
          minScrollExtent: minScrollExtent,
          maxScrollExtent: maxScrollExtent,
          pixels: pixels,
          viewportDimension: viewportDimension,
          axisDirection: axisDirection,
+         scrollInsets: scrollInsets,
        );
 
   @override
@@ -419,6 +421,7 @@ class _FixedExtentScrollPosition extends ScrollPositionWithSingleContext impleme
       viewportDimension: viewportDimension ?? (hasViewportDimension ? this.viewportDimension : null),
       axisDirection: axisDirection ?? this.axisDirection,
       itemIndex: itemIndex ?? this.itemIndex,
+      scrollInsets: scrollInsets ?? this.scrollInsets,
     );
   }
 }

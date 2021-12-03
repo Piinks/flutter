@@ -539,7 +539,7 @@ class SliverGeometry with Diagnosticable {
     this.hasVisualOverflow = false,
     this.scrollOffsetCorrection,
     double? cacheExtent,
-    this.scrollInsets = EdgeInsets.zero,
+    this.scrollInsets,
   }) : assert(scrollExtent != null),
        assert(paintExtent != null),
        assert(paintOrigin != null),
@@ -552,7 +552,7 @@ class SliverGeometry with Diagnosticable {
        visible = visible ?? paintExtent > 0.0;
 
   /// Doc me!
-  final EdgeInsets scrollInsets;
+  final EdgeInsets? scrollInsets;
 
   /// A sliver that occupies no space at all.
   static const SliverGeometry zero = SliverGeometry();

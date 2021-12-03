@@ -272,12 +272,14 @@ class PageMetrics extends FixedScrollMetrics {
     required double? viewportDimension,
     required AxisDirection axisDirection,
     required this.viewportFraction,
+    EdgeInsets? scrollInsets,
   }) : super(
          minScrollExtent: minScrollExtent,
          maxScrollExtent: maxScrollExtent,
          pixels: pixels,
          viewportDimension: viewportDimension,
          axisDirection: axisDirection,
+         scrollInsets: scrollInsets,
        );
 
   @override
@@ -297,6 +299,7 @@ class PageMetrics extends FixedScrollMetrics {
       viewportDimension: viewportDimension ?? (hasViewportDimension ? this.viewportDimension : null),
       axisDirection: axisDirection ?? this.axisDirection,
       viewportFraction: viewportFraction ?? this.viewportFraction,
+      scrollInsets: scrollInsets,
     );
   }
 
@@ -494,6 +497,7 @@ class _PagePosition extends ScrollPositionWithSingleContext implements PageMetri
       viewportDimension: viewportDimension ?? (hasViewportDimension ? this.viewportDimension : null),
       axisDirection: axisDirection ?? this.axisDirection,
       viewportFraction: viewportFraction ?? this.viewportFraction,
+      scrollInsets: scrollInsets,
     );
   }
 }

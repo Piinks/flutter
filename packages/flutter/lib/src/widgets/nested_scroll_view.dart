@@ -528,12 +528,14 @@ class _NestedScrollMetrics extends FixedScrollMetrics {
     required this.minRange,
     required this.maxRange,
     required this.correctionOffset,
+    EdgeInsets? scrollInsets,
   }) : super(
     minScrollExtent: minScrollExtent,
     maxScrollExtent: maxScrollExtent,
     pixels: pixels,
     viewportDimension: viewportDimension,
     axisDirection: axisDirection,
+    scrollInsets: scrollInsets,
   );
 
   @override
@@ -557,6 +559,7 @@ class _NestedScrollMetrics extends FixedScrollMetrics {
       minRange: minRange ?? this.minRange,
       maxRange: maxRange ?? this.maxRange,
       correctionOffset: correctionOffset ?? this.correctionOffset,
+      scrollInsets: scrollInsets,
     );
   }
 

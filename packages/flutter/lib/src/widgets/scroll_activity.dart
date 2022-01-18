@@ -219,6 +219,76 @@ class HoldScrollActivity extends ScrollActivity implements ScrollHoldController 
   }
 }
 
+///
+class PointerScrollDetails {
+  ///
+  PointerScrollDetails({
+    required this.delta,
+    this.sourceTimeStamp,
+  });
+
+  ///
+  final double delta;
+
+  /// Recorded timestamp of the source pointer event that triggered the drag
+  /// event.
+  ///
+  /// Could be null if triggered from proxied events such as accessibility.
+  final Duration? sourceTimeStamp;
+
+  @override
+  String toString() => '${objectRuntimeType(this, 'PointerScrollDetails')}($delta)';
+}
+
+///
+class PointerScrollController {
+  ///
+  PointerScrollController({
+    required ScrollActivityDelegate delegate,
+    required PointerScrollDetails details,
+    this.onPointerScrollTimeout,
+    this.motionStartDistanceThreshold,
+  }) : assert(delegate != null),
+       assert(details != null),
+       assert(
+         motionStartDistanceThreshold == null || motionStartDistanceThreshold > 0.0,
+         'motionStartDistanceThreshold must be a positive number or null',
+       ),
+       _delegate = delegate,
+       _lastDetails = details,
+       _lastNonStationaryTimestamp = details.sourceTimeStamp,
+       _offsetSinceLastStop = motionStartDistanceThreshold == null ? null : 0.0;
+
+  /// The object that will actuate the scroll view as the user drags.
+  ScrollActivityDelegate get delegate => _delegate;
+  ScrollActivityDelegate _delegate;
+
+  ///
+  final VoidCallback? onPointerScrollTimeout;
+
+  /// Amount of pixels in either direction the pointer scroll has to move by to
+  /// start scroll movement again after each time scrolling came to a stop.
+  final double? motionStartDistanceThreshold;
+
+  Duration? _lastNonStationaryTimestamp;
+  /// Null if already in motion or has no [motionStartDistanceThreshold].
+  double? _offsetSinceLastStop;
+
+  /// Called by the delegate when it is no longer sending events to this object.
+  @mustCallSuper
+  void dispose() {
+    _lastDetails = null;
+  }
+
+  /// The most recently observed [DragStartDetails], [DragUpdateDetails], or
+  /// [DragEndDetails] object.
+  dynamic get lastDetails => _lastDetails;
+  dynamic _lastDetails;
+
+  @override
+  String toString() => describeIdentity(this);
+}
+
 /// Scrolls a scroll view as the user drags their finger across the screen.
 ///
 /// See also:

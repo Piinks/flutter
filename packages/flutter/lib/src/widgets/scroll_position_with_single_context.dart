@@ -206,6 +206,7 @@ class ScrollPositionWithSingleContext extends ScrollPosition implements ScrollAc
   @override
   void pointerScroll(double delta) {
     assert(delta != 0.0);
+    print('pointerScroll, delta: $delta');
 
     final double targetPixels =
         math.min(math.max(pixels + delta, minScrollExtent), maxScrollExtent);
@@ -215,7 +216,8 @@ class ScrollPositionWithSingleContext extends ScrollPosition implements ScrollAc
           -delta > 0.0 ? ScrollDirection.forward : ScrollDirection.reverse,
       );
       final double oldPixels = pixels;
-      forcePixels(targetPixels);
+      print('applyUserOffset');
+      applyUserOffset(delta);
       isScrollingNotifier.value = true;
       didStartScroll();
       didUpdateScrollPositionBy(pixels - oldPixels);

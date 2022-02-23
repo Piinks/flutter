@@ -57,10 +57,18 @@ class _CategoryItem extends StatelessWidget {
     // This repaint boundary prevents the entire _CategoriesPage from being
     // repainted when the button's ink splash animates.
     return RepaintBoundary(
-      child: RawMaterialButton(
-        hoverColor: theme.primaryColor.withOpacity(0.05),
-        splashColor: theme.primaryColor.withOpacity(0.12),
-        highlightColor: Colors.transparent,
+      child: TextButton(
+        style: ButtonStyle(
+          overlayColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+            if (states.contains(MaterialState.hovered)) {
+              return theme.primaryColor.withOpacity(0.05);
+            }
+            if (states.contains(MaterialState.pressed)) {
+              return theme.primaryColor.withOpacity(0.12);
+            }
+            return null; // Defer to the widget's default.
+           }),
+        ),
         onPressed: onTap,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -181,9 +189,15 @@ class _DemoItem extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
     final double textScaleFactor = MediaQuery.textScaleFactorOf(context);
-    return RawMaterialButton(
-      splashColor: theme.primaryColor.withOpacity(0.12),
-      highlightColor: Colors.transparent,
+    return TextButton(
+      style: ButtonStyle(
+        overlayColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+          if (states.contains(MaterialState.pressed)) {
+            return theme.primaryColor.withOpacity(0.12);
+          }
+          return null; // Defer to the widget's default.
+        }),
+      ),
       onPressed: () {
         _launchDemo(context);
       },

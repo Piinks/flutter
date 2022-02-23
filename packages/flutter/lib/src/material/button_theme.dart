@@ -50,8 +50,6 @@ enum ButtonBarLayoutBehavior {
 
 /// Used with [ButtonThemeData] to configure the color and geometry of buttons.
 ///
-/// ### This class is obsolete.
-///
 /// Please use one or more of the new buttons and their themes
 /// instead: [TextButton] and [TextButtonTheme], [ElevatedButton] and
 /// [ElevatedButtonTheme], [OutlinedButton] and
@@ -73,11 +71,19 @@ enum ButtonBarLayoutBehavior {
 ///    based on the ambient button theme.
 ///  * [RawMaterialButton], which can be used to configure a button that doesn't
 ///    depend on any inherited themes.
+@Deprecated(
+  'Use the ButtonStyle of the associated ButtonStyleButton instead. See the migration guide in flutter.dev/go/material-button-migration-guide). '
+  'This feature was deprecated after v2.11.0-0.0.pre.',
+)
 class ButtonTheme extends InheritedTheme {
   /// Creates a button theme.
   ///
   /// The [textTheme], [minWidth], [height], and [colorScheme] arguments
   /// must not be null.
+  @Deprecated(
+    'Use the ButtonStyle of the associated ButtonStyleButton instead. See the migration guide in flutter.dev/go/material-button-migration-guide). '
+    'This feature was deprecated after v2.11.0-0.0.pre.',
+  )
   ButtonTheme({
     Key? key,
     ButtonTextTheme textTheme = ButtonTextTheme.normal,
@@ -123,6 +129,10 @@ class ButtonTheme extends InheritedTheme {
   /// Creates a button theme from [data].
   ///
   /// The [data] argument must not be null.
+  @Deprecated(
+    'Use the ButtonStyle of the associated ButtonStyleButton instead. See the migration guide in flutter.dev/go/material-button-migration-guide). '
+    'This feature was deprecated after v2.11.0-0.0.pre.',
+  )
   const ButtonTheme.fromButtonThemeData({
     Key? key,
     required this.data,
@@ -140,6 +150,10 @@ class ButtonTheme extends InheritedTheme {
   /// ```dart
   /// ButtonThemeData theme = ButtonTheme.of(context);
   /// ```
+  @Deprecated(
+    'Use the ButtonStyle of the associated ButtonStyleButton instead. See the migration guide in flutter.dev/go/material-button-migration-guide). '
+    'This feature was deprecated after v2.11.0-0.0.pre.',
+  )
   static ButtonThemeData of(BuildContext context) {
     final ButtonTheme? inheritedButtonTheme = context.dependOnInheritedWidgetOfExactType<ButtonTheme>();
     ButtonThemeData? buttonTheme = inheritedButtonTheme?.data;
@@ -167,8 +181,6 @@ class ButtonTheme extends InheritedTheme {
 
 /// Used with [ButtonTheme] to configure the color and geometry of buttons.
 ///
-/// ### This class is obsolete.
-///
 /// Please use one or more of the new buttons and their themes instead:
 ///
 ///  * [TextButton], [TextButtonTheme], [TextButtonThemeData],
@@ -188,6 +200,10 @@ class ButtonTheme extends InheritedTheme {
 /// using [ThemeData.buttonTheme]. The Material theme's button theme data
 /// can be overridden with [ButtonTheme].
 @immutable
+@Deprecated(
+  'Use ButtonStyle instead. See the migration guide in flutter.dev/go/material-button-migration-guide). '
+  'This feature was deprecated after v2.11.0-0.0.pre.',
+)
 class ButtonThemeData with Diagnosticable {
   /// Create a button theme object that can be used with [ButtonTheme]
   /// or [ThemeData].
@@ -199,6 +215,10 @@ class ButtonThemeData with Diagnosticable {
   /// The ButtonTheme's methods that have a [MaterialButton] parameter and
   /// have a name with a `get` prefix are used by [RaisedButton],
   /// [OutlineButton], and [FlatButton] to configure a [RawMaterialButton].
+  @Deprecated(
+    'Use ButtonStyle instead. See the migration guide in flutter.dev/go/material-button-migration-guide). '
+    'This feature was deprecated after v2.11.0-0.0.pre.',
+  )
   const ButtonThemeData({
     this.textTheme = ButtonTextTheme.normal,
     this.minWidth = 88.0,

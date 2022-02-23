@@ -88,9 +88,7 @@ class ListItem extends StatelessWidget {
       ),
       buildDivider(0.5, const EdgeInsets.only(left: 40, right: 15)),
     ]);
-    return MaterialButton(
-      onPressed: () {},
-      padding: EdgeInsets.zero,
+    return Material(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

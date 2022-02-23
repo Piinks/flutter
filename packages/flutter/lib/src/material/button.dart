@@ -20,8 +20,6 @@ import 'theme_data.dart';
 /// Creates a button based on [Semantics], [Material], and [InkWell]
 /// widgets.
 ///
-/// ### This class is obsolete.
-///
 /// Custom button classes can be created by configuring the
 /// [ButtonStyle] of a [TextButton], [ElevatedButton] or an
 /// [OutlinedButton].
@@ -40,6 +38,10 @@ import 'theme_data.dart';
 /// be used for custom Material buttons that optionally incorporate defaults
 /// from the themes or from app-specific sources.
 @Category(<String>['Material', 'Button'])
+@Deprecated(
+  'Use a ButtonStyleButton instead. See the migration guide in flutter.dev/go/material-button-migration-guide). '
+  'This feature was deprecated after v2.11.0-0.0.pre.',
+)
 class RawMaterialButton extends StatefulWidget {
   /// Create a button based on [Semantics], [Material], and [InkWell] widgets.
   ///
@@ -48,6 +50,10 @@ class RawMaterialButton extends StatefulWidget {
   /// [autofocus], and [clipBehavior] arguments must not be null. Additionally,
   /// [elevation], [focusElevation], [hoverElevation], [highlightElevation], and
   /// [disabledElevation] must be non-negative.
+  @Deprecated(
+    'Use a ButtonStyleButton instead. See the migration guide in flutter.dev/go/material-button-migration-guide). '
+    'This feature was deprecated after v2.11.0-0.0.pre.',
+  )
   const RawMaterialButton({
     Key? key,
     required this.onPressed,

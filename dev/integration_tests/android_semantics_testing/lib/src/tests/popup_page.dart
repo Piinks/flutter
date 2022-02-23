@@ -66,7 +66,7 @@ class _PopupControlsPageState extends State<PopupControlsPage> {
                   });
                 },
               ),
-              MaterialButton(
+              TextButton(
                 key: const ValueKey<String>(alertButtonKeyValue),
                 child: const Text('Alert'),
                 onPressed: () {

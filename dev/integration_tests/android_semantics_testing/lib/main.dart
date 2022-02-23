@@ -61,7 +61,7 @@ class TestApp extends StatelessWidget {
           return Scaffold(
             body: ListView(
               children: routes.keys.map<Widget>((String value) {
-                return MaterialButton(
+                return TextButton(
                   child: Text(value),
                   onPressed: () {
                     Navigator.of(context).pushNamed(value);

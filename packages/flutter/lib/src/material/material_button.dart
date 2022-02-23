@@ -19,8 +19,6 @@ import 'theme_data.dart';
 /// A utility class for building Material buttons that depend on the
 /// ambient [ButtonTheme] and [Theme].
 ///
-/// ### This class is obsolete.
-///
 /// FlatButton, RaisedButton, and OutlineButton have been replaced by
 /// TextButton, ElevatedButton, and OutlinedButton respectively.
 /// ButtonTheme has been replaced by TextButtonTheme,
@@ -51,6 +49,10 @@ import 'theme_data.dart';
 /// See also:
 ///
 ///  * [IconButton], to create buttons that contain icons rather than text.
+@Deprecated(
+  'Use a ButtonStyleButton instead. See the migration guide in flutter.dev/go/material-button-migration-guide). '
+  'This feature was deprecated after v2.11.0-0.0.pre.',
+)
 class MaterialButton extends StatelessWidget {
   /// Creates a material button.
   ///
@@ -62,6 +64,10 @@ class MaterialButton extends StatelessWidget {
   /// Additionally,  [elevation], [hoverElevation], [focusElevation],
   /// [highlightElevation], and [disabledElevation] must be non-negative, if
   /// specified.
+  @Deprecated(
+    'Use a ButtonStyleButton instead. See the migration guide in flutter.dev/go/material-button-migration-guide). '
+    'This feature was deprecated after v2.11.0-0.0.pre.',
+  )
   const MaterialButton({
     Key? key,
     required this.onPressed,
@@ -462,4 +468,8 @@ class MaterialButton extends StatelessWidget {
 ///
 /// This mixin only exists to give the "label and icon" button widgets a distinct
 /// type for the sake of [ButtonTheme].
+@Deprecated(
+  'This is no longer used by the framework aside from deprecated API. '
+  'This feature was deprecated after v2.11.0-0.0.pre.',
+)
 mixin MaterialButtonWithIconMixin { }

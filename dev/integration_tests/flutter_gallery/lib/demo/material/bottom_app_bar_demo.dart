@@ -289,21 +289,20 @@ class _ColorsItem extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: colors.map<Widget>((_NamedColor namedColor) {
-        return RawMaterialButton(
+        return ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            fixedSize: const Size(32.0, 32.0),
+            primary: namedColor.color,
+            shape: CircleBorder(
+              side: BorderSide(
+                color: namedColor.color == selectedColor ? Colors.black : const Color(0xFFD5D7DA),
+                width: 2.0,
+              ),
+            ),
+          ),
           onPressed: () {
             onChanged(namedColor.color);
           },
-          constraints: const BoxConstraints.tightFor(
-            width: 32.0,
-            height: 32.0,
-          ),
-          fillColor: namedColor.color,
-          shape: CircleBorder(
-            side: BorderSide(
-              color: namedColor.color == selectedColor ? Colors.black : const Color(0xFFD5D7DA),
-              width: 2.0,
-            ),
-          ),
           child: Semantics(
             value: namedColor.name,
             selected: namedColor.color == selectedColor,

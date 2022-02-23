@@ -347,7 +347,7 @@ class _OptionsState extends State<Options> {
                     },
                     value: widget.model.rtl,
                   ),
-                  MaterialButton(
+                  TextButton(
                     onPressed: () {
                       widget.model.reset();
                       sliderValue = 0.0;
@@ -525,8 +525,8 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       _ControlTile(
         label: _model.rtl ? 'زر المواد' : 'Material Button',
-        child: MaterialButton(
-          color: m2Swatch[200],
+        child: TextButton(
+          style: TextButton.styleFrom(backgroundColor: m2Swatch[200]),
           onPressed: _model.enable ? () {} : null,
           child: label,
         ),

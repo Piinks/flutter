@@ -54,8 +54,10 @@ class _ColorPickerSwatch extends StatelessWidget {
       width: 60.0,
       height: 60.0,
       padding: const EdgeInsets.fromLTRB(2.0, 0.0, 2.0, 0.0),
-      child: RawMaterialButton(
-        fillColor: color,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          primary: color,
+        ),
         onPressed: () {
           onTap?.call();
         },

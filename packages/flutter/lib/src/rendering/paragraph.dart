@@ -57,7 +57,7 @@ class PlaceholderSpanIndexSemanticsTag extends SemanticsTag {
   }
 
   @override
-  int get hashCode => hashValues(PlaceholderSpanIndexSemanticsTag, index);
+  int get hashCode => Object.hash(PlaceholderSpanIndexSemanticsTag, index);
 }
 
 /// A render object that displays a paragraph of text.
@@ -288,7 +288,7 @@ class RenderParagraph extends RenderBox
     markNeedsLayout();
   }
 
-  /// {@macro flutter.dart:ui.textHeightBehavior}
+  /// {@macro dart.ui.textHeightBehavior}
   ui.TextHeightBehavior? get textHeightBehavior => _textPainter.textHeightBehavior;
   set textHeightBehavior(ui.TextHeightBehavior? value) {
     if (_textPainter.textHeightBehavior == value)
@@ -1004,7 +1004,7 @@ class RenderParagraph extends RenderBox
             assert(false, '${recognizer.runtimeType} is not supported.');
           }
         }
-        final SemanticsNode newChild = (_cachedChildNodes?.isNotEmpty == true)
+        final SemanticsNode newChild = (_cachedChildNodes?.isNotEmpty ?? false)
             ? _cachedChildNodes!.removeFirst()
             : SemanticsNode();
         newChild

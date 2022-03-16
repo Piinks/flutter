@@ -51,16 +51,6 @@ void main() {
     expect(darkTheme.primaryTextTheme.headline6!.color, typography.white.headline6!.color);
   });
 
-  test('Default chip label style gets a default bodyText1 if textTheme.bodyText1 is null', () {
-    const TextTheme noBodyText1TextTheme = TextTheme();
-    final ThemeData lightTheme = ThemeData(brightness: Brightness.light, textTheme: noBodyText1TextTheme);
-    final ThemeData darkTheme = ThemeData(brightness: Brightness.dark, textTheme: noBodyText1TextTheme);
-    final Typography typography = Typography.material2018(platform: lightTheme.platform);
-
-    expect(lightTheme.chipTheme.labelStyle.color, equals(typography.black.bodyText1!.color!.withAlpha(0xde)));
-    expect(darkTheme.chipTheme.labelStyle.color, equals(typography.white.bodyText1!.color!.withAlpha(0xde)));
-  });
-
   test('Default icon theme contrasts with brightness', () {
     final ThemeData lightTheme = ThemeData(brightness: Brightness.light);
     final ThemeData darkTheme = ThemeData(brightness: Brightness.dark);
@@ -138,6 +128,111 @@ void main() {
 
   test('cursorColor', () {
     expect(const TextSelectionThemeData(cursorColor: Colors.red).cursorColor, Colors.red);
+  });
+
+  test('If colorSchemeSeed is used colorScheme, primaryColor and primarySwatch should not be.', () {
+    expect(() => ThemeData(colorSchemeSeed: Colors.blue, colorScheme: const ColorScheme.light()), throwsAssertionError);
+    expect(() => ThemeData(colorSchemeSeed: Colors.blue, primaryColor: Colors.green), throwsAssertionError);
+    expect(() => ThemeData(colorSchemeSeed: Colors.blue, primarySwatch: Colors.green), throwsAssertionError);
+  });
+
+  test('ThemeData can generate a light colorScheme from colorSchemeSeed', () {
+    final ThemeData theme = ThemeData(colorSchemeSeed: Colors.blue);
+
+    expect(theme.colorScheme.primary, const Color(0xff0061a6));
+    expect(theme.colorScheme.onPrimary, const Color(0xffffffff));
+    expect(theme.colorScheme.primaryContainer, const Color(0xffd0e4ff));
+    expect(theme.colorScheme.onPrimaryContainer, const Color(0xff001d36));
+    expect(theme.colorScheme.secondary, const Color(0xff535f70));
+    expect(theme.colorScheme.onSecondary, const Color(0xffffffff));
+    expect(theme.colorScheme.secondaryContainer, const Color(0xffd6e3f7));
+    expect(theme.colorScheme.onSecondaryContainer, const Color(0xff101c2b));
+    expect(theme.colorScheme.tertiary, const Color(0xff6b5778));
+    expect(theme.colorScheme.onTertiary, const Color(0xffffffff));
+    expect(theme.colorScheme.tertiaryContainer, const Color(0xfff3daff));
+    expect(theme.colorScheme.onTertiaryContainer, const Color(0xff251432));
+    expect(theme.colorScheme.error, const Color(0xffba1b1b));
+    expect(theme.colorScheme.onError, const Color(0xffffffff));
+    expect(theme.colorScheme.errorContainer, const Color(0xffffdad4));
+    expect(theme.colorScheme.onErrorContainer, const Color(0xff410001));
+    expect(theme.colorScheme.outline, const Color(0xff73777f));
+    expect(theme.colorScheme.background, const Color(0xfffdfcff));
+    expect(theme.colorScheme.onBackground, const Color(0xff1b1b1b));
+    expect(theme.colorScheme.surface, const Color(0xfffdfcff));
+    expect(theme.colorScheme.onSurface, const Color(0xff1b1b1b));
+    expect(theme.colorScheme.surfaceVariant, const Color(0xffdfe2eb));
+    expect(theme.colorScheme.onSurfaceVariant, const Color(0xff42474e));
+    expect(theme.colorScheme.inverseSurface, const Color(0xff2f3033));
+    expect(theme.colorScheme.onInverseSurface, const Color(0xfff1f0f4));
+    expect(theme.colorScheme.inversePrimary, const Color(0xff9ccaff));
+    expect(theme.colorScheme.shadow, const Color(0xff000000));
+    expect(theme.colorScheme.brightness, Brightness.light);
+
+    expect(theme.primaryColor, theme.colorScheme.primary);
+    expect(theme.primaryColorBrightness, Brightness.dark);
+    expect(theme.canvasColor, theme.colorScheme.background);
+    expect(theme.accentColor, theme.colorScheme.secondary);
+    expect(theme.accentColorBrightness, Brightness.dark);
+    expect(theme.scaffoldBackgroundColor, theme.colorScheme.background);
+    expect(theme.bottomAppBarColor, theme.colorScheme.surface);
+    expect(theme.cardColor, theme.colorScheme.surface);
+    expect(theme.dividerColor, theme.colorScheme.outline);
+    expect(theme.backgroundColor, theme.colorScheme.background);
+    expect(theme.dialogBackgroundColor, theme.colorScheme.background);
+    expect(theme.indicatorColor, theme.colorScheme.onPrimary);
+    expect(theme.errorColor, theme.colorScheme.error);
+    expect(theme.applyElevationOverlayColor, false);
+  });
+
+  test('ThemeData can generate a dark colorScheme from colorSchemeSeed', () {
+    final ThemeData theme = ThemeData(
+      colorSchemeSeed: Colors.blue,
+      brightness: Brightness.dark,
+    );
+
+    expect(theme.colorScheme.primary, const Color(0xff9ccaff));
+    expect(theme.colorScheme.onPrimary, const Color(0xff00325a));
+    expect(theme.colorScheme.primaryContainer, const Color(0xff00497f));
+    expect(theme.colorScheme.onPrimaryContainer, const Color(0xffd0e4ff));
+    expect(theme.colorScheme.secondary, const Color(0xffbbc8db));
+    expect(theme.colorScheme.onSecondary, const Color(0xff253140));
+    expect(theme.colorScheme.secondaryContainer, const Color(0xff3c4858));
+    expect(theme.colorScheme.onSecondaryContainer, const Color(0xffd6e3f7));
+    expect(theme.colorScheme.tertiary, const Color(0xffd6bee4));
+    expect(theme.colorScheme.onTertiary, const Color(0xff3b2948));
+    expect(theme.colorScheme.tertiaryContainer, const Color(0xff523f5f));
+    expect(theme.colorScheme.onTertiaryContainer, const Color(0xfff3daff));
+    expect(theme.colorScheme.error, const Color(0xffffb4a9));
+    expect(theme.colorScheme.onError, const Color(0xff680003));
+    expect(theme.colorScheme.errorContainer, const Color(0xff930006));
+    expect(theme.colorScheme.onErrorContainer, const Color(0xffffb4a9));
+    expect(theme.colorScheme.outline, const Color(0xff8d9199));
+    expect(theme.colorScheme.background, const Color(0xff1b1b1b));
+    expect(theme.colorScheme.onBackground, const Color(0xffe2e2e6));
+    expect(theme.colorScheme.surface, const Color(0xff1b1b1b));
+    expect(theme.colorScheme.onSurface, const Color(0xffe2e2e6));
+    expect(theme.colorScheme.surfaceVariant, const Color(0xff42474e));
+    expect(theme.colorScheme.onSurfaceVariant, const Color(0xffc3c7d0));
+    expect(theme.colorScheme.inverseSurface, const Color(0xffe2e2e6));
+    expect(theme.colorScheme.onInverseSurface, const Color(0xff2f3033));
+    expect(theme.colorScheme.inversePrimary, const Color(0xff0061a6));
+    expect(theme.colorScheme.shadow, const Color(0xff000000));
+    expect(theme.colorScheme.brightness, Brightness.dark);
+
+    expect(theme.primaryColor, theme.colorScheme.surface);
+    expect(theme.primaryColorBrightness, Brightness.dark);
+    expect(theme.canvasColor, theme.colorScheme.background);
+    expect(theme.accentColor, theme.colorScheme.secondary);
+    expect(theme.accentColorBrightness, Brightness.light);
+    expect(theme.scaffoldBackgroundColor, theme.colorScheme.background);
+    expect(theme.bottomAppBarColor, theme.colorScheme.surface);
+    expect(theme.cardColor, theme.colorScheme.surface);
+    expect(theme.dividerColor, theme.colorScheme.outline);
+    expect(theme.backgroundColor, theme.colorScheme.background);
+    expect(theme.dialogBackgroundColor, theme.colorScheme.background);
+    expect(theme.indicatorColor, theme.colorScheme.onSurface);
+    expect(theme.errorColor, theme.colorScheme.error);
+    expect(theme.applyElevationOverlayColor, true);
   });
 
   testWidgets('ThemeData.from a light color scheme sets appropriate values', (WidgetTester tester) async {
@@ -335,6 +430,7 @@ void main() {
       sliderTheme: sliderTheme,
       tabBarTheme: const TabBarTheme(labelColor: Colors.black),
       tooltipTheme: const TooltipThemeData(height: 100),
+      expansionTileTheme: const ExpansionTileThemeData(backgroundColor: Colors.black),
       cardTheme: const CardTheme(color: Colors.black),
       chipTheme: chipTheme,
       platform: TargetPlatform.iOS,
@@ -434,6 +530,7 @@ void main() {
       sliderTheme: otherSliderTheme,
       tabBarTheme: const TabBarTheme(labelColor: Colors.white),
       tooltipTheme: const TooltipThemeData(height: 100),
+      expansionTileTheme: const ExpansionTileThemeData(backgroundColor: Colors.black),
       cardTheme: const CardTheme(color: Colors.white),
       chipTheme: otherChipTheme,
       platform: TargetPlatform.android,
@@ -515,6 +612,7 @@ void main() {
       sliderTheme: otherTheme.sliderTheme,
       tabBarTheme: otherTheme.tabBarTheme,
       tooltipTheme: otherTheme.tooltipTheme,
+      expansionTileTheme: otherTheme.expansionTileTheme,
       cardTheme: otherTheme.cardTheme,
       chipTheme: otherTheme.chipTheme,
       platform: otherTheme.platform,
@@ -592,6 +690,7 @@ void main() {
     expect(themeDataCopy.sliderTheme, equals(otherTheme.sliderTheme));
     expect(themeDataCopy.tabBarTheme, equals(otherTheme.tabBarTheme));
     expect(themeDataCopy.tooltipTheme, equals(otherTheme.tooltipTheme));
+    expect(themeDataCopy.expansionTileTheme, equals(otherTheme.expansionTileTheme));
     expect(themeDataCopy.cardTheme, equals(otherTheme.cardTheme));
     expect(themeDataCopy.chipTheme, equals(otherTheme.chipTheme));
     expect(themeDataCopy.platform, equals(otherTheme.platform));
@@ -746,6 +845,7 @@ void main() {
       'timePickerTheme',
       'toggleButtonsTheme',
       'tooltipTheme',
+      'expansionTileTheme',
       // DEPRECATED (newest deprecations at the bottom)
       'useTextSelectionTheme',
       'textSelectionColor',

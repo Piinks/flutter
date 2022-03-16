@@ -58,6 +58,7 @@ abstract class FlutterTestDriver {
   VmService? _vmService;
   String get lastErrorInfo => _errorBuffer.toString();
   Stream<String> get stdout => _stdout.stream;
+  Stream<String> get stderr => _stderr.stream;
   int? get vmServicePort => _vmServiceWsUri?.port;
   bool get hasExited => _hasExited;
   Uri? get vmServiceWsUri => _vmServiceWsUri;
@@ -102,8 +103,8 @@ abstract class FlutterTestDriver {
     }
     _debugPrint('Spawning flutter $arguments in ${_projectFolder.path}');
 
-    const ProcessManager _processManager = LocalProcessManager();
-    _process = await _processManager.start(
+    const ProcessManager processManager = LocalProcessManager();
+    _process = await processManager.start(
       <String>[flutterBin]
         .followedBy(arguments)
         .toList(),
@@ -157,15 +158,15 @@ abstract class FlutterTestDriver {
       _vmService!.streamListen('Debug'),
     ]);
 
-    if ((await _vmService!.getVM()).isolates?.isEmpty != false) {
+    if ((await _vmService!.getVM()).isolates?.isEmpty ?? true) {
       await isolateStarted.future;
     }
 
     await waitForPause();
     if (pauseOnExceptions) {
-      await _vmService!.setExceptionPauseMode(
+      await _vmService!.setIsolatePauseMode(
         await _getFlutterIsolateId(),
-        ExceptionPauseMode.kUnhandled,
+        exceptionPauseMode: ExceptionPauseMode.kUnhandled,
       );
     }
   }
@@ -286,7 +287,7 @@ abstract class FlutterTestDriver {
     return _vmService!.onDebugEvent
       .where((Event event) {
         return event.isolate?.id == isolateId
-            && event.kind?.startsWith(kind) == true;
+            && (event.kind?.startsWith(kind) ?? false);
       }).first;
   }
 
@@ -301,7 +302,7 @@ abstract class FlutterTestDriver {
         // don't need to wait for the event.
         final VmService vmService = _vmService!;
         final Isolate isolate = await vmService.getIsolate(isolateId);
-        if (isolate.pauseEvent?.kind?.startsWith(kind) == true) {
+        if (isolate.pauseEvent?.kind?.startsWith(kind) ?? false) {
           _debugPrint('Isolate was already at "$kind" (${isolate.pauseEvent!.kind}).');
           event.ignore();
         } else {
@@ -323,7 +324,7 @@ abstract class FlutterTestDriver {
 
   Future<bool> isAtAsyncSuspension() async {
     final Isolate isolate = await getFlutterIsolate();
-    return isolate.pauseEvent?.atAsyncSuspension == true;
+    return isolate.pauseEvent?.atAsyncSuspension ?? false;
   }
 
   Future<Isolate?> stepOverOrOverAsyncSuspension({ bool waitForNextPause = true }) async {
@@ -355,9 +356,9 @@ abstract class FlutterTestDriver {
     );
   }
 
-  Future<InstanceRef> evaluate(String targetId, String expression) async {
-    return _timeoutWithMessages<InstanceRef>(
-      () async => await _vmService!.evaluate(await _getFlutterIsolateId(), targetId, expression) as InstanceRef,
+  Future<ObjRef> evaluate(String targetId, String expression) async {
+    return _timeoutWithMessages<ObjRef>(
+      () async => await _vmService!.evaluate(await _getFlutterIsolateId(), targetId, expression) as ObjRef,
       task: 'Evaluating expression ($expression for $targetId)',
     );
   }
@@ -481,7 +482,7 @@ abstract class FlutterTestDriver {
         timeoutExpired = true;
         _debugPrint(messages.toString());
       }
-      throw error;
+      throw error; // ignore: only_throw_errors
     }).whenComplete(() => subscription.cancel());
   }
 }
@@ -752,15 +753,15 @@ class FlutterRunTestDriver extends FlutterTestDriver {
   }
 
   void _throwErrorResponse(String message) {
-    throw '$message\n\n$_lastResponse\n\n${_errorBuffer.toString()}'.trim();
+    throw Exception('$message\n\n$_lastResponse\n\n${_errorBuffer.toString()}'.trim());
   }
 
   final bool spawnDdsInstance;
 }
 
 class FlutterTestTestDriver extends FlutterTestDriver {
-  FlutterTestTestDriver(Directory _projectFolder, {String? logPrefix})
-    : super(_projectFolder, logPrefix: logPrefix);
+  FlutterTestTestDriver(Directory projectFolder, {String? logPrefix})
+    : super(projectFolder, logPrefix: logPrefix);
 
   Future<void> test({
     String testFile = 'test/test.dart',

@@ -568,7 +568,7 @@ void main() {
 
     // Move the gesture very slightly
     await gesture.moveBy(const Offset(1.0, 1.0));
-    await tester.pump(TextSelectionOverlay.fadeDuration * 0.5);
+    await tester.pump(SelectionOverlay.fadeDuration * 0.5);
     handle = tester.widget(fadeFinder.at(0));
 
     // The handle should still be fully opaque.
@@ -4128,7 +4128,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final List<FadeTransition> transitions = find.descendant(
-      of: find.byWidgetPredicate((Widget w) => '${w.runtimeType}' == '_TextSelectionHandleOverlay'),
+      of: find.byWidgetPredicate((Widget w) => '${w.runtimeType}' == '_SelectionHandleOverlay'),
       matching: find.byType(FadeTransition),
     ).evaluate().map((Element e) => e.widget).cast<FadeTransition>().toList();
     expect(transitions.length, 2);
@@ -4416,7 +4416,7 @@ void main() {
 
     await tester.pump();
 
-    expect(RendererBinding.instance!.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.text);
+    expect(RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.text);
   });
 
   testWidgets('The handles show after pressing Select All', (WidgetTester tester) async {
@@ -4868,5 +4868,92 @@ void main() {
       find.byType(MaterialApp),
       matchesGoldenFile('selectable_text_golden.TextSelectionStyle.2.png'),
     );
+  });
+
+  testWidgets('keeps alive when has focus', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: DefaultTabController(
+          length: 2,
+          child: Scaffold(
+            body: NestedScrollView(
+              headerSliverBuilder:
+                (BuildContext context, bool innerBoxIsScrolled) {
+                  return <Widget>[
+                    SliverToBoxAdapter(
+                      child: Container(
+                        height: 200,
+                        color: Colors.black12,
+                        child: const Center(child: Text('Sliver 1')),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(
+                      child: Center(
+                        child: TabBar(
+                          labelColor: Colors.black,
+                          tabs: <Tab>[
+                            Tab(text: 'Sliver Tab 1'),
+                            Tab(text: 'Sliver Tab 2'),
+                          ],
+                        ),
+                      )
+                    ),
+                  ];
+                },
+                body: const TabBarView(
+                  children: <Widget>[
+                    Padding(
+                      padding: EdgeInsets.only(top: 100.0),
+                      child: Text('Regular Text'),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(top: 100.0),
+                      child: SelectableText('Selectable Text'),
+                    ),
+                  ],
+                ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Without any selection, the offscreen widget is disposed and can't be
+    // found, for both Text and SelectableText.
+    expect(find.text('Regular Text', skipOffstage: false), findsOneWidget);
+    expect(find.byType(SelectableText, skipOffstage: false), findsNothing);
+
+    await tester.tap(find.text('Sliver Tab 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('Regular Text', skipOffstage: false), findsNothing);
+    expect(find.byType(SelectableText, skipOffstage: false), findsOneWidget);
+
+    await tester.tap(find.text('Sliver Tab 1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Regular Text', skipOffstage: false), findsOneWidget);
+    expect(find.byType(SelectableText, skipOffstage: false), findsNothing);
+
+    // Switch back to tab 2 and select some text in SelectableText.
+    await tester.tap(find.text('Sliver Tab 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('Regular Text', skipOffstage: false), findsNothing);
+    expect(find.byType(SelectableText, skipOffstage: false), findsOneWidget);
+
+    final EditableText editableText = tester.widget(find.byType(EditableText));
+    expect(editableText.controller.selection.isValid, isFalse);
+    await tester.tapAt(textOffsetToPosition(tester, 4));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tapAt(textOffsetToPosition(tester, 4));
+    await tester.pumpAndSettle();
+    expect(editableText.controller.selection.isValid, isTrue);
+    expect(editableText.controller.selection.baseOffset, 0);
+    expect(editableText.controller.selection.extentOffset, 'Selectable'.length);
+
+    // Switch back to tab 1. The SelectableText remains because it is preserving
+    // its selection.
+    await tester.tap(find.text('Sliver Tab 1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Regular Text', skipOffstage: false), findsOneWidget);
+    expect(find.byType(SelectableText, skipOffstage: false), findsOneWidget);
   });
 }

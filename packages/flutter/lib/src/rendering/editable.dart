@@ -30,17 +30,6 @@ const EdgeInsets _kFloatingCaretSizeIncrease = EdgeInsets.symmetric(horizontal: 
 // The corner radius of the floating cursor in pixels.
 const Radius _kFloatingCaretRadius = Radius.circular(1.0);
 
-/// Signature for the callback that reports when the user changes the selection
-/// (including the cursor location).
-///
-/// Used by [RenderEditable.onSelectionChanged].
-@Deprecated(
-  'Signature of a deprecated class method, '
-  'textSelectionDelegate.userUpdateTextEditingValue. '
-  'This feature was deprecated after v1.26.0-17.2.pre.',
-)
-typedef SelectionChangedHandler = void Function(TextSelection selection, RenderEditable renderObject, SelectionChangedCause cause);
-
 /// Signature for the callback that reports when the caret location changes.
 ///
 /// Used by [RenderEditable.onCaretChanged].
@@ -265,11 +254,6 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin, 
     double textScaleFactor = 1.0,
     TextSelection? selection,
     required ViewportOffset offset,
-    @Deprecated(
-      'Uses the textSelectionDelegate.userUpdateTextEditingValue instead. '
-      'This feature was deprecated after v1.26.0-17.2.pre.',
-    )
-    this.onSelectionChanged,
     this.onCaretChanged,
     this.ignorePointer = false,
     bool readOnly = false,
@@ -501,14 +485,6 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin, 
       ],
     );
   }
-  /// Called when the selection changes.
-  ///
-  /// If this is null, then selection changes will be ignored.
-  @Deprecated(
-    'Uses the textSelectionDelegate.userUpdateTextEditingValue instead. '
-    'This feature was deprecated after v1.26.0-17.2.pre.',
-  )
-  SelectionChangedHandler? onSelectionChanged;
 
   double? _textLayoutLastMaxWidth;
   double? _textLayoutLastMinWidth;
@@ -547,7 +523,7 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin, 
   /// The default value of this property is false.
   bool ignorePointer;
 
-  /// {@macro flutter.dart:ui.textHeightBehavior}
+  /// {@macro dart.ui.textHeightBehavior}
   TextHeightBehavior? get textHeightBehavior => _textPainter.textHeightBehavior;
   set textHeightBehavior(TextHeightBehavior? value) {
     if (_textPainter.textHeightBehavior == value)
@@ -731,7 +707,6 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin, 
   }
 
   void _setTextEditingValue(TextEditingValue newValue, SelectionChangedCause cause) {
-    textSelectionDelegate.textEditingValue = newValue;
     textSelectionDelegate.userUpdateTextEditingValue(newValue, cause);
   }
 
@@ -751,26 +726,10 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin, 
         extentOffset: math.min(nextSelection.extentOffset, textLength),
       );
     }
-    _handleSelectionChange(nextSelection, cause);
     _setTextEditingValue(
       textSelectionDelegate.textEditingValue.copyWith(selection: nextSelection),
       cause,
     );
-  }
-
-  void _handleSelectionChange(
-    TextSelection nextSelection,
-    SelectionChangedCause cause,
-  ) {
-    // Changes made by the keyboard can sometimes be "out of band" for listening
-    // components, so always send those events, even if we didn't think it
-    // changed. Also, focusing an empty field is sent as a selection change even
-    // if the selection offset didn't change.
-    final bool focusingEmpty = nextSelection.baseOffset == 0 && nextSelection.extentOffset == 0 && !hasFocus;
-    if (nextSelection == selection && cause != SelectionChangedCause.keyboard && !focusingEmpty) {
-      return;
-    }
-    onSelectionChanged?.call(nextSelection, this, cause);
   }
 
   @override
@@ -1265,6 +1224,16 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin, 
   // [assembleSemanticsNode] invocations.
   Queue<SemanticsNode>? _cachedChildNodes;
 
+  /// Returns a list of rects that bound the given selection.
+  ///
+  /// See [TextPainter.getBoxesForSelection] for more details.
+  List<Rect> getBoxesForSelection(TextSelection selection) {
+    _computeTextMetricsIfNeeded();
+    return _textPainter.getBoxesForSelection(selection)
+                       .map((TextBox textBox) => textBox.toRect().shift(_paintOffset))
+                       .toList();
+  }
+
   @override
   void describeSemanticsConfiguration(SemanticsConfiguration config) {
     super.describeSemanticsConfiguration(config);
@@ -1321,7 +1290,7 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin, 
     if (hasFocus && !readOnly)
       config.onSetText = _handleSetText;
 
-    if (selectionEnabled && selection?.isValid == true) {
+    if (selectionEnabled && (selection?.isValid ?? false)) {
       config.textSelection = selection;
       if (_textPainter.getOffsetBefore(selection!.extentOffset) != null) {
         config
@@ -1437,7 +1406,7 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin, 
             assert(false, '${recognizer.runtimeType} is not supported.');
           }
         }
-        final SemanticsNode newChild = (_cachedChildNodes?.isNotEmpty == true)
+        final SemanticsNode newChild = (_cachedChildNodes?.isNotEmpty ?? false)
             ? _cachedChildNodes!.removeFirst()
             : SemanticsNode();
         newChild
@@ -2406,7 +2375,7 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin, 
     // ui.LineMetrics, then we can get rid of this.
     final Offset offset = _textPainter.getOffsetForCaret(startPosition, Rect.zero);
     for (final ui.LineMetrics lineMetrics in metrics) {
-      if (lineMetrics.baseline + lineMetrics.descent > offset.dy) {
+      if (lineMetrics.baseline > offset.dy) {
         return MapEntry<int, Offset>(lineMetrics.lineNumber, Offset(offset.dx, lineMetrics.baseline));
       }
     }

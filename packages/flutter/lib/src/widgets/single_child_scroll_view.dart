@@ -34,7 +34,7 @@ import 'scrollable.dart';
 /// When you have a list of children and do not require cross-axis
 /// shrink-wrapping behavior, for example a scrolling list that is always the
 /// width of the screen, consider [ListView], which is vastly more efficient
-/// that a [SingleChildScrollView] containing a [ListBody] or [Column] with
+/// than a [SingleChildScrollView] containing a [ListBody] or [Column] with
 /// many children.
 ///
 /// ## Sample code: Using [SingleChildScrollView] with a [Column]
@@ -153,7 +153,7 @@ class SingleChildScrollView extends StatelessWidget {
   }) : assert(scrollDirection != null),
        assert(dragStartBehavior != null),
        assert(clipBehavior != null),
-       assert(!(controller != null && primary == true),
+       assert(!(controller != null && (primary ?? false)),
           'Primary ScrollViews obtain their ScrollController via inheritance from a PrimaryScrollController widget. '
           'You cannot both set primary to true and pass an explicit controller.',
        ),
@@ -318,6 +318,15 @@ class _SingleChildViewport extends SingleChildRenderObjectWidget {
       ..offset = offset
       ..clipBehavior = clipBehavior;
   }
+
+  @override
+  SingleChildRenderObjectElement createElement() {
+    return _SingleChildViewportElement(this);
+  }
+}
+
+class _SingleChildViewportElement extends SingleChildRenderObjectElement with NotifiableElementMixin, ViewportElementMixin {
+  _SingleChildViewportElement(_SingleChildViewport widget) : super(widget);
 }
 
 class _RenderSingleChildViewport extends RenderBox with RenderObjectWithChildMixin<RenderBox> implements RenderAbstractViewport {

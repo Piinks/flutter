@@ -249,7 +249,7 @@ class AsyncSnapshot<T> {
     if (hasData)
       return data!;
     if (hasError)
-      throw error!; // ignore: only_throw_errors, since we're just propagating an existing error
+      Error.throwWithStackTrace(error!, stackTrace!);
     throw StateError('Snapshot has neither data nor error');
   }
 
@@ -304,7 +304,7 @@ class AsyncSnapshot<T> {
   }
 
   @override
-  int get hashCode => hashValues(connectionState, data, error);
+  int get hashCode => Object.hash(connectionState, data, error);
 }
 
 /// Signature for strategies that build widgets based on asynchronous

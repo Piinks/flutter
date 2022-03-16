@@ -6,7 +6,6 @@ import 'package:flutter/animation.dart';
 import 'package:flutter/foundation.dart';
 
 import 'object.dart';
-import 'sliver.dart';
 
 /// The direction of a scroll, relative to the positive scroll offset axis given
 /// by an [AxisDirection] and a [GrowthDirection].
@@ -151,7 +150,7 @@ abstract class ViewportOffset extends ChangeNotifier {
   bool applyContentDimensions(double minScrollExtent, double maxScrollExtent);
 
   /// Doc me!
-  bool applyContentInsets(EdgeInsets scrollInsets);
+  bool applyContentInsets(EdgeInsets overlayInsets);
 
   /// Apply a layout-time correction to the scroll offset.
   ///

@@ -274,14 +274,14 @@ class PageMetrics extends FixedScrollMetrics {
     required double? viewportDimension,
     required AxisDirection axisDirection,
     required this.viewportFraction,
-    EdgeInsets? scrollInsets,
+    EdgeInsets? overlayInsets,
   }) : super(
          minScrollExtent: minScrollExtent,
          maxScrollExtent: maxScrollExtent,
          pixels: pixels,
          viewportDimension: viewportDimension,
          axisDirection: axisDirection,
-         scrollInsets: scrollInsets,
+         overlayInsets: overlayInsets,
        );
 
   @override
@@ -292,7 +292,7 @@ class PageMetrics extends FixedScrollMetrics {
     double? viewportDimension,
     AxisDirection? axisDirection,
     double? viewportFraction,
-    EdgeInsets? scrollInsets,
+    EdgeInsets? overlayInsets,
   }) {
     return PageMetrics(
       minScrollExtent: minScrollExtent ?? (hasContentDimensions ? this.minScrollExtent : null),
@@ -301,7 +301,7 @@ class PageMetrics extends FixedScrollMetrics {
       viewportDimension: viewportDimension ?? (hasViewportDimension ? this.viewportDimension : null),
       axisDirection: axisDirection ?? this.axisDirection,
       viewportFraction: viewportFraction ?? this.viewportFraction,
-      scrollInsets: scrollInsets,
+      overlayInsets: overlayInsets,
     );
   }
 
@@ -490,7 +490,7 @@ class _PagePosition extends ScrollPositionWithSingleContext implements PageMetri
     double? viewportDimension,
     AxisDirection? axisDirection,
     double? viewportFraction,
-    EdgeInsets? scrollInsets,
+    EdgeInsets? overlayInsets,
   }) {
     return PageMetrics(
       minScrollExtent: minScrollExtent ?? (hasContentDimensions ? this.minScrollExtent : null),
@@ -499,7 +499,7 @@ class _PagePosition extends ScrollPositionWithSingleContext implements PageMetri
       viewportDimension: viewportDimension ?? (hasViewportDimension ? this.viewportDimension : null),
       axisDirection: axisDirection ?? this.axisDirection,
       viewportFraction: viewportFraction ?? this.viewportFraction,
-      scrollInsets: scrollInsets,
+      overlayInsets: overlayInsets,
     );
   }
 }

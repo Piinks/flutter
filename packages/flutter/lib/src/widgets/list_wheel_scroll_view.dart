@@ -313,14 +313,14 @@ class FixedExtentMetrics extends FixedScrollMetrics {
     required double? viewportDimension,
     required AxisDirection axisDirection,
     required this.itemIndex,
-    EdgeInsets? scrollInsets,
+    EdgeInsets? overlayInsets,
   }) : super(
          minScrollExtent: minScrollExtent,
          maxScrollExtent: maxScrollExtent,
          pixels: pixels,
          viewportDimension: viewportDimension,
          axisDirection: axisDirection,
-         scrollInsets: scrollInsets,
+         overlayInsets: overlayInsets,
        );
 
   @override
@@ -331,7 +331,7 @@ class FixedExtentMetrics extends FixedScrollMetrics {
     double? viewportDimension,
     AxisDirection? axisDirection,
     int? itemIndex,
-    EdgeInsets? scrollInsets,
+    EdgeInsets? overlayInsets,
   }) {
     return FixedExtentMetrics(
       minScrollExtent: minScrollExtent ?? (hasContentDimensions ? this.minScrollExtent : null),
@@ -412,7 +412,7 @@ class _FixedExtentScrollPosition extends ScrollPositionWithSingleContext impleme
     double? viewportDimension,
     AxisDirection? axisDirection,
     int? itemIndex,
-    EdgeInsets? scrollInsets,
+    EdgeInsets? overlayInsets,
   }) {
     return FixedExtentMetrics(
       minScrollExtent: minScrollExtent ?? (hasContentDimensions ? this.minScrollExtent : null),
@@ -421,7 +421,7 @@ class _FixedExtentScrollPosition extends ScrollPositionWithSingleContext impleme
       viewportDimension: viewportDimension ?? (hasViewportDimension ? this.viewportDimension : null),
       axisDirection: axisDirection ?? this.axisDirection,
       itemIndex: itemIndex ?? this.itemIndex,
-      scrollInsets: scrollInsets ?? this.scrollInsets,
+      overlayInsets: overlayInsets ?? this.overlayInsets,
     );
   }
 }

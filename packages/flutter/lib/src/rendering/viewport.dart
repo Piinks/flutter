@@ -1442,7 +1442,7 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
   // Out-of-band data computed during layout.
   late double _minScrollExtent;
   late double _maxScrollExtent;
-  EdgeInsets _scrollInsets = EdgeInsets.zero;
+  EdgeInsets _overlayInsets = EdgeInsets.zero;
   bool _hasVisualOverflow = false;
 
   @override
@@ -1462,7 +1462,7 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
       assert(firstChild == null);
       _minScrollExtent = 0.0;
       _maxScrollExtent = 0.0;
-      _scrollInsets = EdgeInsets.zero;
+      _overlayInsets = EdgeInsets.zero;
       _hasVisualOverflow = false;
       offset.applyContentDimensions(0.0, 0.0);
       return;
@@ -1496,10 +1496,8 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
           math.min(0.0, _minScrollExtent + mainAxisExtent * anchor),
           math.max(0.0, _maxScrollExtent - mainAxisExtent * (1.0 - anchor)),
         );
-        print('RenderViewport.performLayout');
-        print('Sending scrollInsets: $_scrollInsets');
         // Apply any insets if there are any
-        offset.applyContentInsets(_scrollInsets);
+        offset.applyContentInsets(_overlayInsets);
         if (completed) {
           break;
         }
@@ -1540,7 +1538,7 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
     assert(correctedOffset.isFinite);
     _minScrollExtent = 0.0;
     _maxScrollExtent = 0.0;
-    _scrollInsets = EdgeInsets.zero;
+    _overlayInsets = EdgeInsets.zero;
     _hasVisualOverflow = false;
 
     // centerOffset is the offset from the leading edge of the RenderViewport
@@ -1614,8 +1612,8 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
         _minScrollExtent -= childLayoutGeometry.scrollExtent;
         break;
     }
-    if (childLayoutGeometry.scrollInsets != null) {
-      _scrollInsets += childLayoutGeometry.scrollInsets!;
+    if (childLayoutGeometry.overlayInsets != null) {
+      _overlayInsets += childLayoutGeometry.overlayInsets!;
     }
     if (childLayoutGeometry.hasVisualOverflow)
       _hasVisualOverflow = true;

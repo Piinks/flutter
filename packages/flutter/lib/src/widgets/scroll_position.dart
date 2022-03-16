@@ -144,8 +144,8 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
   double? _maxScrollExtent;
 
   @override
-  EdgeInsets get scrollInsets => _scrollInsets;
-  EdgeInsets _scrollInsets = EdgeInsets.zero;
+  EdgeInsets get overlayInsets => _overlayInsets;
+  EdgeInsets _overlayInsets = EdgeInsets.zero;
 
   @override
   bool get hasContentDimensions => _minScrollExtent != null && _maxScrollExtent != null;
@@ -527,7 +527,7 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
       && currentMetrics.extentInside == _lastMetrics!.extentInside
       && currentMetrics.extentAfter == _lastMetrics!.extentAfter
       && currentMetrics.axisDirection == _lastMetrics!.axisDirection
-      && currentMetrics.scrollInsets == _lastMetrics!.scrollInsets);
+      && currentMetrics.overlayInsets == _lastMetrics!.overlayInsets);
   }
 
   @override
@@ -563,19 +563,19 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
   }
 
   @override
-  bool applyContentInsets(EdgeInsets scrollInsets) {
+  bool applyContentInsets(EdgeInsets overlayInsets) {
     print('applyContentInsets');
-    print('current Insets: $_scrollInsets');
-    print('new Insets: $scrollInsets');
-    if (_scrollInsets == null || _scrollInsets != scrollInsets) {
+    print('current Insets: $_overlayInsets');
+    print('new Insets: $overlayInsets');
+    if (_overlayInsets == null || _overlayInsets != overlayInsets) {
       // Insets can come from multiple sources, such as a Scrollbar, or a
-      // SliverAppBar. If the incoming scrollInsets have a negative edge, then
+      // SliverAppBar. If the incoming overlayInsets have a negative edge, then
       // the incoming information does not care about that edge. In this case,
       // defer to existing insets, less that edge will be zero.
       // TODO(Piinks): This^ isn't great. The scrollbar can use copyWith and
       //  update the edges it cares about, we should find a way to let the
       //  Rendering layer contribute in a better way.
-      _scrollInsets = scrollInsets;
+      _overlayInsets = overlayInsets;
       //  EdgeInsets.fromLTRB(
       //     left:
       //     top:

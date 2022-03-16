@@ -43,7 +43,7 @@ mixin ScrollMetrics {
   ScrollMetrics copyWith({
     double? minScrollExtent,
     double? maxScrollExtent,
-    EdgeInsets? scrollInsets,
+    EdgeInsets? overlayInsets,
     double? pixels,
     double? viewportDimension,
     AxisDirection? axisDirection,
@@ -51,7 +51,7 @@ mixin ScrollMetrics {
     return FixedScrollMetrics(
       minScrollExtent: minScrollExtent ?? (hasContentDimensions ? this.minScrollExtent : null),
       maxScrollExtent: maxScrollExtent ?? (hasContentDimensions ? this.maxScrollExtent : null),
-      scrollInsets: scrollInsets ?? (hasContentDimensions ? this.scrollInsets : null),
+      overlayInsets: overlayInsets ?? (hasContentDimensions ? this.overlayInsets : null),
       pixels: pixels ?? (hasPixels ? this.pixels : null),
       viewportDimension: viewportDimension ?? (hasViewportDimension ? this.viewportDimension : null),
       axisDirection: axisDirection ?? this.axisDirection,
@@ -75,7 +75,7 @@ mixin ScrollMetrics {
   double get maxScrollExtent;
 
   /// Doc me!
-  EdgeInsets? get scrollInsets;
+  EdgeInsets? get overlayInsets;
 
   /// Whether the [minScrollExtent] and the [maxScrollExtent] properties are available.
   bool get hasContentDimensions;
@@ -142,12 +142,12 @@ class FixedScrollMetrics with ScrollMetrics {
     required double? pixels,
     required double? viewportDimension,
     required this.axisDirection,
-    EdgeInsets? scrollInsets,
+    EdgeInsets? overlayInsets,
   }) : _minScrollExtent = minScrollExtent,
        _maxScrollExtent = maxScrollExtent,
        _pixels = pixels,
        _viewportDimension = viewportDimension,
-       _scrollInsets = scrollInsets;
+       _overlayInsets = overlayInsets;
 
   @override
   double get minScrollExtent => _minScrollExtent!;
@@ -158,8 +158,8 @@ class FixedScrollMetrics with ScrollMetrics {
   final double? _maxScrollExtent;
 
   @override
-  EdgeInsets? get scrollInsets => _scrollInsets;
-  final EdgeInsets? _scrollInsets;
+  EdgeInsets? get overlayInsets => _overlayInsets;
+  final EdgeInsets? _overlayInsets;
 
   @override
   bool get hasContentDimensions => _minScrollExtent != null && _maxScrollExtent != null;

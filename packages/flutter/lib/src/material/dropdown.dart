@@ -304,6 +304,9 @@ class _DropdownMenuState<T> extends State<_DropdownMenu<T>> {
                 child: Scrollbar(
                   thumbVisibility: true,
                   child: ListView(
+                    // Ensure this always inherits the PrimaryScrollController
+                    // above.
+                    primary: true,
                     padding: kMaterialListPadding,
                     shrinkWrap: true,
                     children: children,

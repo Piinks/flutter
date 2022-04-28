@@ -1482,7 +1482,7 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
           ErrorHint(
             'The Scrollbar attempted to use the $controllerForError. This '
             'ScrollController should be associated with the ScrollView that '
-            'the Scrollbar is being applied to. '
+            'the Scrollbar is being applied to.'
             '${tryPrimary
               ? 'A ScrollView with an Axis.vertical ScrollDirection on mobile '
                 'platforms will automatically use the '
@@ -1514,8 +1514,8 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
             'The Scrollbar requires a single ScrollPosition in order to be painted.',
           ),
           ErrorHint(
-            'When $when, the associated ScrollController should only have one '
-            'ScrollPosition attached. '
+            'When $when, the associated ScrollController must only have one '
+            'ScrollPosition attached.'
             '${tryPrimary
               ? 'If a ScrollController has not been provided, the '
                 'PrimaryScrollController is used by default on mobile platforms '

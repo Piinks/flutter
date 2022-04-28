@@ -1181,7 +1181,7 @@ class ScrollAction extends Action<ScrollIntent> {
             ),
             ErrorDescription(
               'Only one ScrollPosition can be manipulated by a ScrollAction at '
-              'a time. ',
+              'a time.',
             ),
             ErrorHint(
               'The PrimaryScrollController can be inherited automatically by '

@@ -35,6 +35,9 @@ export 'package:flutter/physics.dart' show Tolerance;
 /// scrollable content is displayed.
 typedef ViewportBuilder = Widget Function(BuildContext context, ViewportOffset position);
 
+///
+typedef TwoDimensionalViewportBuilder = Widget Function(BuildContext context, ViewportOffset verticalPosition, ViewportOffset horizontalPosition);
+
 /// A widget that scrolls.
 ///
 /// [Scrollable] implements the interaction model for a scrollable widget,
@@ -262,7 +265,7 @@ class Scrollable extends StatefulWidget {
   Axis get axis => axisDirectionToAxis(axisDirection);
 
   @override
-  ScrollableState createState() => ScrollableState();
+  ScrollableState<Scrollable> createState() => ScrollableState<Scrollable>();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -282,7 +285,7 @@ class Scrollable extends StatefulWidget {
   ///
   /// Calling this method will create a dependency on the closest [Scrollable]
   /// in the [context], if there is one.
-  static ScrollableState? of(BuildContext context) {
+  static ScrollableState<Scrollable>? of(BuildContext context) {
     final _ScrollableScope? widget = context.dependOnInheritedWidgetOfExactType<_ScrollableScope>();
     return widget?.scrollable;
   }
@@ -326,7 +329,7 @@ class Scrollable extends StatefulWidget {
     // the `targetRenderObject` invisible.
     // Also see https://github.com/flutter/flutter/issues/65100
     RenderObject? targetRenderObject;
-    ScrollableState? scrollable = Scrollable.of(context);
+    ScrollableState<Scrollable>? scrollable = Scrollable.of(context);
     while (scrollable != null) {
       futures.add(scrollable.position.ensureVisible(
         context.findRenderObject()!,
@@ -360,7 +363,7 @@ class _ScrollableScope extends InheritedWidget {
   }) : assert(scrollable != null),
        assert(child != null);
 
-  final ScrollableState scrollable;
+  final ScrollableState<Scrollable> scrollable;
   final ScrollPosition position;
 
   @override
@@ -379,7 +382,7 @@ class _ScrollableScope extends InheritedWidget {
 ///
 /// This class is not intended to be subclassed. To specialize the behavior of a
 /// [Scrollable], provide it with a [ScrollPhysics].
-class ScrollableState extends State<Scrollable> with TickerProviderStateMixin, RestorationMixin
+class ScrollableState <T extends Scrollable> extends State<T> with TickerProviderStateMixin, RestorationMixin
     implements ScrollContext {
   /// The manager for this [Scrollable] widget's viewport position.
   ///
@@ -470,7 +473,7 @@ class ScrollableState extends State<Scrollable> with TickerProviderStateMixin, R
   }
 
   @override
-  void didUpdateWidget(Scrollable oldWidget) {
+  void didUpdateWidget(T oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (widget.controller != oldWidget.controller) {
@@ -531,6 +534,9 @@ class ScrollableState extends State<Scrollable> with TickerProviderStateMixin, R
   final GlobalKey _ignorePointerKey = GlobalKey();
 
   // This field is set during layout, and then reused until the next time it is set.
+  /// Doc
+  @protected
+  Map<Type, GestureRecognizerFactory> get gestures => _gestureRecognizers;
   Map<Type, GestureRecognizerFactory> _gestureRecognizers = const <Type, GestureRecognizerFactory>{};
   bool _shouldIgnorePointer = false;
 
@@ -800,6 +806,177 @@ class ScrollableState extends State<Scrollable> with TickerProviderStateMixin, R
 
   @override
   String? get restorationId => widget.restorationId;
+}
+
+// Horizontal inner scrollable of 2D scrolling
+class _SecondDimensionScrollable extends Scrollable {
+  const _SecondDimensionScrollable({
+    required super.viewportBuilder,
+    required this.alignPanAxis,
+    super.controller,
+  }) : super(axisDirection: AxisDirection.right);
+
+  final bool alignPanAxis;
+
+  @override
+  _SecondDimensionScrollableState createState() => _SecondDimensionScrollableState();
+}
+
+class _SecondDimensionScrollableState extends ScrollableState<_SecondDimensionScrollable> {
+  late ScrollableState<Scrollable> verticalScrollable;
+
+  @override
+  void didChangeDependencies() {
+    verticalScrollable = Scrollable.of(context)!;
+    super.didChangeDependencies();
+  }
+
+  @override
+  void _handleDragDown(DragDownDetails details) {
+    if (widget.alignPanAxis) {
+      verticalScrollable._handleDragDown(details);
+    }
+    super._handleDragDown(details);
+  }
+
+  @override
+  void _handleDragStart(DragStartDetails details) {
+    if (widget.alignPanAxis) {
+      verticalScrollable._handleDragStart(details);
+    }
+    super._handleDragStart(details);
+  }
+
+  @override
+  void _handleDragUpdate(DragUpdateDetails details) {
+    if (widget.alignPanAxis) {
+      verticalScrollable._handleDragUpdate(details);
+    }
+    super._handleDragUpdate(details);
+  }
+
+  @override
+  void _handleDragEnd(DragEndDetails details) {
+    if (widget.alignPanAxis) {
+      verticalScrollable._handleDragEnd(details);
+    }
+    super._handleDragEnd(details);
+  }
+
+  @override
+  void _handleDragCancel() {
+    if (widget.alignPanAxis) {
+      verticalScrollable._handleDragCancel();
+    }
+    super._handleDragCancel();
+  }
+
+  @override
+  void setCanDrag(bool value) {
+    if (value == _lastCanDrag && (!value || widget.axis == _lastAxisDirection))
+      return;
+    if (!value) {
+      _gestureRecognizers = const <Type, GestureRecognizerFactory>{};
+      // Cancel the active hold/drag (if any) because the gesture recognizers
+      // will soon be disposed by our RawGestureDetector, and we won't be
+      // receiving pointer up events to cancel the hold/drag.
+      _handleDragCancel();
+    } else {
+      _gestureRecognizers = <Type, GestureRecognizerFactory>{
+        PanGestureRecognizer: GestureRecognizerFactoryWithHandlers<PanGestureRecognizer>(
+          () => PanGestureRecognizer(supportedDevices: _configuration.dragDevices),
+          (PanGestureRecognizer instance) {
+            instance
+              ..onDown = _handleDragDown
+              ..onStart = _handleDragStart
+              ..onUpdate = _handleDragUpdate
+              ..onEnd = _handleDragEnd
+              ..onCancel = _handleDragCancel
+              ..minFlingDistance = _physics?.minFlingDistance
+              ..minFlingVelocity = _physics?.minFlingVelocity
+              ..maxFlingVelocity = _physics?.maxFlingVelocity
+              ..velocityTrackerBuilder = _configuration.velocityTrackerBuilder(context)
+              ..dragStartBehavior = widget.dragStartBehavior
+              ..gestureSettings = _mediaQueryData?.gestureSettings;
+          },
+        ),
+      };
+    }
+    _lastCanDrag = value;
+    _lastAxisDirection = widget.axis;
+    if (_gestureDetectorKey.currentState != null)
+      _gestureDetectorKey.currentState!.replaceGestureRecognizers(_gestureRecognizers);
+  }
+}
+
+///
+class RawTwoDimensionScrollable extends StatelessWidget {
+  ///
+  const RawTwoDimensionScrollable({
+    super.key,
+    this.horizontalController,
+    this.verticalController,
+    required this.viewportBuilder,
+  });
+
+  ///
+  final ScrollController? horizontalController;
+
+  ///
+  final ScrollController? verticalController;
+
+  ///
+  final  TwoDimensionalViewportBuilder viewportBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scrollable(
+      controller: verticalController,
+      viewportBuilder: (BuildContext context, ViewportOffset verticalOffset) {
+        // The FakeViewport increases the depth of the ScrollNotifications issued by
+        // the Scrollable below to differentiate them from the notifications issued
+        // by the Scrollable above.
+        return FakeViewport(
+          child: _SecondDimensionScrollable(
+            alignPanAxis: false,
+            controller: horizontalController,
+            viewportBuilder: (BuildContext context, ViewportOffset horizontalOffset) {
+              return viewportBuilder(context, verticalOffset, horizontalOffset);
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// A widget that inserts a [RenderAbstractViewport] into the render tree
+/// to increase the [ViewportNotificationMixin.depth] of scroll notifications
+/// bubbling up.
+///
+/// This may be used if two [Scrollable]s are nested within each other to
+/// properly differentiate the [ScrollNotification]s produced by them.
+class FakeViewport extends SingleChildRenderObjectWidget {
+  /// Creates a [FakeViewport].
+  const FakeViewport({
+    super.key,
+    super.child,
+  });
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderFakeViewport();
+}
+
+class _RenderFakeViewport extends RenderProxyBox implements RenderAbstractViewport {
+  _RenderFakeViewport({
+    RenderBox? child,
+  }) : super(child);
+
+  @override
+  RevealedOffset getOffsetToReveal(RenderObject target, double alignment, {Rect? rect}) {
+    /// ?
+    return RevealedOffset(offset: 0.0, rect: rect ?? target.paintBounds);
+  }
 }
 
 /// Describes the aspects of a Scrollable widget to inform inherited widgets
@@ -1100,7 +1277,7 @@ class ScrollAction extends Action<ScrollIntent> {
   // metrics (pixels, viewportDimension, maxScrollExtent, minScrollExtent) are
   // null. The type and state arguments must not be null, and the widget must
   // have already been laid out so that the position fields are valid.
-  double _calculateScrollIncrement(ScrollableState state, { ScrollIncrementType type = ScrollIncrementType.line }) {
+  double _calculateScrollIncrement(ScrollableState<Scrollable> state, { ScrollIncrementType type = ScrollIncrementType.line }) {
     assert(type != null);
     assert(state.position != null);
     assert(state.position.hasPixels);
@@ -1126,7 +1303,7 @@ class ScrollAction extends Action<ScrollIntent> {
 
   // Find out how much of an increment to move by, taking the different
   // directions into account.
-  double _getIncrement(ScrollableState state, ScrollIntent intent) {
+  double _getIncrement(ScrollableState<Scrollable> state, ScrollIntent intent) {
     final double increment = _calculateScrollIncrement(state, type: intent.type);
     switch (intent.direction) {
       case AxisDirection.down:
@@ -1174,7 +1351,7 @@ class ScrollAction extends Action<ScrollIntent> {
 
   @override
   void invoke(ScrollIntent intent) {
-    ScrollableState? state = Scrollable.of(primaryFocus!.context!);
+    ScrollableState<Scrollable>? state = Scrollable.of(primaryFocus!.context!);
     if (state == null) {
       final ScrollController? primaryScrollController = PrimaryScrollController.of(primaryFocus!.context!);
       state = Scrollable.of(primaryScrollController!.position.context.notificationContext!);

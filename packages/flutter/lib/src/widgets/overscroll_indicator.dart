@@ -690,6 +690,7 @@ class _StretchingOverscrollIndicatorState extends State<StretchingOverscrollIndi
   bool _accepted = true;
 
   bool _handleScrollNotification(ScrollNotification notification) {
+    // print('indicator for ${widget.axis}: $notification');
     if (!widget.notificationPredicate(notification))
       return false;
 
@@ -701,7 +702,7 @@ class _StretchingOverscrollIndicatorState extends State<StretchingOverscrollIndi
         _accepted = confirmationNotification._accepted;
       }
 
-      assert(notification.metrics.axis == widget.axis);
+      // assert(notification.metrics.axis == widget.axis);
       if (_accepted) {
         if (notification.velocity != 0.0) {
           assert(notification.dragDetails == null);

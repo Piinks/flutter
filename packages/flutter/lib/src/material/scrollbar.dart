@@ -283,7 +283,7 @@ class _MaterialScrollbarState extends RawScrollbarState<_MaterialScrollbar> {
   bool get showScrollbar => widget.thumbVisibility ?? _scrollbarTheme.thumbVisibility?.resolve(_states) ?? _scrollbarTheme.isAlwaysShown ?? false;
 
   @override
-  bool get enableGestures => widget.interactive ?? _scrollbarTheme.interactive ?? !_useAndroidScrollbar;
+  bool get enableGestures => widget.interactive ?? _scrollbarTheme.interactive ?? true;//!_useAndroidScrollbar;
 
   bool get _showTrackOnHover => widget.showTrackOnHover ?? _scrollbarTheme.showTrackOnHover ?? false;
 

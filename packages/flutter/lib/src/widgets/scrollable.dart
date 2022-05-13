@@ -808,9 +808,43 @@ class ScrollableState <T extends Scrollable> extends State<T> with TickerProvide
   String? get restorationId => widget.restorationId;
 }
 
+// Vertical outer scrollable of 2D scrolling
+class _VerticalDimensionScrollable extends Scrollable {
+  const _VerticalDimensionScrollable({
+    required super.viewportBuilder,
+    required this.alignPanAxis,
+    super.controller,
+  }) : super(axisDirection: AxisDirection.down);
+
+  final bool alignPanAxis;
+
+  @override
+  _VerticalDimensionScrollableState createState() => _VerticalDimensionScrollableState();
+}
+
+class _VerticalDimensionScrollableState extends ScrollableState<_VerticalDimensionScrollable> {
+
+  @override
+  void setCanDrag(bool value) {
+    if (widget.alignPanAxis && value) {
+      _gestureRecognizers = const <Type, GestureRecognizerFactory>{};
+      // Cancel the active hold/drag (if any) because the gesture recognizers
+      // will soon be disposed by our RawGestureDetector, and we won't be
+      // receiving pointer up events to cancel the hold/drag.
+      _handleDragCancel();
+      _lastCanDrag = value;
+      _lastAxisDirection = widget.axis;
+      if (_gestureDetectorKey.currentState != null)
+        _gestureDetectorKey.currentState!.replaceGestureRecognizers(_gestureRecognizers);
+    } else {
+      super.setCanDrag(value);
+    }
+  }
+}
+
 // Horizontal inner scrollable of 2D scrolling
-class _SecondDimensionScrollable extends Scrollable {
-  const _SecondDimensionScrollable({
+class _HorizontalDimensionScrollable extends Scrollable {
+  const _HorizontalDimensionScrollable({
     required super.viewportBuilder,
     required this.alignPanAxis,
     super.controller,
@@ -819,10 +853,10 @@ class _SecondDimensionScrollable extends Scrollable {
   final bool alignPanAxis;
 
   @override
-  _SecondDimensionScrollableState createState() => _SecondDimensionScrollableState();
+  _HorizontalDimensionScrollableState createState() => _HorizontalDimensionScrollableState();
 }
 
-class _SecondDimensionScrollableState extends ScrollableState<_SecondDimensionScrollable> {
+class _HorizontalDimensionScrollableState extends ScrollableState<_HorizontalDimensionScrollable> {
   late ScrollableState<Scrollable> verticalScrollable;
 
   @override
@@ -850,17 +884,39 @@ class _SecondDimensionScrollableState extends ScrollableState<_SecondDimensionSc
   @override
   void _handleDragUpdate(DragUpdateDetails details) {
     if (widget.alignPanAxis) {
-      verticalScrollable._handleDragUpdate(details);
+      final DragUpdateDetails verticalDetails = DragUpdateDetails(
+        sourceTimeStamp: details.sourceTimeStamp,
+        delta: Offset(details.delta.dy, 0.0),
+        primaryDelta: details.delta.dy,
+        globalPosition: details.globalPosition,
+        localPosition: details.localPosition,
+      );
+      verticalScrollable._handleDragUpdate(verticalDetails);
     }
-    super._handleDragUpdate(details);
+    final DragUpdateDetails horizontalDetails = DragUpdateDetails(
+      sourceTimeStamp: details.sourceTimeStamp,
+      delta: Offset(details.delta.dx, 0.0),
+      primaryDelta: details.delta.dx,
+      globalPosition: details.globalPosition,
+      localPosition: details.localPosition,
+    );
+    super._handleDragUpdate(horizontalDetails);
   }
 
   @override
   void _handleDragEnd(DragEndDetails details) {
     if (widget.alignPanAxis) {
-      verticalScrollable._handleDragEnd(details);
+      final DragEndDetails verticalDetails = DragEndDetails(
+        velocity: details.velocity,
+        primaryVelocity: details.velocity.pixelsPerSecond.dy,
+      );
+      verticalScrollable._handleDragEnd(verticalDetails);
     }
-    super._handleDragEnd(details);
+    final DragEndDetails horizontalDetails = DragEndDetails(
+      velocity: details.velocity,
+      primaryVelocity: details.velocity.pixelsPerSecond.dx,
+    );
+    super._handleDragEnd(horizontalDetails);
   }
 
   @override
@@ -873,15 +929,7 @@ class _SecondDimensionScrollableState extends ScrollableState<_SecondDimensionSc
 
   @override
   void setCanDrag(bool value) {
-    if (value == _lastCanDrag && (!value || widget.axis == _lastAxisDirection))
-      return;
-    if (!value) {
-      _gestureRecognizers = const <Type, GestureRecognizerFactory>{};
-      // Cancel the active hold/drag (if any) because the gesture recognizers
-      // will soon be disposed by our RawGestureDetector, and we won't be
-      // receiving pointer up events to cancel the hold/drag.
-      _handleDragCancel();
-    } else {
+    if (widget.alignPanAxis && value) {
       _gestureRecognizers = <Type, GestureRecognizerFactory>{
         PanGestureRecognizer: GestureRecognizerFactoryWithHandlers<PanGestureRecognizer>(
           () => PanGestureRecognizer(supportedDevices: _configuration.dragDevices),
@@ -901,11 +949,17 @@ class _SecondDimensionScrollableState extends ScrollableState<_SecondDimensionSc
           },
         ),
       };
+      // Cancel the active hold/drag (if any) because the gesture recognizers
+      // will soon be disposed by our RawGestureDetector, and we won't be
+      // receiving pointer up events to cancel the hold/drag.
+      _handleDragCancel();
+      _lastCanDrag = value;
+      _lastAxisDirection = widget.axis;
+      if (_gestureDetectorKey.currentState != null)
+        _gestureDetectorKey.currentState!.replaceGestureRecognizers(_gestureRecognizers);
+    } else {
+      super.setCanDrag(value);
     }
-    _lastCanDrag = value;
-    _lastAxisDirection = widget.axis;
-    if (_gestureDetectorKey.currentState != null)
-      _gestureDetectorKey.currentState!.replaceGestureRecognizers(_gestureRecognizers);
   }
 }
 
@@ -916,8 +970,12 @@ class RawTwoDimensionScrollable extends StatelessWidget {
     super.key,
     this.horizontalController,
     this.verticalController,
+    this.alignPanAxis = false,
     required this.viewportBuilder,
   });
+
+  ///
+  final bool alignPanAxis;
 
   ///
   final ScrollController? horizontalController;
@@ -930,15 +988,16 @@ class RawTwoDimensionScrollable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scrollable(
+    return _VerticalDimensionScrollable(
+      alignPanAxis: alignPanAxis,
       controller: verticalController,
       viewportBuilder: (BuildContext context, ViewportOffset verticalOffset) {
         // The FakeViewport increases the depth of the ScrollNotifications issued by
         // the Scrollable below to differentiate them from the notifications issued
         // by the Scrollable above.
-        return FakeViewport(
-          child: _SecondDimensionScrollable(
-            alignPanAxis: false,
+        return _FakeViewport(
+          child: _HorizontalDimensionScrollable(
+            alignPanAxis: alignPanAxis,
             controller: horizontalController,
             viewportBuilder: (BuildContext context, ViewportOffset horizontalOffset) {
               return viewportBuilder(context, verticalOffset, horizontalOffset);
@@ -950,18 +1009,15 @@ class RawTwoDimensionScrollable extends StatelessWidget {
   }
 }
 
-/// A widget that inserts a [RenderAbstractViewport] into the render tree
-/// to increase the [ViewportNotificationMixin.depth] of scroll notifications
-/// bubbling up.
-///
-/// This may be used if two [Scrollable]s are nested within each other to
-/// properly differentiate the [ScrollNotification]s produced by them.
-class FakeViewport extends SingleChildRenderObjectWidget {
-  /// Creates a [FakeViewport].
-  const FakeViewport({
-    super.key,
-    super.child,
-  });
+// A widget that inserts a [RenderAbstractViewport] into the render tree
+// to increase the [ViewportNotificationMixin.depth] of scroll notifications
+// bubbling up.
+//
+// This may be used if two [Scrollable]s are nested within each other to
+// properly differentiate the [ScrollNotification]s produced by them.
+class _FakeViewport extends SingleChildRenderObjectWidget {
+  // Creates a [_FakeViewport].
+  const _FakeViewport({ super.child });
 
   @override
   RenderObject createRenderObject(BuildContext context) => _RenderFakeViewport();
@@ -974,7 +1030,6 @@ class _RenderFakeViewport extends RenderProxyBox implements RenderAbstractViewpo
 
   @override
   RevealedOffset getOffsetToReveal(RenderObject target, double alignment, {Rect? rect}) {
-    /// ?
     return RevealedOffset(offset: 0.0, rect: rect ?? target.paintBounds);
   }
 }

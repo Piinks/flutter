@@ -702,7 +702,7 @@ class _StretchingOverscrollIndicatorState extends State<StretchingOverscrollIndi
         _accepted = confirmationNotification._accepted;
       }
 
-      // assert(notification.metrics.axis == widget.axis);
+      assert(notification.metrics.axis == widget.axis);
       if (_accepted) {
         if (notification.velocity != 0.0) {
           assert(notification.dragDetails == null);

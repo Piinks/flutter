@@ -21,8 +21,7 @@ class _AnimatedListSampleState extends State<AnimatedListSample> {
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   late ListModel<int> _list;
   int? _selectedItem;
-  late int
-      _nextItem; // The next item inserted when the user presses the '+' button.
+  late int _nextItem; // The next item inserted when the user presses the '+' button.
 
   @override
   void initState() {

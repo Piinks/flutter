@@ -554,4 +554,11 @@ void main() {
 
   // Change made in https://github.com/flutter/flutter/pull/100381
   TextSelectionOverlay.fadeDuration;
+
+  // Changes made in https://github.com/flutter/flutter/pull/97972
+  ThemeData themeData = ThemeData();
+  themeData = ThemeData(toggleableActiveColor: Colors.black);
+  themeData = ThemeData.raw(toggleableActiveColor: Colors.black);
+  themeData = ThemeData.copyWith(toggleableActiveColor: Colors.black);
+  themeData.toggleableActiveColor; // Removing field reference not supported.
 }

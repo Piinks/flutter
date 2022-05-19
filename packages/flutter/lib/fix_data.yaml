@@ -28,7 +28,7 @@ transforms:
     - kind: 'removeParameter'
       name: 'toggleableActiveColor'
     - kind: 'addParameter'
-      index: 95
+      index: 96
       name: 'checkboxTheme'
       style: optional_named
       argumentValue:
@@ -39,7 +39,7 @@ transforms:
                      ),"
         requiredIf: "toggleableActiveColor != '' && checkboxTheme == ''"
     - kind: 'addParameter'
-      index: 96
+      index: 97
       name: 'checkboxTheme'
       style: optional_named
       argumentValue:
@@ -124,7 +124,7 @@ transforms:
     - kind: 'removeParameter'
       name: 'toggleableActiveColor'
     - kind: 'addParameter'
-      index: 95
+      index: 96
       name: 'checkboxTheme'
       style: optional_named
       argumentValue:
@@ -135,7 +135,7 @@ transforms:
                      ),"
         requiredIf: "toggleableActiveColor != '' && checkboxTheme == ''"
     - kind: 'addParameter'
-      index: 96
+      index: 97
       name: 'checkboxTheme'
       style: optional_named
       argumentValue:
@@ -220,7 +220,7 @@ transforms:
     - kind: 'removeParameter'
       name: 'toggleableActiveColor'
     - kind: 'addParameter'
-      index: 95
+      index: 96
       name: 'checkboxTheme'
       style: optional_named
       argumentValue:
@@ -231,7 +231,7 @@ transforms:
                      ),"
         requiredIf: "toggleableActiveColor != '' && checkboxTheme == ''"
     - kind: 'addParameter'
-      index: 96
+      index: 97
       name: 'checkboxTheme'
       style: optional_named
       argumentValue:

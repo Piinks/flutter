@@ -546,7 +546,25 @@ void main() {
  	     return states.contains(MaterialState.selected) ? Colors.black : null;
  	   }),
  	));
-  themeData = ThemeData.raw(checkboxTheme: CheckboxThemeData(
+  themeData = ThemeData(
+    checkboxTheme: CheckboxThemeData(
+      fillColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+        return states.contains(MaterialState.selected) ? Colors.black : null;
+      }),
+      ),radioTheme: RadioThemeData(
+      fillColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+        return states.contains(MaterialState.selected) ? Colors.black : null;
+      }),
+      ),switchTheme: SwitchThemeData(
+      thumbColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+        return states.contains(MaterialState.selected) ? Colors.black : null;
+      }),
+      trackColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+        return states.contains(MaterialState.selected) ? Colors.black : null;
+      }),
+    ),
+  );
+  themeData = themeData.raw(checkboxTheme: CheckboxThemeData(
  	   fillColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
  	     return states.contains(MaterialState.selected) ? Colors.black : null;
  	   }),
@@ -562,7 +580,25 @@ void main() {
  	     return states.contains(MaterialState.selected) ? Colors.black : null;
  	   }),
  	));
-  themeData = ThemeData.copyWith(checkboxTheme: CheckboxThemeData(
+  themeData = themeData.raw(
+    checkboxTheme: CheckboxThemeData(
+      fillColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+        return states.contains(MaterialState.selected) ? Colors.black : null;
+      }),
+      ),radioTheme: RadioThemeData(
+      fillColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+        return states.contains(MaterialState.selected) ? Colors.black : null;
+      }),
+      ),switchTheme: SwitchThemeData(
+      thumbColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+        return states.contains(MaterialState.selected) ? Colors.black : null;
+      }),
+      trackColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+        return states.contains(MaterialState.selected) ? Colors.black : null;
+      }),
+    ),
+  );
+  themeData = themeData.copyWith(checkboxTheme: CheckboxThemeData(
  	   fillColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
  	     return states.contains(MaterialState.selected) ? Colors.black : null;
  	   }),
@@ -578,5 +614,23 @@ void main() {
  	     return states.contains(MaterialState.selected) ? Colors.black : null;
  	   }),
  	));
+  themeData = themeData.copyWith(
+    checkboxTheme: CheckboxThemeData(
+      fillColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+        return states.contains(MaterialState.selected) ? Colors.black : null;
+      }),
+      ),radioTheme: RadioThemeData(
+      fillColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+        return states.contains(MaterialState.selected) ? Colors.black : null;
+      }),
+      ),switchTheme: SwitchThemeData(
+      thumbColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+        return states.contains(MaterialState.selected) ? Colors.black : null;
+      }),
+      trackColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+        return states.contains(MaterialState.selected) ? Colors.black : null;
+      }),
+    ),
+  );
   themeData.toggleableActiveColor; // Removing field reference not supported.
 }

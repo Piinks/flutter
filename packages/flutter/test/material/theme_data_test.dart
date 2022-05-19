@@ -656,7 +656,6 @@ void main() {
       selectedRowColor: Colors.black,
       shadowColor: Colors.black,
       splashColor: Colors.black,
-      toggleableActiveColor: Colors.black,
       unselectedWidgetColor: Colors.black,
       // TYPOGRAPHY & ICONOGRAPHY
       iconTheme: ThemeData.dark().iconTheme,
@@ -706,6 +705,7 @@ void main() {
       buttonColor: Colors.black,
       fixTextFieldOutlineLabel: false,
       primaryColorBrightness: Brightness.dark,
+      toggleableActiveColor: Colors.black,
     );
 
     final SliderThemeData otherSliderTheme = SliderThemeData.fromPrimaryColors(
@@ -753,7 +753,6 @@ void main() {
       indicatorColor: Colors.white,
       hintColor: Colors.white,
       errorColor: Colors.white,
-      toggleableActiveColor: Colors.white,
       textTheme: ThemeData.light().textTheme,
       primaryTextTheme: ThemeData.light().textTheme,
       accentTextTheme: ThemeData.light().textTheme,
@@ -802,6 +801,7 @@ void main() {
       listTileTheme: const ListTileThemeData(),
       fixTextFieldOutlineLabel: true,
       androidOverscrollIndicator: AndroidOverscrollIndicator.stretch,
+      toggleableActiveColor: Colors.white,
       extensions: const <Object, ThemeExtension<dynamic>>{
         MyThemeExtensionB: MyThemeExtensionB(textStyle: TextStyle()),
       },
@@ -1040,7 +1040,6 @@ void main() {
       'indicatorColor',
       'hintColor',
       'errorColor',
-      'toggleableActiveColor',
       // TYPOGRAPHY & ICONOGRAPHY
       'typography',
       'textTheme',
@@ -1090,6 +1089,7 @@ void main() {
       'fixTextFieldOutlineLabel',
       'primaryColorBrightness',
       'androidOverscrollIndicator',
+      'toggleableActiveColor',
     };
 
     final DiagnosticPropertiesBuilder properties = DiagnosticPropertiesBuilder();

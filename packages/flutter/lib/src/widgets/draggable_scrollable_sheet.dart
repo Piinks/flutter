@@ -857,6 +857,18 @@ class _DraggableScrollableSheetScrollPosition extends ScrollPositionWithSingleCo
     }
   }
 
+  @override
+  void pointerScroll(double delta) {
+    if (!listShouldScroll &&
+        (!(extent.isAtMin || extent.isAtMax) ||
+          (extent.isAtMin && delta < 0) ||
+          (extent.isAtMax && delta > 0))) {
+      extent.addPixelDelta(-delta, context.notificationContext!);
+    } else {
+      super.pointerScroll(delta);
+    }
+  }
+
   bool get _isAtSnapSize {
     return extent.snapSizes.any(
       (double snapSize) {

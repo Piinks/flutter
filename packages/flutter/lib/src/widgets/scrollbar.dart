@@ -488,7 +488,7 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
         trackSize = Size(thickness + 2 * crossAxisMargin, _trackExtent);
         x = crossAxisMargin + padding.left;
         y = _thumbOffset;
-        trackOffset = Offset(x - crossAxisMargin, mainAxisMargin + padding.top);
+        trackOffset = Offset(x - crossAxisMargin, padding.top);
         borderStart = trackOffset + Offset(trackSize.width, 0.0);
         borderEnd = Offset(trackOffset.dx + trackSize.width, trackOffset.dy + _trackExtent);
         break;
@@ -497,7 +497,7 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
         trackSize = Size(thickness + 2 * crossAxisMargin, _trackExtent);
         x = size.width - thickness - crossAxisMargin - padding.right;
         y = _thumbOffset;
-        trackOffset = Offset(x - crossAxisMargin, mainAxisMargin + padding.top);
+        trackOffset = Offset(x - crossAxisMargin, padding.top);
         borderStart = trackOffset;
         borderEnd = Offset(trackOffset.dx, trackOffset.dy + _trackExtent);
         break;
@@ -506,7 +506,7 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
         trackSize = Size(_trackExtent, thickness + 2 * crossAxisMargin);
         x = _thumbOffset;
         y = crossAxisMargin + padding.top;
-        trackOffset = Offset(mainAxisMargin + padding.left, y - crossAxisMargin);
+        trackOffset = Offset(padding.left, y - crossAxisMargin);
         borderStart = trackOffset + Offset(0.0, trackSize.height);
         borderEnd = Offset(trackOffset.dx + _trackExtent, trackOffset.dy + trackSize.height);
         break;
@@ -515,7 +515,7 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
         trackSize = Size(_trackExtent, thickness + 2 * crossAxisMargin);
         x = _thumbOffset;
         y = size.height - thickness - crossAxisMargin - padding.bottom;
-        trackOffset = Offset(mainAxisMargin + padding.left, y - crossAxisMargin);
+        trackOffset = Offset(padding.left, y - crossAxisMargin);
         borderStart = trackOffset;
         borderEnd = Offset(trackOffset.dx + _trackExtent, trackOffset.dy);
         break;
@@ -556,10 +556,10 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
   double _thumbExtent() {
     // Thumb extent reflects fraction of content visible, as long as this
     // isn't less than the absolute minimum size.
-    // _totalContentExtent >= viewportDimension, so (_totalContentExtent - _mainAxisPadding) > 0
+    // _totalContentExtent >= viewportDimension, so (_totalContentExtent - _mainAxisInsets) > 0
     final double fractionVisible = clampDouble(
-        (_lastMetrics!.extentInside - _mainAxisInsets) /
-            (_totalContentExtent - _mainAxisInsets),
+        (_lastMetrics!.extentInside - _mainAxisPadding + 2 * mainAxisMargin) /
+            (_totalContentExtent - _mainAxisPadding + 2 * mainAxisMargin),
         0.0,
         1.0);
 
@@ -603,12 +603,9 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
   double get _beforeExtent => _isReversed ? _lastMetrics!.extentAfter : _lastMetrics!.extentBefore;
   double get _afterExtent => _isReversed ? _lastMetrics!.extentBefore : _lastMetrics!.extentAfter;
   // Padding of the thumb track.
-  double get _mainAxisInsets {
-    final double mainAxisPadding = _isVertical ? padding.vertical : padding.horizontal;
-    return 2 * mainAxisMargin + mainAxisPadding;
-  }
+  double get _mainAxisPadding => _isVertical ? padding.vertical : padding.horizontal;
   // The size of the thumb track.
-  double get _trackExtent => _lastMetrics!.viewportDimension - 2 * mainAxisMargin - _mainAxisInsets;
+  double get _trackExtent => _lastMetrics!.viewportDimension - _mainAxisPadding;
 
   // The total size of the scrollable content.
   double get _totalContentExtent {
@@ -650,7 +647,7 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
     }
 
     // Skip painting if there's not enough space.
-    if (_lastMetrics!.viewportDimension <= _mainAxisInsets || _trackExtent <= 0) {
+    if (_lastMetrics!.viewportDimension <= _mainAxisPadding || _trackExtent <= 0) {
       return;
     }
 
@@ -1575,8 +1572,8 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
     scrollbarPainter
       ..color = widget.thumbColor ?? const Color(0x66BCBCBC)
       ..trackRadius = widget.trackRadius
-      ..trackColor = _showTrack ? const Color(0x08000000) : const Color(0x00000000)
-      ..trackBorderColor = _showTrack ? const Color(0x1a000000) : const Color(0x00000000)
+      ..trackColor = _showTrack ? widget.trackColor ?? const Color(0x08000000) : const Color(0x00000000)
+      ..trackBorderColor = _showTrack ? widget.trackBorderColor ?? const Color(0x1a000000) : const Color(0x00000000)
       ..textDirection = Directionality.of(context)
       ..thickness = widget.thickness ?? _kScrollbarThickness
       ..radius = widget.radius

@@ -214,6 +214,8 @@ class DraggableScrollableController extends ChangeNotifier {
 /// [minChildSize], which defaults to `0.25` and [maxChildSize], which defaults
 /// to `1.0`. These sizes are percentages of the height of the parent container.
 ///
+/// The parent container will also expand and con
+///
 /// The widget coordinates resizing and scrolling of the widget returned by
 /// builder as the user drags along the horizontal axis.
 ///
@@ -854,11 +856,33 @@ class _DraggableScrollableSheetScrollPosition extends ScrollPositionWithSingleCo
   }
 
   @override
+  void pointerScroll(double delta) {
+    print('pointerScroll');
+    print('listShouldScroll $listShouldScroll');
+    print(extent.isAtMin);
+    print(extent.isAtMax);
+    print(delta);
+
+    if (!listShouldScroll &&
+      (!(extent.isAtMin || extent.isAtMax) ||
+        (extent.isAtMin && delta > 0) ||
+        (extent.isAtMax && delta < 0))) {
+      // Allow pointer scrolling to expand and contract the sheet before making
+      // it scroll.
+      print('changing sheet');
+      extent.addPixelDelta(delta, context.notificationContext!);
+    } else {
+      print('Calling super');
+      super.pointerScroll(delta);
+    }
+  }
+
+  @override
   void applyUserOffset(double delta) {
     if (!listShouldScroll &&
-        (!(extent.isAtMin || extent.isAtMax) ||
-          (extent.isAtMin && delta < 0) ||
-          (extent.isAtMax && delta > 0))) {
+      (!(extent.isAtMin || extent.isAtMax) ||
+        (extent.isAtMin && delta < 0) ||
+        (extent.isAtMax && delta > 0))) {
       extent.addPixelDelta(-delta, context.notificationContext!);
     } else {
       super.applyUserOffset(delta);

@@ -81,17 +81,18 @@ void main() {
     await gesture.moveBy(Offset(-_kGestureOffset.dx, -_kGestureOffset.dy));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
+    const  double barHeight = 44 + 20 + 3.0;
 
     expect(find.byType(CupertinoScrollbar), paints..rrect(
       color: _kScrollbarColor,
       rrect: RRect.fromRectAndRadius(
-        const Rect.fromLTWH(
+        const Rect.fromLTRB(
           800.0 - 3 - 3, // Screen width - margin - thickness.
-          44 + 20 + 3.0, // nav bar height + top margin
-          3, // Thickness.
-          // Fraction visible * (viewport size - padding - margin)
-          // where Fraction visible = (viewport size - padding) / content size
-          (600.0 - 34 - 44 - 20) / 4000.0 * (600.0 - 2 * 3 - 34 - 44 - 20),
+          barHeight, // nav bar height + top margin
+          800.0 - 3, // Thickness.
+          // Fraction visible * (viewport size - margin)
+          // where Fraction visible = viewport size / content size
+          (((600.0 - 44) / 4000.0) * (600.0 - 2 * 3 - 44)) - barHeight,
         ),
         _kScrollbarRadius,
       ),

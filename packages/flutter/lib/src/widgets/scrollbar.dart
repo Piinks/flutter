@@ -560,12 +560,11 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
   double _thumbExtent() {
     // Thumb extent reflects fraction of content visible, as long as this
     // isn't less than the absolute minimum size.
-    // _totalContentExtent >= viewportDimension, so (_totalContentExtent - _mainAxisPadding) > 0
     final double fractionVisible = clampDouble(
-        (_lastMetrics!.extentInside - _mainAxisPadding) /
-            (_totalContentExtent - _mainAxisPadding),
-        0.0,
-        1.0);
+      _lastMetrics!.extentInside / _totalContentExtent,
+      0.0,
+      1.0,
+    );
 
     final double thumbExtent = math.max(
       math.min(_traversableTrackExtent, minOverscrollLength),

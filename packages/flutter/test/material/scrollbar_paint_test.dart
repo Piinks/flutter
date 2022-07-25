@@ -117,7 +117,7 @@ void main() {
           color: const Color(0x00000000),
         )
         ..rect(
-          rect: const Rect.fromLTWH(796.0, 0.0, 4.0, (600.0 - 56 - 34 - 20) / 4000 * (600 - 56 - 34 - 20)),
+          rect: const Rect.fromLTRB(796.0, 0.0, 800, 63.6),
           color: _kAndroidThumbIdleColor,
         ),
     );

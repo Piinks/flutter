@@ -204,6 +204,87 @@ abstract class SliverGridLayout {
   double computeMaxScrollOffset(int childCount);
 }
 
+///
+class SliverGridStaggerLayout extends SliverGridLayout{
+  ///
+  SliverGridStaggerLayout({
+    required this.crossAxisCount,
+    required this.crossAxisStride,
+    required this.childCrossAxisExtent,
+    required this.reverseCrossAxis,
+    super.layoutType,
+  }) : assert(crossAxisCount != null && crossAxisCount > 0),
+       assert(crossAxisStride != null && crossAxisStride >= 0),
+       assert(childCrossAxisExtent != null && childCrossAxisExtent >= 0),
+       assert(reverseCrossAxis != null) {
+    for (int i = 0; i <= crossAxisCount; i++) {
+      // _scrollOffsetForColumn.addEntries(i - 0.0);
+    }
+  }
+
+  /// The number of children in the cross axis.
+  final int crossAxisCount;
+
+  /// The number of pixels from the leading edge of one tile to the leading edge
+  /// of the next tile in the cross axis.
+  final double crossAxisStride;
+
+  /// The number of pixels from the leading edge of one tile to the trailing
+  /// edge of the same tile in the cross axis.
+  final double childCrossAxisExtent;
+
+  /// Whether the children should be placed in the opposite order of increasing
+  /// coordinates in the cross axis.
+  ///
+  /// For example, if the cross axis is horizontal, the children are placed from
+  /// left to right when [reverseCrossAxis] is false and from right to left when
+  /// [reverseCrossAxis] is true.
+  ///
+  /// Typically set to the return value of [axisDirectionIsReversed] applied to
+  /// the [SliverConstraints.crossAxisDirection].
+  final bool reverseCrossAxis;
+
+  final Map<int, double> _scrollOffsetForColumn = <int, double>{};
+
+  double _getOffsetFromStartInCrossAxis(double crossAxisStart) {
+    if (reverseCrossAxis) {
+      return crossAxisCount * crossAxisStride - crossAxisStart - childCrossAxisExtent - (crossAxisStride - childCrossAxisExtent);
+    }
+    return crossAxisStart;
+  }
+
+  @override
+  double computeMaxScrollOffset(int childCount) {
+    return _getLargestScrollOffset();
+  }
+
+  @override
+  SliverGridGeometry getGeometryForChildIndex(int index) {
+    // final double crossAxisStart = (index % crossAxisCount) * crossAxisStride;
+    // Return the column # we are adding to next.
+    final int column = _getNextColumn(); // 2
+    return SliverGridGeometry(
+      scrollOffset: _scrollOffsetForColumn[column],
+      crossAxisOffset: 2 * crossAxisStride,
+      mainAxisExtent: double.infinity, // <--
+      crossAxisExtent: childCrossAxisExtent,
+    );
+  }
+
+  @override
+  SliverGridGeometry updateGeometryForChildIndex(int index, Size childSize) {
+    final int column = _getNextColumn(); // 2
+    _scrollOffsetForColumn[2] = childSize.height + _scrollOffsetForColumn[2];
+    return SliverGridGeometry(
+      scrollOffset: _scrollOffsetForColumn[column],
+      crossAxisOffset: 2 * crossAxisStride,
+      mainAxisExtent: childSize.height, // <--
+      crossAxisExtent: childCrossAxisExtent,
+    );
+  }
+
+}
+
 /// A [SliverGridLayout] that uses equally sized and spaced tiles.
 ///
 /// Rather that providing a grid with a [SliverGridLayout] directly, you instead

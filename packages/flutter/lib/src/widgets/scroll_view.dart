@@ -1919,6 +1919,57 @@ class GridView extends BoxScrollView {
          semanticChildCount: semanticChildCount ?? children.length,
        );
 
+  GridView.stagger({
+    super.key,
+    super.scrollDirection,
+    super.reverse,
+    super.controller,
+    super.primary,
+    super.physics,
+    super.shrinkWrap,
+    super.padding,
+    double? maxCrossAxisExtent,
+    int? crossAxisCount,
+    double mainAxisSpacing = 0.0,
+    double crossAxisSpacing = 0.0,
+    double childAspectRatio = 1.0,
+    bool addAutomaticKeepAlives = true,
+    bool addRepaintBoundaries = true,
+    bool addSemanticIndexes = true,
+    super.cacheExtent,
+    List<Widget> children = const <Widget>[],
+    int? semanticChildCount,
+    super.dragStartBehavior,
+    super.keyboardDismissBehavior,
+    super.restorationId,
+    super.clipBehavior,
+  }) : assert(crossAxisCount == null || maxCrossAxisExtent == null, 'Only one can be set'),
+       assert(crossAxisCount != null || maxCrossAxisExtent != null, 'One must be set'),
+       gridDelegate = maxCrossAxisExtent != null ?
+         SliverGridDelegateWithMaxCrossAxisExtent(
+           maxCrossAxisExtent: maxCrossAxisExtent,
+           mainAxisSpacing: mainAxisSpacing,
+           crossAxisSpacing: crossAxisSpacing,
+           childAspectRatio: childAspectRatio,
+           layoutType: SliverGridLayoutType.stagger,
+         ) :
+         SliverGridDelegateWithFixedCrossAxisCount(
+           crossAxisCount: crossAxisCount!,
+           mainAxisSpacing: mainAxisSpacing,
+           crossAxisSpacing: crossAxisSpacing,
+           childAspectRatio: childAspectRatio,
+           layoutType: SliverGridLayoutType.stagger,
+         ),
+       childrenDelegate = SliverChildListDelegate(
+         children,
+         addAutomaticKeepAlives: addAutomaticKeepAlives,
+         addRepaintBoundaries: addRepaintBoundaries,
+         addSemanticIndexes: addSemanticIndexes,
+       ),
+       super(
+         semanticChildCount: semanticChildCount ?? children.length,
+       );
+
   /// A delegate that controls the layout of the children within the [GridView].
   ///
   /// The [GridView], [GridView.builder], and [GridView.custom] constructors let you specify this

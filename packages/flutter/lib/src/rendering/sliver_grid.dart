@@ -89,17 +89,18 @@ class SliverGridGeometry {
   }
 }
 
-/// TODO(Piinks): Add docs. This distinguishes the different render objects.
+///
+// TODO(Piinks): Add docs for these, https://pass-analyzer
 enum SliverGridLayoutType {
-  /// TODO(Piinks): Add docs
   /// The full layout pattern is known ahead of time, does not adapt to the size
   /// of the children.
   fixed,
 
-  /// TODO(Piinks): Add docs
-  /// Incorporates child size in the layout. Uses a different underlying render
-  /// object.
-  dynamic,
+  ///
+  stagger,
+
+  ///
+  wrap,
 }
 
 /// The size and position of all the tiles in a [RenderSliverGrid].
@@ -128,39 +129,38 @@ abstract class SliverGridLayout {
   /// const constructors so that they can be used in const expressions.
   const SliverGridLayout({ this.layoutType = SliverGridLayoutType.fixed });
 
-  /// TODO(Piinks): Add docs
+  ///
+  // TODO(Piinks): Add docs, https://pass-analyzer
   final SliverGridLayoutType layoutType;
 
   /// The minimum child index that intersects with (or is after) this scroll
   /// offset.
-  /// TODO(Piinks): Add more docs - only used for fixed layouts
+  // TODO(Piinks): Add docs, https://pass-analyzer
   int getMinChildIndexForScrollOffset(double scrollOffset) {
-    return 0;
-    // assert(
-    //   layoutType == SliverGridLayoutType.fixed,
-    //   'This method is only used for fixed layouts that know all of the child '
-    //   'positioning ahead of time.',
-    // );
-    // throw UnimplementedError(
-    //   'A SliverGridLayoutType.fixed requires getMinChildIndexForScrollOffset to be '
-    //   'implemented, returning the child index for the given scrollOffset.',
-    // );
+    assert(
+      layoutType == SliverGridLayoutType.fixed,
+      'This method is only used for fixed layouts that know all of the child '
+      'positioning ahead of time.',
+    );
+    throw UnimplementedError(
+      'A SliverGridLayoutType.fixed requires getMinChildIndexForScrollOffset to be '
+      'implemented, returning the child index for the given scrollOffset.',
+    );
   }
 
   /// The maximum child index that intersects with (or is before) this scroll
   /// offset.
-  /// TODO(Piinks): Add more docs - only used for fixed layouts
+  // TODO(Piinks): Add docs, https://pass-analyzer
   int getMaxChildIndexForScrollOffset(double scrollOffset) {
-    return 0;
-    // assert(
-    //   layoutType == SliverGridLayoutType.fixed,
-    //   'This method is only used for fixed layouts that know all of the child '
-    //   'positioning ahead of time.',
-    // );
-    // throw UnimplementedError(
-    //   'A SliverGridLayoutType.fixed requires getMaxChildIndexForScrollOffset to be '
-    //   'implemented, returning the child index for the given scrollOffset.',
-    // );
+    assert(
+      layoutType == SliverGridLayoutType.fixed,
+      'This method is only used for fixed layouts that know all of the child '
+      'positioning ahead of time.',
+    );
+    throw UnimplementedError(
+      'A SliverGridLayoutType.fixed requires getMaxChildIndexForScrollOffset to be '
+      'implemented, returning the child index for the given scrollOffset.',
+    );
   }
 
   /// The  estimated size and position of the child with the given index.
@@ -172,7 +172,7 @@ abstract class SliverGridLayout {
   /// For dynamic layouts, the [SliverGridGeometry] that is returned will
   /// provide looser constraints to the child, whose size after layout can be
   /// reported back to the layout object in [updateGeometryForChildIndex].
-  /// TODO(Piinks): Add more docs - used for both fixed and dynamic layouts
+  // TODO(Piinks): Add docs, https://pass-analyzer
   SliverGridGeometry getGeometryForChildIndex(int index);
 
   /// Update the size and position of the child with the given index,
@@ -180,28 +180,134 @@ abstract class SliverGridLayout {
   ///
   /// This is used to update the layout object after the child has laid out,
   /// allowing the layout pattern to adapt to the child's size.
-  /// TODO(Piinks): Add more docs - used for only dynamic layouts
+  // TODO(Piinks): Add docs, https://pass-analyzer
   SliverGridGeometry updateGeometryForChildIndex(int index, Size childSize) {
-    return getGeometryForChildIndex(index);
-    // TODO(Piinks): Add this back to enforce methods needed for various layouts.
     // Actual implementation, the above call is just for experimenting with the
     // existing layout
-    // assert(
-    // layoutType == SliverGridLayoutType.dynamic,
-    // 'This method is only used for fixed layouts that know all of the child '
-    //     'positioning ahead of time.',
-    // );
-    // throw UnimplementedError(
-    //   'A SliverGridLayoutType.dynamic requires updateGeometryForChildIndex to be '
-    //       'implemented, which provides the size of the child at the given index.',
-    // );
+    assert(
+      layoutType != SliverGridLayoutType.fixed,
+      'This method is only used for dynamic layouts that know all of the child '
+      'positioning ahead of time.',
+    );
+    throw UnimplementedError(
+      'A SliverGridLayoutType.dynamic requires updateGeometryForChildIndex to be '
+      'implemented, which provides the size of the child at the given index.',
+    );
   }
+
+  /// Doc
+  // TODO(Piinks): Add docs, https://pass-analyzer
+  bool finishedRunForTargetScrollOffset(double scrollOffset) => true;
 
   /// The scroll extent needed to fully display all the tiles if there are
   /// `childCount` children in total.
   ///
   /// The child count will never be null.
   double computeMaxScrollOffset(int childCount);
+}
+
+///
+class SliverGridStaggerLayout extends SliverGridLayout{
+  ///
+  SliverGridStaggerLayout({
+    required this.crossAxisCount,
+    required this.crossAxisStride,
+    required this.childCrossAxisExtent,
+    required this.mainAxisSpacing,
+    required this.reverseCrossAxis,
+    super.layoutType,
+  }) : assert(crossAxisCount != null && crossAxisCount > 0),
+        assert(crossAxisStride != null && crossAxisStride >= 0),
+        assert(childCrossAxisExtent != null && childCrossAxisExtent >= 0),
+        assert(reverseCrossAxis != null) {
+    for (int i = 0; i < crossAxisCount; i++) {
+      _scrollOffsetForMainAxisRun[i] = 0.0;
+    }
+  }
+
+  /// The number of children in the cross axis.
+  final int crossAxisCount;
+
+  /// The number of pixels from the leading edge of one tile to the leading edge
+  /// of the next tile in the cross axis.
+  final double crossAxisStride;
+
+  /// Doc!
+  final double mainAxisSpacing;
+
+  /// The number of pixels from the leading edge of one tile to the trailing
+  /// edge of the same tile in the cross axis.
+  final double childCrossAxisExtent;
+
+  /// Whether the children should be placed in the opposite order of increasing
+  /// coordinates in the cross axis.
+  ///
+  /// For example, if the cross axis is horizontal, the children are placed from
+  /// left to right when [reverseCrossAxis] is false and from right to left when
+  /// [reverseCrossAxis] is true.
+  ///
+  /// Typically set to the return value of [axisDirectionIsReversed] applied to
+  /// the [SliverConstraints.crossAxisDirection].
+  final bool reverseCrossAxis;
+
+  final Map<int, double> _scrollOffsetForMainAxisRun = <int, double>{};
+
+  @override
+  double computeMaxScrollOffset(int childCount) {
+    return 10000;
+  }
+
+  int _getShortestMainAxisRun() {
+    double offset = double.infinity;
+    int mainAxisRun = 0;
+    for(int index = 0; index < _scrollOffsetForMainAxisRun.length; index++) {
+      if (_scrollOffsetForMainAxisRun[index]! < offset) {
+        offset = _scrollOffsetForMainAxisRun[index]!;
+        mainAxisRun = index;
+      }
+    }
+    return mainAxisRun;
+  }
+
+  @override
+  SliverGridGeometry getGeometryForChildIndex(int index) {
+    return SliverGridGeometry(
+      scrollOffset: 0, // This will de finalized in updateGeometryForChildIndex
+      crossAxisOffset: 0, // This will de finalized in updateGeometryForChildIndex
+      mainAxisExtent: double.infinity,
+      crossAxisExtent: childCrossAxisExtent,
+    );
+  }
+
+  @override
+  SliverGridGeometry updateGeometryForChildIndex(int index, Size childSize) {
+    // Get the shortest main axis run for the next child to be placed.
+    final int mainAxisRun = _getShortestMainAxisRun();
+    final double childExtent = childSize.height + mainAxisSpacing;
+    // final double crossAxisStart = (index % crossAxisCount) * crossAxisStride;
+    final SliverGridGeometry geometry = SliverGridGeometry(
+      scrollOffset: _scrollOffsetForMainAxisRun[mainAxisRun]!,
+      crossAxisOffset: mainAxisRun * crossAxisStride,
+      mainAxisExtent: childExtent,
+      crossAxisExtent: childCrossAxisExtent,
+    );
+    _scrollOffsetForMainAxisRun[mainAxisRun] = childExtent  + _scrollOffsetForMainAxisRun[mainAxisRun]!;
+    return geometry;
+  }
+
+  @override
+  bool finishedRunForTargetScrollOffset(double scrollOffset) {
+    bool isFinished = true;
+    for(int index = 0; index < _scrollOffsetForMainAxisRun.length; index++) {
+      // If every main axis run has not been filled to the extent of the current
+      // scroll offset, return false.
+      if (_scrollOffsetForMainAxisRun[index]! < scrollOffset) {
+        isFinished = false;
+      }
+    }
+    return isFinished;
+  }
+
 }
 
 /// A [SliverGridLayout] that uses equally sized and spaced tiles.
@@ -339,7 +445,7 @@ abstract class SliverGridDelegate {
   const SliverGridDelegate({ this.layoutType = SliverGridLayoutType.fixed });
 
   /// Informs the SliverGridLayout.
-  /// TODO(Piinks): Add more docs!
+  // TODO(Piinks): add more docs, https://pass-analyzer.com
   final SliverGridLayoutType layoutType;
 
   /// Returns information about the size and position of the tiles in the grid.
@@ -407,7 +513,11 @@ class SliverGridDelegateWithFixedCrossAxisCount extends SliverGridDelegate {
   }) : assert(crossAxisCount != null && crossAxisCount > 0),
        assert(mainAxisSpacing != null && mainAxisSpacing >= 0),
        assert(crossAxisSpacing != null && crossAxisSpacing >= 0),
-       assert(childAspectRatio != null && childAspectRatio > 0);
+       assert(childAspectRatio != null && childAspectRatio > 0),
+        assert(
+          layoutType == SliverGridLayoutType.fixed || layoutType == SliverGridLayoutType.stagger,
+          'SliverGridDelegateWithFixedCrossAxisCount only supports fixed and staggered layouts.'
+        );
 
   /// The number of children in the cross axis.
   final int crossAxisCount;
@@ -444,15 +554,39 @@ class SliverGridDelegateWithFixedCrossAxisCount extends SliverGridDelegate {
     );
     final double childCrossAxisExtent = usableCrossAxisExtent / crossAxisCount;
     final double childMainAxisExtent = mainAxisExtent ?? childCrossAxisExtent / childAspectRatio;
-    return SliverGridRegularTileLayout(
-      crossAxisCount: crossAxisCount,
-      mainAxisStride: childMainAxisExtent + mainAxisSpacing,
-      crossAxisStride: childCrossAxisExtent + crossAxisSpacing,
-      childMainAxisExtent: childMainAxisExtent,
-      childCrossAxisExtent: childCrossAxisExtent,
-      reverseCrossAxis: axisDirectionIsReversed(constraints.crossAxisDirection),
-      layoutType: layoutType,
-    );
+
+    switch (layoutType) {
+      case SliverGridLayoutType.fixed:
+        return SliverGridRegularTileLayout(
+          crossAxisCount: crossAxisCount,
+          mainAxisStride: childMainAxisExtent + mainAxisSpacing,
+          crossAxisStride: childCrossAxisExtent + crossAxisSpacing,
+          childMainAxisExtent: childMainAxisExtent,
+          childCrossAxisExtent: childCrossAxisExtent,
+          reverseCrossAxis: axisDirectionIsReversed(constraints.crossAxisDirection),
+          layoutType: layoutType,
+        );
+      case SliverGridLayoutType.stagger:
+        return SliverGridStaggerLayout(
+          crossAxisCount: crossAxisCount,
+          crossAxisStride: childCrossAxisExtent + crossAxisSpacing,
+          mainAxisSpacing: mainAxisSpacing,
+          childCrossAxisExtent: childCrossAxisExtent,
+          reverseCrossAxis: axisDirectionIsReversed(constraints.crossAxisDirection),
+          layoutType: layoutType,
+        );
+      case SliverGridLayoutType.wrap:
+        assert(false, 'Wrap layout is not supported with this delegate.');
+        return SliverGridRegularTileLayout(
+          crossAxisCount: 0,
+          mainAxisStride: 0,
+          crossAxisStride: 0,
+          childMainAxisExtent: 0,
+          childCrossAxisExtent: 0,
+          reverseCrossAxis: false,
+          layoutType: layoutType,
+        );
+    }
   }
 
   @override
@@ -508,7 +642,11 @@ class SliverGridDelegateWithMaxCrossAxisExtent extends SliverGridDelegate {
   }) : assert(maxCrossAxisExtent != null && maxCrossAxisExtent > 0),
        assert(mainAxisSpacing != null && mainAxisSpacing >= 0),
        assert(crossAxisSpacing != null && crossAxisSpacing >= 0),
-       assert(childAspectRatio != null && childAspectRatio > 0);
+       assert(childAspectRatio != null && childAspectRatio > 0),
+       assert(
+         layoutType == SliverGridLayoutType.fixed || layoutType == SliverGridLayoutType.stagger,
+         'SliverGridDelegateWithMaxCrossAxisExtent only supports fixed and staggered layouts.'
+       );
 
   /// The maximum extent of tiles in the cross axis.
   ///
@@ -557,15 +695,38 @@ class SliverGridDelegateWithMaxCrossAxisExtent extends SliverGridDelegate {
     );
     final double childCrossAxisExtent = usableCrossAxisExtent / crossAxisCount;
     final double childMainAxisExtent = mainAxisExtent ?? childCrossAxisExtent / childAspectRatio;
-    return SliverGridRegularTileLayout(
-      crossAxisCount: crossAxisCount,
-      mainAxisStride: childMainAxisExtent + mainAxisSpacing,
-      crossAxisStride: childCrossAxisExtent + crossAxisSpacing,
-      childMainAxisExtent: childMainAxisExtent,
-      childCrossAxisExtent: childCrossAxisExtent,
-      reverseCrossAxis: axisDirectionIsReversed(constraints.crossAxisDirection),
-      layoutType: layoutType,
-    );
+    switch (layoutType) {
+      case SliverGridLayoutType.fixed:
+        return SliverGridRegularTileLayout(
+          crossAxisCount: crossAxisCount,
+          mainAxisStride: childMainAxisExtent + mainAxisSpacing,
+          crossAxisStride: childCrossAxisExtent + crossAxisSpacing,
+          childMainAxisExtent: childMainAxisExtent,
+          childCrossAxisExtent: childCrossAxisExtent,
+          reverseCrossAxis: axisDirectionIsReversed(constraints.crossAxisDirection),
+          layoutType: layoutType,
+        );
+      case SliverGridLayoutType.stagger:
+        return SliverGridStaggerLayout(
+          crossAxisCount: crossAxisCount,
+          crossAxisStride: childCrossAxisExtent + crossAxisSpacing,
+          mainAxisSpacing: mainAxisSpacing,
+          childCrossAxisExtent: childCrossAxisExtent,
+          reverseCrossAxis: axisDirectionIsReversed(constraints.crossAxisDirection),
+          layoutType: layoutType,
+        );
+      case SliverGridLayoutType.wrap:
+        assert(false, 'Wrap layout is not supported with this delegate.');
+        return SliverGridRegularTileLayout(
+          crossAxisCount: 0,
+          mainAxisStride: 0,
+          crossAxisStride: 0,
+          childMainAxisExtent: 0,
+          childCrossAxisExtent: 0,
+          reverseCrossAxis: false,
+          layoutType: layoutType,
+        );
+    }
   }
 
   @override
@@ -777,11 +938,10 @@ class RenderSliverGrid extends RenderSliverMultiBoxAdaptor {
 }
 
 /// A sliver that places multiple box children in a two dimensional arrangement.
-/// TODO(Piinks): add more docs
+// TODO(Piinks): add more docs, https://pass-analyzer.com
 ///
 /// [RenderDynamicSliverGrid] places its children in arbitrary positions determined by
-/// [gridDelegate]. TODO --> This is different for this one. Each child is forced to
-/// have the size specified by the [gridDelegate].
+/// [gridDelegate].
 ///
 /// See also:
 ///
@@ -1104,12 +1264,7 @@ class RenderDynamicSliverGrid extends RenderSliverMultiBoxAdaptor {
     }
 
     // Now find the first child that ends after our end.
-    // TODO(Piinks): In a dynamic grid with tiles of many sizes, one could reach
-    //  the target end main axis offset, but there could still be room for more tiles
-    //  in the crossAxis. Either we should change the end of layout condition,
-    //  or add a way for the SliverGridLayout to tell us to keep going/affirm we
-    //  have actually reached the end.
-    while (endScrollOffset < targetEndScrollOffset) { // && layout.reachedEndGeometry ?
+    while (endScrollOffset < targetEndScrollOffset || !layout.finishedRunForTargetScrollOffset(targetEndScrollOffset)) {
       if (!advance()) {
         reachedEnd = true;
         break;
@@ -1126,9 +1281,10 @@ class RenderDynamicSliverGrid extends RenderSliverMultiBoxAdaptor {
     }
 
     // At this point everything should be good to go, we just have to clean up
-    // the garbage and report the geometry.
-
-    collectGarbage(leadingGarbage, trailingGarbage);
+    // any trailing garbage and report the geometry.
+    // Since dynamic tile placement is dependent on the preceding tile, we only
+    // collect trailing garbage.
+    collectGarbage(0, trailingGarbage);
 
     assert(debugAssertChildListIsNonEmptyAndContiguous());
     final double estimatedMaxScrollOffset;

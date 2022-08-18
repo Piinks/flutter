@@ -518,10 +518,10 @@ void main() {
       ),
     );
 
-    //By default the value of edgeOffset is 0.0
+    //By default the value of edgeOffset is null
     expect(
       tester.widget<RefreshIndicator>(find.byType(RefreshIndicator)).edgeOffset,
-      0.0,
+      isNull,
     );
 
     await tester.pumpWidget(

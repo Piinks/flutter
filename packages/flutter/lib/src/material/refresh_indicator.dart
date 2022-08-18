@@ -161,7 +161,7 @@ class RefreshIndicator extends StatefulWidget {
   /// value is calculated from that offset instead of the parent's edge.
   final double displacement;
 
-  /// TODO(Piinks): Update docs
+  // TODO(Piinks): Update docs
   /// The offset where [RefreshProgressIndicator] starts to appear on drag start.
   ///
   /// Depending whether the indicator is showing on the top or bottom, the value
@@ -251,7 +251,8 @@ class RefreshIndicatorState extends State<RefreshIndicator> with TickerProviderS
   static final Animatable<double> _kDragSizeFactorLimitTween = Tween<double>(begin: 0.0, end: _kDragSizeFactorLimit);
   static final Animatable<double> _oneToZeroTween = Tween<double>(begin: 1.0, end: 0.0);
 
-  double? get _edgeOffset => widget.edgeOffset ?? (_isIndicatorAtTop! ?_lastMetrics?.contentInsets?.top : _lastMetrics?.contentInsets?.bottom);
+  double? get _edgeOffset => widget.edgeOffset
+    ?? (_isIndicatorAtTop! ?_lastMetrics?.contentInsets.top : _lastMetrics?.contentInsets.bottom);
 
 
   @override

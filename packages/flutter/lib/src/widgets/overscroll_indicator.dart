@@ -236,7 +236,7 @@ class _GlowingOverscrollIndicatorState extends State<GlowingOverscrollIndicator>
         confirmationNotification.dispatch(context);
         _accepted[isLeading] = confirmationNotification.accepted;
         if (_accepted[isLeading]!) {
-          controller!._paintOffset = confirmationNotification.paintOffset + (notification.metrics.contentInsets?.top ?? 0.0);
+          controller!._paintOffset = confirmationNotification.paintOffset + (notification.metrics.contentInsets.top);
         }
       }
       assert(controller != null);

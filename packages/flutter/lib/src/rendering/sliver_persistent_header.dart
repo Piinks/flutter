@@ -601,7 +601,7 @@ abstract class RenderSliverFloatingPersistentHeader extends RenderSliverPersiste
     final double maxExtent = this.maxExtent;
     final double paintExtent = maxExtent - _effectiveScrollOffset!;
     final double layoutExtent = maxExtent - constraints.scrollOffset;
-    final double clampedPaintExtent = paintExtent.clamp(0.0, constraints.remainingPaintExtent);
+    final double clampedPaintExtent = paintExtent.clamp(0.0, constraints.remainingPaintExtent); // ignore_clamp_double_lint
     final EdgeInsets contentInsets = _getInsetsForAxisDirection(
       clampedPaintExtent + stretchOffset,
       constraints.axisDirection,

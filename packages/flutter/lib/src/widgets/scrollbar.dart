@@ -1922,7 +1922,6 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
         _maybeStartFadeoutTimer();
       }
     }
-    scrollbarPainter.update(metrics, metrics.axisDirection);
     return false;
   }
 

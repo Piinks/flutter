@@ -809,8 +809,8 @@ class ScrollableState <T extends Scrollable> extends State<T> with TickerProvide
 }
 
 // Vertical outer scrollable of 2D scrolling
-class _VerticalDimensionScrollable extends Scrollable {
-  const _VerticalDimensionScrollable({
+class _OuterVerticalDimension extends Scrollable {
+  const _OuterVerticalDimension({
     required super.viewportBuilder,
     required this.alignPanAxis,
     super.controller,
@@ -819,10 +819,10 @@ class _VerticalDimensionScrollable extends Scrollable {
   final bool alignPanAxis;
 
   @override
-  _VerticalDimensionScrollableState createState() => _VerticalDimensionScrollableState();
+  _OuterVerticalDimensionState createState() => _OuterVerticalDimensionState();
 }
 
-class _VerticalDimensionScrollableState extends ScrollableState<_VerticalDimensionScrollable> {
+class _OuterVerticalDimensionState extends ScrollableState<_OuterVerticalDimension> {
 
   @override
   void setCanDrag(bool value) {
@@ -843,8 +843,8 @@ class _VerticalDimensionScrollableState extends ScrollableState<_VerticalDimensi
 }
 
 // Horizontal inner scrollable of 2D scrolling
-class _HorizontalDimensionScrollable extends Scrollable {
-  const _HorizontalDimensionScrollable({
+class _InnerHorizontalDimension extends Scrollable {
+  const _InnerHorizontalDimension({
     required super.viewportBuilder,
     required this.alignPanAxis,
     super.controller,
@@ -853,10 +853,10 @@ class _HorizontalDimensionScrollable extends Scrollable {
   final bool alignPanAxis;
 
   @override
-  _HorizontalDimensionScrollableState createState() => _HorizontalDimensionScrollableState();
+  _InnerHorizontalDimensionState createState() => _InnerHorizontalDimensionState();
 }
 
-class _HorizontalDimensionScrollableState extends ScrollableState<_HorizontalDimensionScrollable> {
+class _InnerHorizontalDimensionState extends ScrollableState<_InnerHorizontalDimension> {
   late ScrollableState<Scrollable> verticalScrollable;
 
   @override
@@ -964,9 +964,9 @@ class _HorizontalDimensionScrollableState extends ScrollableState<_HorizontalDim
 }
 
 ///
-class RawTwoDimensionScrollable extends StatelessWidget {
+class TwoDimensionalScrollable extends StatelessWidget {
   ///
-  const RawTwoDimensionScrollable({
+  const TwoDimensionalScrollable({
     super.key,
     this.horizontalController,
     this.verticalController,
@@ -988,49 +988,19 @@ class RawTwoDimensionScrollable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _VerticalDimensionScrollable(
+    return _OuterVerticalDimension(
       alignPanAxis: alignPanAxis,
       controller: verticalController,
       viewportBuilder: (BuildContext context, ViewportOffset verticalOffset) {
-        // The FakeViewport increases the depth of the ScrollNotifications issued by
-        // the Scrollable below to differentiate them from the notifications issued
-        // by the Scrollable above.
-        return _FakeViewport(
-          child: _HorizontalDimensionScrollable(
-            alignPanAxis: alignPanAxis,
-            controller: horizontalController,
-            viewportBuilder: (BuildContext context, ViewportOffset horizontalOffset) {
-              return viewportBuilder(context, verticalOffset, horizontalOffset);
-            },
-          ),
+        return _InnerHorizontalDimension(
+          alignPanAxis: alignPanAxis,
+          controller: horizontalController,
+          viewportBuilder: (BuildContext context, ViewportOffset horizontalOffset) {
+            return viewportBuilder(context, verticalOffset, horizontalOffset);
+          },
         );
       },
     );
-  }
-}
-
-// A widget that inserts a [RenderAbstractViewport] into the render tree
-// to increase the [ViewportNotificationMixin.depth] of scroll notifications
-// bubbling up.
-//
-// This may be used if two [Scrollable]s are nested within each other to
-// properly differentiate the [ScrollNotification]s produced by them.
-class _FakeViewport extends SingleChildRenderObjectWidget {
-  // Creates a [_FakeViewport].
-  const _FakeViewport({ super.child });
-
-  @override
-  RenderObject createRenderObject(BuildContext context) => _RenderFakeViewport();
-}
-
-class _RenderFakeViewport extends RenderProxyBox implements RenderAbstractViewport {
-  _RenderFakeViewport({
-    RenderBox? child,
-  }) : super(child);
-
-  @override
-  RevealedOffset getOffsetToReveal(RenderObject target, double alignment, {Rect? rect}) {
-    return RevealedOffset(offset: 0.0, rect: rect ?? target.paintBounds);
   }
 }
 

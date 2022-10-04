@@ -1048,13 +1048,16 @@ void main() {
         );
 
       expect(find.byType(RichText), paints..something((Symbol method, List<dynamic> arguments) {
-        if (method != #drawParagraph)
+        if (method != #drawParagraph) {
           return false;
+        }
         final ui.Paragraph paragraph = arguments[0] as ui.Paragraph;
-        if (paragraph.longestLine > paragraph.width)
+        if (paragraph.longestLine > paragraph.width) {
           throw 'paragraph width (${paragraph.width}) greater than its longest line (${paragraph.longestLine}).';
-        if (paragraph.width >= 400)
+        }
+        if (paragraph.width >= 400) {
           throw 'paragraph.width (${paragraph.width}) >= 400';
+        }
         return true;
       }));
     },
@@ -1067,6 +1070,7 @@ void main() {
     final ui.Paragraph paragraph = builder.build();
     paragraph.layout(const ui.ParagraphConstraints(width: 1000));
     expect(paragraph.getBoxesForRange(2, 2), isEmpty);
+    paragraph.dispose();
   });
 
   // Regression test for https://github.com/flutter/flutter/issues/65818

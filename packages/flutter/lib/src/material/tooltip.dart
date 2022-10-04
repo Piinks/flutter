@@ -16,6 +16,9 @@ import 'theme.dart';
 import 'tooltip_theme.dart';
 import 'tooltip_visibility.dart';
 
+/// Signature for when a tooltip is triggered.
+typedef TooltipTriggeredCallback = void Function();
+
 /// A Material Design tooltip.
 ///
 /// Tooltips provide text labels which help explain the function of a button or
@@ -108,6 +111,7 @@ class Tooltip extends StatefulWidget {
     this.showDuration,
     this.triggerMode,
     this.enableFeedback,
+    this.onTriggered,
     this.child,
   }) :  assert((message == null) != (richMessage == null), 'Either `message` or `richMessage` must be specified'),
         assert(
@@ -134,7 +138,8 @@ class Tooltip extends StatefulWidget {
 
   /// The amount of space by which to inset the tooltip's [child].
   ///
-  /// Defaults to 16.0 logical pixels in each direction.
+  /// On mobile, defaults to 16.0 logical pixels horizontally and 4.0 vertically.
+  /// On desktop, defaults to 8.0 logical pixels horizontally and 4.0 vertically.
   final EdgeInsetsGeometry? padding;
 
   /// The empty space that surrounds the tooltip.
@@ -192,9 +197,9 @@ class Tooltip extends StatefulWidget {
   ///
   /// If null, the message's [TextStyle] will be determined based on
   /// [ThemeData]. If [ThemeData.brightness] is set to [Brightness.dark],
-  /// [TextTheme.bodyText2] of [ThemeData.textTheme] will be used with
+  /// [TextTheme.bodyMedium] of [ThemeData.textTheme] will be used with
   /// [Colors.white]. Otherwise, if [ThemeData.brightness] is set to
-  /// [Brightness.light], [TextTheme.bodyText2] of [ThemeData.textTheme] will be
+  /// [Brightness.light], [TextTheme.bodyMedium] of [ThemeData.textTheme] will be
   /// used with [Colors.black].
   final TextStyle? textStyle;
 
@@ -211,11 +216,13 @@ class Tooltip extends StatefulWidget {
   /// Defaults to 0 milliseconds (tooltips are shown immediately upon hover).
   final Duration? waitDuration;
 
-  /// The length of time that the tooltip will be shown after a long press
-  /// is released or mouse pointer exits the widget.
+  /// The length of time that the tooltip will be shown after a long press is
+  /// released (if triggerMode is [TooltipTriggerMode.longPress]) or a tap is
+  /// released (if triggerMode is [TooltipTriggerMode.tap]) or mouse pointer
+  /// exits the widget.
   ///
-  /// Defaults to 1.5 seconds for long press released or 0.1 seconds for mouse
-  /// pointer exits the widget.
+  /// Defaults to 1.5 seconds for long press and tap released or 0.1 seconds
+  /// for mouse pointer exits the widget.
   final Duration? showDuration;
 
   /// The [TooltipTriggerMode] that will show the tooltip.
@@ -236,6 +243,12 @@ class Tooltip extends StatefulWidget {
   ///
   ///  * [Feedback], for providing platform-specific feedback to certain actions.
   final bool? enableFeedback;
+
+  /// Called when the Tooltip is triggered.
+  ///
+  /// The tooltip is triggered after a tap when [triggerMode] is [TooltipTriggerMode.tap]
+  /// or after a long press when [triggerMode] is [TooltipTriggerMode.longPress].
+  final TooltipTriggeredCallback? onTriggered;
 
   static final List<TooltipState> _openedTooltips = <TooltipState>[];
 
@@ -403,11 +416,11 @@ class TooltipState extends State<Tooltip> with SingleTickerProviderStateMixin {
       case TargetPlatform.macOS:
       case TargetPlatform.linux:
       case TargetPlatform.windows:
-        return const EdgeInsets.symmetric(horizontal: 8.0);
+        return const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0);
       case TargetPlatform.android:
       case TargetPlatform.fuchsia:
       case TargetPlatform.iOS:
-        return const EdgeInsets.symmetric(horizontal: 16.0);
+        return const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0);
     }
   }
 
@@ -484,7 +497,7 @@ class TooltipState extends State<Tooltip> with SingleTickerProviderStateMixin {
     _dismissTimer = null;
     _showTimer?.cancel();
     _showTimer = null;
-    if (_entry!= null) {
+    if (_entry != null) {
       _entry!.remove();
     }
     _controller.reverse();
@@ -504,7 +517,7 @@ class TooltipState extends State<Tooltip> with SingleTickerProviderStateMixin {
       final OverlayState overlayState = Overlay.of(
         context,
         debugRequiredFor: widget,
-      )!;
+      );
       overlayState.insert(_entry!);
     }
     SemanticsService.tooltip(_tooltipMessage);
@@ -516,8 +529,9 @@ class TooltipState extends State<Tooltip> with SingleTickerProviderStateMixin {
   /// Returns `false` when the tooltip shouldn't be shown or when the tooltip
   /// was already visible.
   bool ensureTooltipVisible() {
-    if (!_visible)
+    if (!_visible || !mounted) {
       return false;
+    }
     _showTimer?.cancel();
     _showTimer = null;
     _forceRemoval = false;
@@ -559,7 +573,7 @@ class TooltipState extends State<Tooltip> with SingleTickerProviderStateMixin {
     final OverlayState overlayState = Overlay.of(
       context,
       debugRequiredFor: widget,
-    )!;
+    );
 
     final RenderBox box = context.findRenderObject()! as RenderBox;
     final Offset target = box.localToGlobal(
@@ -655,11 +669,25 @@ class TooltipState extends State<Tooltip> with SingleTickerProviderStateMixin {
     _pressActivated = true;
     final bool tooltipCreated = ensureTooltipVisible();
     if (tooltipCreated && _enableFeedback) {
-      if (_triggerMode == TooltipTriggerMode.longPress)
+      if (_triggerMode == TooltipTriggerMode.longPress) {
         Feedback.forLongPress(context);
-      else
+      } else {
         Feedback.forTap(context);
+      }
     }
+    widget.onTriggered?.call();
+  }
+
+  void _handleTap() {
+    _handlePress();
+    // When triggerMode is not [TooltipTriggerMode.tap] the tooltip is dismissed
+    // by _handlePointerEvent, which listens to the global pointer events.
+    // When triggerMode is [TooltipTriggerMode.tap] and the Tooltip GestureDetector
+    // competes with other GestureDetectors, the disambiguation process will complete
+    // after the global pointer event is received. As we can't rely on the global
+    // pointer events to dismiss the Tooltip, we have to call _handleMouseExit
+    // to dismiss the tooltip after _showDuration expired.
+    _handleMouseExit();
   }
 
   @override
@@ -668,15 +696,15 @@ class TooltipState extends State<Tooltip> with SingleTickerProviderStateMixin {
     // the empty black container so just return the wrapped child as is or
     // empty container if child is not specified.
     if (_tooltipMessage.isEmpty) {
-      return widget.child ?? const SizedBox();
+      return widget.child ?? const SizedBox.shrink();
     }
-    assert(Overlay.of(context, debugRequiredFor: widget) != null);
+    assert(debugCheckHasOverlay(context));
     final ThemeData theme = Theme.of(context);
     final TooltipThemeData tooltipTheme = TooltipTheme.of(context);
     final TextStyle defaultTextStyle;
     final BoxDecoration defaultDecoration;
     if (theme.brightness == Brightness.dark) {
-      defaultTextStyle = theme.textTheme.bodyText2!.copyWith(
+      defaultTextStyle = theme.textTheme.bodyMedium!.copyWith(
         color: Colors.black,
         fontSize: _getDefaultFontSize(),
       );
@@ -685,7 +713,7 @@ class TooltipState extends State<Tooltip> with SingleTickerProviderStateMixin {
         borderRadius: const BorderRadius.all(Radius.circular(4)),
       );
     } else {
-      defaultTextStyle = theme.textTheme.bodyText2!.copyWith(
+      defaultTextStyle = theme.textTheme.bodyMedium!.copyWith(
         color: Colors.white,
         fontSize: _getDefaultFontSize(),
       );
@@ -721,9 +749,8 @@ class TooltipState extends State<Tooltip> with SingleTickerProviderStateMixin {
     if (_visible) {
       result = GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onLongPress: (_triggerMode == TooltipTriggerMode.longPress) ?
-        _handlePress : null,
-        onTap: (_triggerMode == TooltipTriggerMode.tap) ? _handlePress : null,
+        onLongPress: (_triggerMode == TooltipTriggerMode.longPress) ? _handlePress : null,
+        onTap: (_triggerMode == TooltipTriggerMode.tap) ? _handleTap : null,
         excludeFromSemantics: true,
         child: result,
       );
@@ -742,7 +769,7 @@ class TooltipState extends State<Tooltip> with SingleTickerProviderStateMixin {
 }
 
 /// A delegate for computing the layout of a tooltip to be displayed above or
-/// bellow a target specified in the global coordinate system.
+/// below a target specified in the global coordinate system.
 class _TooltipPositionDelegate extends SingleChildLayoutDelegate {
   /// Creates a delegate for computing the layout of a tooltip.
   ///
@@ -830,7 +857,7 @@ class _TooltipOverlay extends StatelessWidget {
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: height),
           child: DefaultTextStyle(
-            style: Theme.of(context).textTheme.bodyText2!,
+            style: Theme.of(context).textTheme.bodyMedium!,
             child: Container(
               decoration: decoration,
               padding: padding,

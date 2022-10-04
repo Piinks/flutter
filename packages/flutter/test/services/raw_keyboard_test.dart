@@ -759,12 +759,11 @@ void main() {
       } else {
         keyEventMessage = const <String, dynamic>{
           'type': 'keydown',
-          'keymap': 'android',
-          'keyCode': 0x3b, // Left shift key keyCode
-          'scanCode': 0x2a,
-          'metaState': 0x0, // No shift key metaState set!
-          'source': 0x101,
-          'deviceId': 1,
+          'keymap': 'windows',
+          'keyCode': 16, // Left shift key keyCode
+          'characterCodePoint': 0,
+          'scanCode': 42,
+          'modifiers': 0x0, // No shift key metaState set!
         };
       }
 
@@ -783,6 +782,65 @@ void main() {
         )),
       );
     });
+
+    testWidgets('Allows inconsistent modifier for iOS', (WidgetTester _) async {
+      // Use `testWidgets` for clean-ups.
+      final List<RawKeyEvent> events = <RawKeyEvent>[];
+      RawKeyboard.instance.addListener(events.add);
+      addTearDown(() {
+        RawKeyboard.instance.removeListener(events.add);
+      });
+      await TestDefaultBinaryMessengerBinding.instance!.defaultBinaryMessenger.handlePlatformMessage(
+        SystemChannels.keyEvent.name,
+        SystemChannels.keyEvent.codec.encodeMessage(const <String, dynamic>{
+          'type': 'keydown',
+          'keymap': 'ios',
+          'keyCode': 0x00000039,
+          'characters': '',
+          'charactersIgnoringModifiers': '',
+          'modifiers': 0,
+        }),
+        (ByteData? data) { },
+      );
+
+      expect(events, hasLength(1));
+      final RawKeyEvent capsLockKey = events[0];
+      final RawKeyEventDataIos data = capsLockKey.data as RawKeyEventDataIos;
+      expect(data.physicalKey, equals(PhysicalKeyboardKey.capsLock));
+      expect(data.logicalKey, equals(LogicalKeyboardKey.capsLock));
+      expect(RawKeyboard.instance.keysPressed, contains(LogicalKeyboardKey.capsLock));
+    }, skip: isBrowser); // [intended] This is an iOS-specific group.
+
+    testWidgets('Allows inconsistent modifier for Android', (WidgetTester _) async {
+      // Use `testWidgets` for clean-ups.
+      final List<RawKeyEvent> events = <RawKeyEvent>[];
+      RawKeyboard.instance.addListener(events.add);
+      addTearDown(() {
+        RawKeyboard.instance.removeListener(events.add);
+      });
+      await TestDefaultBinaryMessengerBinding.instance!.defaultBinaryMessenger.handlePlatformMessage(
+        SystemChannels.keyEvent.name,
+        SystemChannels.keyEvent.codec.encodeMessage(const <String, dynamic>{
+          'type': 'keydown',
+          'keymap': 'android',
+          'keyCode': 115,
+          'plainCodePoint': 0,
+          'codePoint': 0,
+          'scanCode': 58,
+          'metaState': 0,
+          'source': 0x101,
+          'deviceId': 1,
+        }),
+        (ByteData? data) { },
+      );
+
+      expect(events, hasLength(1));
+      final RawKeyEvent capsLockKey = events[0];
+      final RawKeyEventDataAndroid data = capsLockKey.data as RawKeyEventDataAndroid;
+      expect(data.physicalKey, equals(PhysicalKeyboardKey.capsLock));
+      expect(data.logicalKey, equals(LogicalKeyboardKey.capsLock));
+      expect(RawKeyboard.instance.keysPressed, contains(LogicalKeyboardKey.capsLock));
+    }, skip: isBrowser); // [intended] This is an Android-specific group.
 
     testWidgets('Dispatch events to all handlers', (WidgetTester tester) async {
       final FocusNode focusNode = FocusNode();
@@ -1936,6 +1994,28 @@ void main() {
       const  String platform = 'windows';
       bool lastHandled = true;
       final List<RawKeyEvent> events = <RawKeyEvent>[];
+
+      // Test both code paths: addListener, and FocusNode.onKey.
+      RawKeyboard.instance.addListener(events.add);
+      final FocusNode node = FocusNode(
+        onKey: (_, RawKeyEvent event) {
+          events.add(event);
+          return KeyEventResult.ignored;
+        },
+      );
+      await tester.pumpWidget(RawKeyboardListener(
+        focusNode: node,
+        child: Container(),
+      ));
+      node.requestFocus();
+      await tester.pumpAndSettle();
+
+      // Dispatch an arbitrary key press for the correct transit mode.
+      await simulateKeyDownEvent(LogicalKeyboardKey.keyA);
+      await simulateKeyUpEvent(LogicalKeyboardKey.keyA);
+      expect(events, hasLength(4));
+      events.clear();
+
       // Simulate raw events because VK_PROCESSKEY does not exist in the key mapping.
       Future<void> simulateKeyEventMessage(String type, int keyCode, int scanCode) {
         return ServicesBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
@@ -1953,7 +2033,7 @@ void main() {
           },
         );
       }
-      RawKeyboard.instance.addListener(events.add);
+
       await simulateKeyEventMessage('keydown', 229, 30);
       expect(events, isEmpty);
       expect(lastHandled, true);
@@ -1962,7 +2042,7 @@ void main() {
       expect(events, isEmpty);
       expect(lastHandled, true);
       expect(RawKeyboard.instance.keysPressed, isEmpty);
-    });
+    }, variant: KeySimulatorTransitModeVariant.keyDataThenRawKeyData());
 
     test('data.toString', () {
       expect(RawKeyEvent.fromMessage(const <String, Object?>{
@@ -2656,6 +2736,23 @@ void main() {
       expect(data.logicalKey, equals(LogicalKeyboardKey.shiftLeft));
       expect(data.keyLabel, isEmpty);
       expect(data.keyCode, equals(0x10));
+    });
+
+    test('Esc keys generated by older browsers are correctly translated', () {
+      final RawKeyEvent escapeKeyEvent = RawKeyEvent.fromMessage(const <String, Object?>{
+        'type': 'keydown',
+        'keymap': 'web',
+        'code': 'Esc',
+        'key': 'Esc',
+        'location': 0,
+        'metaState': 0x0,
+        'keyCode': 0x1B,
+      });
+      final RawKeyEventDataWeb data = escapeKeyEvent.data as RawKeyEventDataWeb;
+      expect(data.physicalKey, equals(PhysicalKeyboardKey.escape));
+      expect(data.logicalKey, equals(LogicalKeyboardKey.escape));
+      expect(data.keyLabel, isEmpty);
+      expect(data.keyCode, equals(0x1B));
     });
 
     test('Arrow keys from a keyboard give correct physical key mappings', () {

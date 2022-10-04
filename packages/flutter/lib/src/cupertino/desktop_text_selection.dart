@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/foundation.dart' show clampDouble;
 import 'package:flutter/gestures.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 import 'button.dart';
@@ -31,8 +31,11 @@ const CupertinoDynamicColor _kToolbarBackgroundColor = CupertinoDynamicColor.wit
   darkColor: Color(0xff302928),
 );
 
-
-class _CupertinoDesktopTextSelectionControls extends TextSelectionControls {
+/// Desktop Cupertino styled text selection controls.
+///
+/// The [cupertinoDesktopTextSelectionControls] global variable has a
+/// suitable instance of this class.
+class CupertinoDesktopTextSelectionControls extends TextSelectionControls {
   /// Desktop has no text selection handles.
   @override
   Size getHandleSize(double textLineHeight) {
@@ -86,7 +89,7 @@ class _CupertinoDesktopTextSelectionControls extends TextSelectionControls {
 
 /// Text selection controls that follows Mac design conventions.
 final TextSelectionControls cupertinoDesktopTextSelectionControls =
-    _CupertinoDesktopTextSelectionControls();
+    CupertinoDesktopTextSelectionControls();
 
 // Generates the child that's passed into CupertinoDesktopTextSelectionToolbar.
 class _CupertinoDesktopTextSelectionControlsToolbar extends StatefulWidget {
@@ -150,14 +153,14 @@ class _CupertinoDesktopTextSelectionControlsToolbarState extends State<_Cupertin
   Widget build(BuildContext context) {
     // Don't render the menu until the state of the clipboard is known.
     if (widget.handlePaste != null && widget.clipboardStatus?.value == ClipboardStatus.unknown) {
-      return const SizedBox(width: 0.0, height: 0.0);
+      return const SizedBox.shrink();
     }
 
     assert(debugCheckHasMediaQuery(context));
     final MediaQueryData mediaQuery = MediaQuery.of(context);
 
     final Offset midpointAnchor = Offset(
-      (widget.selectionMidpoint.dx - widget.globalEditableRegion.left).clamp(
+      clampDouble(widget.selectionMidpoint.dx - widget.globalEditableRegion.left,
         mediaQuery.padding.left,
         mediaQuery.size.width - mediaQuery.padding.right,
       ),
@@ -200,7 +203,7 @@ class _CupertinoDesktopTextSelectionControlsToolbarState extends State<_Cupertin
 
     // If there is no option available, build an empty widget.
     if (items.isEmpty) {
-      return const SizedBox(width: 0.0, height: 0.0);
+      return const SizedBox.shrink();
     }
 
     return _CupertinoDesktopTextSelectionToolbar(

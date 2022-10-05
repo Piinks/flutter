@@ -240,7 +240,9 @@ class _GlowingOverscrollIndicatorState extends State<GlowingOverscrollIndicator>
         }
       }
       assert(controller != null);
-      assert(notification.metrics.axis == widget.axis);
+      if (notification.metrics.axis != widget.axis) {
+        return false;
+      }
       if (_accepted[isLeading]!) {
         if (notification.velocity != 0.0) {
           assert(notification.dragDetails == null);
@@ -705,6 +707,7 @@ class _StretchingOverscrollIndicatorState extends State<StretchingOverscrollIndi
   bool _accepted = true;
 
   bool _handleScrollNotification(ScrollNotification notification) {
+    print('Notified in indicator: ${widget.axisDirection}, ${notification.metrics.axisDirection}');
     if (!widget.notificationPredicate(notification)) {
       return false;
     }
@@ -717,7 +720,9 @@ class _StretchingOverscrollIndicatorState extends State<StretchingOverscrollIndi
         _accepted = confirmationNotification.accepted;
       }
 
-      assert(notification.metrics.axis == widget.axis);
+      if(notification.metrics.axis != widget.axis) {
+        return false;
+      }
       if (_accepted) {
         if (notification.velocity != 0.0) {
           assert(notification.dragDetails == null);

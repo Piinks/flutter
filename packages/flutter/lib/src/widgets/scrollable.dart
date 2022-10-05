@@ -282,7 +282,7 @@ class Scrollable extends StatefulWidget {
   Axis get axis => axisDirectionToAxis(axisDirection);
 
   @override
-  ScrollableState<Scrollable> createState() => ScrollableState<Scrollable>();
+  ScrollableState createState() => ScrollableState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -302,7 +302,7 @@ class Scrollable extends StatefulWidget {
   ///
   /// Calling this method will create a dependency on the closest [Scrollable]
   /// in the [context], if there is one.
-  static ScrollableState<Scrollable>? of(BuildContext context) {
+  static ScrollableState? of(BuildContext context) {
     final _ScrollableScope? widget = context.dependOnInheritedWidgetOfExactType<_ScrollableScope>();
     return widget?.scrollable;
   }
@@ -346,7 +346,7 @@ class Scrollable extends StatefulWidget {
     // the `targetRenderObject` invisible.
     // Also see https://github.com/flutter/flutter/issues/65100
     RenderObject? targetRenderObject;
-    ScrollableState<Scrollable>? scrollable = Scrollable.of(context);
+    ScrollableState? scrollable = Scrollable.of(context);
     while (scrollable != null) {
       futures.add(scrollable.position.ensureVisible(
         context.findRenderObject()!,
@@ -382,7 +382,7 @@ class _ScrollableScope extends InheritedWidget {
   }) : assert(scrollable != null),
        assert(child != null);
 
-  final ScrollableState<Scrollable> scrollable;
+  final ScrollableState scrollable;
   final ScrollPosition position;
 
   @override
@@ -401,7 +401,7 @@ class _ScrollableScope extends InheritedWidget {
 ///
 /// This class is not intended to be subclassed. To specialize the behavior of a
 /// [Scrollable], provide it with a [ScrollPhysics].
-class ScrollableState <T extends Scrollable> extends State<T> with TickerProviderStateMixin, RestorationMixin
+class ScrollableState extends State<Scrollable> with TickerProviderStateMixin, RestorationMixin
     implements ScrollContext {
   /// The manager for this [Scrollable] widget's viewport position.
   ///
@@ -494,7 +494,7 @@ class ScrollableState <T extends Scrollable> extends State<T> with TickerProvide
   }
 
   @override
-  void didUpdateWidget(T oldWidget) {
+  void didUpdateWidget(Scrollable oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (widget.controller != oldWidget.controller) {
@@ -856,21 +856,25 @@ class ScrollableState <T extends Scrollable> extends State<T> with TickerProvide
 class _OuterVerticalDimension extends Scrollable {
   const _OuterVerticalDimension({
     required super.viewportBuilder,
-    required this.alignPanAxis,
     super.controller,
   }) : super(axisDirection: AxisDirection.down);
-
-  final bool alignPanAxis;
 
   @override
   _OuterVerticalDimensionState createState() => _OuterVerticalDimensionState();
 }
 
-class _OuterVerticalDimensionState extends ScrollableState<_OuterVerticalDimension> {
+class _OuterVerticalDimensionState extends ScrollableState {
+  late bool _alignPanAxis;
+
+  @override
+  void didChangeDependencies() {
+    _alignPanAxis = TwoDimensionalScrollable._alignPanAxis(context)!;
+    super.didChangeDependencies();
+  }
 
   @override
   void setCanDrag(bool value) {
-    if (widget.alignPanAxis && value) {
+    if (_alignPanAxis && value) {
       _gestureRecognizers = const <Type, GestureRecognizerFactory>{};
       // Cancel the active hold/drag (if any) because the gesture recognizers
       // will soon be disposed by our RawGestureDetector, and we won't be
@@ -891,28 +895,27 @@ class _OuterVerticalDimensionState extends ScrollableState<_OuterVerticalDimensi
 class _InnerHorizontalDimension extends Scrollable {
   const _InnerHorizontalDimension({
     required super.viewportBuilder,
-    required this.alignPanAxis,
     super.controller,
   }) : super(axisDirection: AxisDirection.right);
-
-  final bool alignPanAxis;
 
   @override
   _InnerHorizontalDimensionState createState() => _InnerHorizontalDimensionState();
 }
 
-class _InnerHorizontalDimensionState extends ScrollableState<_InnerHorizontalDimension> {
-  late ScrollableState<Scrollable> verticalScrollable;
+class _InnerHorizontalDimensionState extends ScrollableState {
+  late ScrollableState verticalScrollable;
+  late bool _alignPanAxis;
 
   @override
   void didChangeDependencies() {
     verticalScrollable = Scrollable.of(context)!;
+    _alignPanAxis = TwoDimensionalScrollable._alignPanAxis(context)!;
     super.didChangeDependencies();
   }
 
   @override
   void _handleDragDown(DragDownDetails details) {
-    if (widget.alignPanAxis) {
+    if (_alignPanAxis) {
       verticalScrollable._handleDragDown(details);
     }
     super._handleDragDown(details);
@@ -920,7 +923,7 @@ class _InnerHorizontalDimensionState extends ScrollableState<_InnerHorizontalDim
 
   @override
   void _handleDragStart(DragStartDetails details) {
-    if (widget.alignPanAxis) {
+    if (_alignPanAxis) {
       verticalScrollable._handleDragStart(details);
     }
     super._handleDragStart(details);
@@ -928,7 +931,7 @@ class _InnerHorizontalDimensionState extends ScrollableState<_InnerHorizontalDim
 
   @override
   void _handleDragUpdate(DragUpdateDetails details) {
-    if (widget.alignPanAxis) {
+    if (_alignPanAxis) {
       final DragUpdateDetails verticalDetails = DragUpdateDetails(
         sourceTimeStamp: details.sourceTimeStamp,
         delta: Offset(details.delta.dy, 0.0),
@@ -950,7 +953,7 @@ class _InnerHorizontalDimensionState extends ScrollableState<_InnerHorizontalDim
 
   @override
   void _handleDragEnd(DragEndDetails details) {
-    if (widget.alignPanAxis) {
+    if (_alignPanAxis) {
       final DragEndDetails verticalDetails = DragEndDetails(
         velocity: details.velocity,
         primaryVelocity: details.velocity.pixelsPerSecond.dy,
@@ -966,7 +969,7 @@ class _InnerHorizontalDimensionState extends ScrollableState<_InnerHorizontalDim
 
   @override
   void _handleDragCancel() {
-    if (widget.alignPanAxis) {
+    if (_alignPanAxis) {
       verticalScrollable._handleDragCancel();
     }
     super._handleDragCancel();
@@ -974,7 +977,7 @@ class _InnerHorizontalDimensionState extends ScrollableState<_InnerHorizontalDim
 
   @override
   void setCanDrag(bool value) {
-    if (widget.alignPanAxis && value) {
+    if (_alignPanAxis && value) {
       _gestureRecognizers = <Type, GestureRecognizerFactory>{
         PanGestureRecognizer: GestureRecognizerFactoryWithHandlers<PanGestureRecognizer>(
           () => PanGestureRecognizer(supportedDevices: _configuration.dragDevices),
@@ -1000,8 +1003,9 @@ class _InnerHorizontalDimensionState extends ScrollableState<_InnerHorizontalDim
       _handleDragCancel();
       _lastCanDrag = value;
       _lastAxisDirection = widget.axis;
-      if (_gestureDetectorKey.currentState != null)
+      if (_gestureDetectorKey.currentState != null) {
         _gestureDetectorKey.currentState!.replaceGestureRecognizers(_gestureRecognizers);
+      }
     } else {
       super.setCanDrag(value);
     }
@@ -1009,7 +1013,7 @@ class _InnerHorizontalDimensionState extends ScrollableState<_InnerHorizontalDim
 }
 
 ///
-class TwoDimensionalScrollable extends StatelessWidget {
+class TwoDimensionalScrollable extends StatefulWidget {
   ///
   const TwoDimensionalScrollable({
     super.key,
@@ -1017,6 +1021,16 @@ class TwoDimensionalScrollable extends StatelessWidget {
     this.verticalController,
     this.alignPanAxis = false,
     required this.viewportBuilder,
+    // TODO(Piinks): Add here and to V+H constructors via super
+    // physics
+    // viewportBuilder
+    // incrementCalculator
+    // excludeFromSemantics
+    // semanticChildCount
+    // dragStartBehavior
+    // restorationId
+    // scrollBehavior (Maybe not physics then?)
+    // clipBehavior
   });
 
   ///
@@ -1032,20 +1046,53 @@ class TwoDimensionalScrollable extends StatelessWidget {
   final  TwoDimensionalViewportBuilder viewportBuilder;
 
   @override
+  State<TwoDimensionalScrollable> createState() => _TwoDimensionalScrollableState();
+
+  ///
+  static bool? _alignPanAxis(BuildContext context) {
+    final _TwoDimensionalScrollableScope? widget = context.dependOnInheritedWidgetOfExactType<_TwoDimensionalScrollableScope>();
+    return widget?.alignPanAxis;
+  }
+}
+
+///
+class _TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
+
+  @override
   Widget build(BuildContext context) {
-    return _OuterVerticalDimension(
-      alignPanAxis: alignPanAxis,
-      controller: verticalController,
-      viewportBuilder: (BuildContext context, ViewportOffset verticalOffset) {
-        return _InnerHorizontalDimension(
-          alignPanAxis: alignPanAxis,
-          controller: horizontalController,
-          viewportBuilder: (BuildContext context, ViewportOffset horizontalOffset) {
-            return viewportBuilder(context, verticalOffset, horizontalOffset);
-          },
-        );
-      },
+    return _TwoDimensionalScrollableScope(
+      alignPanAxis: widget.alignPanAxis,
+      child: _OuterVerticalDimension(
+        controller: widget.verticalController,
+        viewportBuilder: (BuildContext context, ViewportOffset verticalOffset) {
+          return _InnerHorizontalDimension(
+            controller: widget.horizontalController,
+            viewportBuilder: (BuildContext context, ViewportOffset horizontalOffset) {
+              return widget.viewportBuilder(context, verticalOffset, horizontalOffset);
+            },
+          );
+        },
+      ),
     );
+  }
+}
+
+// Enable TwoDimensionalScrollable.of() to work as if
+// TwoDimensionalScrollableState was an inherited widget.
+// TwoDimensionalScrollableState.build() always rebuilds its
+// _TwoDimensionalScrollableScope.
+class _TwoDimensionalScrollableScope extends InheritedWidget {
+  const _TwoDimensionalScrollableScope({
+    required this.alignPanAxis,
+    required super.child,
+  }) : assert(alignPanAxis != null),
+       assert(child != null);
+
+  final bool alignPanAxis;
+
+  @override
+  bool updateShouldNotify(_TwoDimensionalScrollableScope old) {
+    return alignPanAxis != old.alignPanAxis;
   }
 }
 
@@ -1826,7 +1873,7 @@ class ScrollAction extends Action<ScrollIntent> {
   // metrics (pixels, viewportDimension, maxScrollExtent, minScrollExtent) are
   // null. The type and state arguments must not be null, and the widget must
   // have already been laid out so that the position fields are valid.
-  double _calculateScrollIncrement(ScrollableState<Scrollable> state, { ScrollIncrementType type = ScrollIncrementType.line }) {
+  double _calculateScrollIncrement(ScrollableState state, { ScrollIncrementType type = ScrollIncrementType.line }) {
     assert(type != null);
     assert(state.position != null);
     assert(state.position.hasPixels);
@@ -1852,7 +1899,7 @@ class ScrollAction extends Action<ScrollIntent> {
 
   // Find out how much of an increment to move by, taking the different
   // directions into account.
-  double _getIncrement(ScrollableState<Scrollable> state, ScrollIntent intent) {
+  double _getIncrement(ScrollableState state, ScrollIntent intent) {
     final double increment = _calculateScrollIncrement(state, type: intent.type);
     switch (intent.direction) {
       case AxisDirection.down:
@@ -1900,7 +1947,7 @@ class ScrollAction extends Action<ScrollIntent> {
 
   @override
   void invoke(ScrollIntent intent) {
-    ScrollableState<Scrollable>? state = Scrollable.of(primaryFocus!.context!);
+    ScrollableState? state = Scrollable.of(primaryFocus!.context!);
     if (state == null) {
       final ScrollController? primaryScrollController = PrimaryScrollController.of(primaryFocus!.context!);
       assert (() {

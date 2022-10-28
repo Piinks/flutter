@@ -707,7 +707,6 @@ class _StretchingOverscrollIndicatorState extends State<StretchingOverscrollIndi
   bool _accepted = true;
 
   bool _handleScrollNotification(ScrollNotification notification) {
-    print('Notified in indicator: ${widget.axisDirection}, ${notification.metrics.axisDirection}');
     if (!widget.notificationPredicate(notification)) {
       return false;
     }

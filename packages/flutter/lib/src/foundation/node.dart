@@ -111,7 +111,11 @@ class AbstractNode {
   void detach() {
     assert(_owner != null);
     _owner = null;
-    assert(parent == null || attached == parent!.attached);
+    assert(
+      parent == null || attached == parent!.attached,
+      'parent == null: ${parent == null}\n'
+      'attached mismatch: ${attached == parent!.attached}',
+      );
   }
 
   /// The parent of this node in the tree.

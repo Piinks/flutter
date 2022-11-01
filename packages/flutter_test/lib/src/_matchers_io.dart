@@ -57,6 +57,8 @@ class MatchesGoldenFile extends AsyncMatcher {
   @override
   Future<String?> matchAsync(dynamic item) async {
     final Uri testNameUri = goldenFileComparator.getTestUri(key, version);
+    // Do not flash the cursor for golden file testing.
+    EditableText.debugDeterministicCursor = true;
 
     Uint8List? buffer;
     if (item is Future<List<int>>) {
@@ -71,8 +73,12 @@ class MatchesGoldenFile extends AsyncMatcher {
       }
       try {
         final bool success = await goldenFileComparator.compare(buffer, testNameUri);
+        // Reset after comparison.
+        EditableText.debugDeterministicCursor = false;
         return success ? null : 'does not match';
       } on TestFailure catch (ex) {
+        // Reset after failure.
+        EditableText.debugDeterministicCursor = false;
         return ex.message;
       }
     }
@@ -109,8 +115,12 @@ class MatchesGoldenFile extends AsyncMatcher {
       }
       try {
         final bool success = await goldenFileComparator.compare(bytes.buffer.asUint8List(), testNameUri);
+        // Reset after comparison.
+        EditableText.debugDeterministicCursor = false;
         return success ? null : 'does not match';
       } on TestFailure catch (ex) {
+        // Reset after failure.
+        EditableText.debugDeterministicCursor = false;
         return ex.message;
       }
     }, additionalTime: const Duration(minutes: 1));

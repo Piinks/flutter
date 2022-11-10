@@ -33,7 +33,7 @@ abstract class PreferredSizeWidget implements Widget {
   /// For example the [Scaffold] only depends on its app bar's preferred
   /// height. In that case implementations of this method can just return
   /// `Size.fromHeight(myAppBarHeight)`.
-  Size get preferredSize;
+  Size preferredSizeFor(BuildContext context);
 }
 
 /// A widget with a preferred size.
@@ -70,16 +70,18 @@ class PreferredSize extends StatelessWidget implements PreferredSizeWidget {
   const PreferredSize({
     super.key,
     required this.child,
-    required this.preferredSize,
-  });
+    required Size preferredSize,
+  }) : _preferredSize = preferredSize;
 
   /// The widget below this widget in the tree.
   ///
   /// {@macro flutter.widgets.ProxyWidget.child}
   final Widget child;
 
+  final Size _preferredSize;
+
   @override
-  final Size preferredSize;
+  Size preferredSizeFor(BuildContext context) => _preferredSize;
 
   @override
   Widget build(BuildContext context) => child;

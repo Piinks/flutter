@@ -143,7 +143,7 @@ class CupertinoTabBar extends StatelessWidget implements PreferredSizeWidget {
   final Border? border;
 
   @override
-  Size get preferredSize => Size.fromHeight(height);
+  Size preferredSizeFor(BuildContext context) => Size.fromHeight(height);
 
   /// Indicates whether the tab bar is fully opaque or can have contents behind
   /// it show through it.

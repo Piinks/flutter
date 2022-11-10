@@ -59,13 +59,13 @@ class _ToolbarContainerLayout extends SingleChildLayoutDelegate {
       toolbarHeight != oldDelegate.toolbarHeight;
 }
 
-class _PreferredAppBarSize extends Size {
-  _PreferredAppBarSize(this.toolbarHeight, this.bottomHeight)
-    : super.fromHeight((toolbarHeight ?? kToolbarHeight) + (bottomHeight ?? 0));
-
-  final double? toolbarHeight;
-  final double? bottomHeight;
-}
+// class _PreferredAppBarSize extends Size {
+//   _PreferredAppBarSize(this.toolbarHeight, this.bottomHeight)
+//     : super.fromHeight((toolbarHeight ?? kToolbarHeight) + (bottomHeight ?? 0));
+//
+//   final double? toolbarHeight;
+//   final double? bottomHeight;
+// }
 
 /// A Material Design app bar.
 ///
@@ -226,7 +226,7 @@ class AppBar extends StatefulWidget implements PreferredSizeWidget {
        assert(primary != null),
        assert(toolbarOpacity != null),
        assert(bottomOpacity != null),
-       preferredSize = _PreferredAppBarSize(toolbarHeight, bottom?.preferredSize.height);
+       _preferredSize = _PreferredAppBarSize(toolbarHeight, bottom?.preferredSize.height);
 
   /// Used by [Scaffold] to compute its [AppBar]'s overall height. The returned value is
   /// the same `preferredSize.height` unless [AppBar.toolbarHeight] was null and
@@ -689,6 +689,8 @@ class AppBar extends StatefulWidget implements PreferredSizeWidget {
   /// {@endtemplate}
   final double bottomOpacity;
 
+  final Size _preferredSize;
+
   /// {@template flutter.material.appbar.preferredSize}
   /// A size whose height is the sum of [toolbarHeight] and the [bottom] widget's
   /// preferred height.
@@ -696,7 +698,12 @@ class AppBar extends StatefulWidget implements PreferredSizeWidget {
   /// [Scaffold] uses this size to set its app bar's height.
   /// {@endtemplate}
   @override
-  final Size preferredSize;
+  Size preferredSizeFor(BuildContext context) {
+    if (_preferredSize is _PreferredAppBarSize && _preferredSize.toolbarHeight == null) {
+      return (AppBarTheme.of(context).toolbarHeight ?? kToolbarHeight) + (_preferredSize.bottomHeight ?? 0);
+    }
+    return preferredSize.height;
+  }
 
   /// {@template flutter.material.appbar.toolbarHeight}
   /// Defines the height of the toolbar component of an [AppBar].
@@ -1253,8 +1260,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
        assert(
          !floating || (snapConfiguration == null && showOnScreenConfiguration == null) || vsync != null,
          'vsync cannot be null when snapConfiguration or showOnScreenConfiguration is not null, and floating is true',
-       ),
-       _bottomHeight = bottom?.preferredSize.height ?? 0.0;
+       );
 
   final Widget? leading;
   final bool automaticallyImplyLeading;
@@ -1289,7 +1295,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   final TextStyle? toolbarTextStyle;
   final TextStyle? titleTextStyle;
   final SystemUiOverlayStyle? systemOverlayStyle;
-  final double _bottomHeight;
+  late final double _bottomHeight;
 
   @override
   double get minExtent => collapsedHeight;
@@ -1312,6 +1318,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     final double visibleMainHeight = maxExtent - shrinkOffset - topPadding;
+    _bottomHeight = bottom?.preferredSizeFor(context).height ?? 0.0;
     final double extraToolbarHeight = math.max(minExtent - _bottomHeight - topPadding - (toolbarHeight ?? kToolbarHeight), 0.0);
     final double visibleToolbarHeight = visibleMainHeight - _bottomHeight - extraToolbarHeight;
 
@@ -2096,7 +2103,7 @@ class _SliverAppBarState extends State<SliverAppBar> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     assert(!widget.primary || debugCheckHasMediaQuery(context));
-    final double bottomHeight = widget.bottom?.preferredSize.height ?? 0.0;
+    final double bottomHeight = widget.bottom?.preferredSizeFor(context).height ?? 0.0;
     final double topPadding = widget.primary ? MediaQuery.of(context).padding.top : 0.0;
     final double collapsedHeight = (widget.pinned && widget.floating && widget.bottom != null)
       ? (widget.collapsedHeight ?? 0.0) + bottomHeight + topPadding

@@ -225,14 +225,16 @@ class AppBar extends StatefulWidget implements PreferredSizeWidget {
        assert(notificationPredicate != null),
        assert(primary != null),
        assert(toolbarOpacity != null),
-       assert(bottomOpacity != null),
-       _preferredSize = _PreferredAppBarSize(toolbarHeight, bottom?.preferredSize.height);
+       assert(bottomOpacity != null);
 
   /// Used by [Scaffold] to compute its [AppBar]'s overall height. The returned value is
   /// the same `preferredSize.height` unless [AppBar.toolbarHeight] was null and
   /// `AppBarTheme.of(context).toolbarHeight` is non-null. In that case the
   /// return value is the sum of the theme's toolbar height and the height of
   /// the app bar's [AppBar.bottom] widget.
+  @Deprecated(
+    'TBD'
+  )
   static double preferredHeightFor(BuildContext context, Size preferredSize) {
     if (preferredSize is _PreferredAppBarSize && preferredSize.toolbarHeight == null) {
       return (AppBarTheme.of(context).toolbarHeight ?? kToolbarHeight) + (preferredSize.bottomHeight ?? 0);

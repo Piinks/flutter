@@ -150,7 +150,7 @@ class Tab extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize {
+  Size preferredSizeFor(BuildContext context) {
     if (height != null) {
       return Size.fromHeight(height!);
     } else if ((text != null || child != null) && icon != null) {
@@ -882,11 +882,11 @@ class TabBar extends StatefulWidget implements PreferredSizeWidget {
   ///
   /// [AppBar] uses this size to compute its own preferred size.
   @override
-  Size get preferredSize {
+  Size preferredSizeFor(BuildContext context) {
     double maxHeight = _kTabHeight;
     for (final Widget item in tabs) {
       if (item is PreferredSizeWidget) {
-        final double itemHeight = item.preferredSize.height;
+        final double itemHeight = item.preferredSizeFor(context).height;
         maxHeight = math.max(itemHeight, maxHeight);
       }
     }
@@ -898,10 +898,10 @@ class TabBar extends StatefulWidget implements PreferredSizeWidget {
   /// [TabBar] uses this to give uniform padding to all tabs in cases where
   /// there are some tabs with both text and icon and some which contain only
   /// text or icon.
-  bool get tabHasTextAndIcon {
+  bool tabHasTextAndIconFor(BuildContext context) {
     for (final Widget item in tabs) {
       if (item is PreferredSizeWidget) {
-        if (item.preferredSize.height == _kTextAndIconTabHeight) {
+        if (item.preferredSizeFor(context).height == _kTextAndIconTabHeight) {
           return true;
         }
       }
@@ -1202,7 +1202,7 @@ class _TabBarState extends State<TabBar> {
 
       if (widget.tabs[index] is PreferredSizeWidget) {
         final PreferredSizeWidget tab = widget.tabs[index] as PreferredSizeWidget;
-        if (widget.tabHasTextAndIcon && tab.preferredSize.height == _kTabHeight) {
+        if (widget.tabHasTextAndIconFor(context) && tab.preferredSizeFor(context).height == _kTabHeight) {
           if (widget.labelPadding != null || tabBarTheme.labelPadding != null) {
             adjustedPadding = (widget.labelPadding ?? tabBarTheme.labelPadding!).add(const EdgeInsets.symmetric(vertical: verticalAdjustment));
           }

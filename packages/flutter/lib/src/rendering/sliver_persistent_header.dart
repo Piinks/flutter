@@ -321,6 +321,19 @@ abstract class RenderSliverPersistentHeader extends RenderSliver with RenderObje
     }
   }
 
+  EdgeInsets _getInsetsForAxisDirection(double paintExtent, AxisDirection axisDirection) {
+    switch (constraints.axisDirection) {
+      case AxisDirection.up:
+        return EdgeInsets.only(bottom: paintExtent);
+      case AxisDirection.right:
+        return EdgeInsets.only(left: paintExtent);
+      case AxisDirection.down:
+        return EdgeInsets.only(top: paintExtent);
+      case AxisDirection.left:
+        return EdgeInsets.only(right: paintExtent);
+    }
+  }
+
   @override
   void describeSemanticsConfiguration(SemanticsConfiguration config) {
     super.describeSemanticsConfiguration(config);

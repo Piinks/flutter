@@ -687,7 +687,11 @@ class RenderListWheelViewport
     // if the child count decrease, we should correct the pixels first, otherwise,
     // it may be shown blank null children.
     if (childManager.childCount != null) {
-      offset.applyContentDimensions(_minEstimatedScrollExtent, _maxEstimatedScrollExtent);
+      offset.applyContentMetrics(
+        _minEstimatedScrollExtent,
+        _maxEstimatedScrollExtent,
+        EdgeInsets.zero,
+      );
     }
 
     // The height, in pixel, that children will be visible and might be laid out
@@ -801,7 +805,7 @@ class RenderListWheelViewport
     final double maxScrollExtent = childManager.childExistsAt(targetLastIndex + 1)
       ? _maxEstimatedScrollExtent
       : indexToScrollOffset(targetLastIndex);
-    offset.applyContentDimensions(minScrollExtent, maxScrollExtent);
+    offset.applyContentMetrics(minScrollExtent, maxScrollExtent, EdgeInsets.zero);
   }
 
   bool _shouldClipAtCurrentOffset() {

@@ -152,7 +152,9 @@ void main() {
     expect(_indicator(tester)?.color, const Color(0xff2196f3));
     expect(_indicator(tester)?.shape, const StadiumBorder());
   });
+  testWidgets('Navigation drawer is scrollable', (WidgetTester tester) async {
 
+  });
   testWidgets('Navigation drawer semantics', (WidgetTester tester) async {
     final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
     final ThemeData theme= ThemeData.from(colorScheme: const ColorScheme.light());

@@ -366,6 +366,15 @@ targets:
         ["firebaselab"]
       task_name: release_smoke_test
 
+  - name: Linux flutter_packaging_test
+    recipe: packaging_v2/packaging_v2
+    timeout: 60
+    bringup: true
+    properties:
+      task_name: flutter_packaging
+      tags: >
+        ["framework", "hostonly", "shard", "linux"]
+
   - name: Linux flutter_plugins
     recipe: flutter/flutter_drone
     enabled_branches:
@@ -2586,6 +2595,27 @@ targets:
         ["devicelab", "hostonly", "mac"]
       task_name: flutter_gallery_macos__start_up
 
+  - name: Mac flutter_packaging_test
+    recipe: packaging_v2/packaging_v2
+    timeout: 60
+    bringup: true
+    properties:
+      task_name: flutter_packaging
+      tags: >
+        ["framework", "hostonly", "shard", "mac"]
+
+
+  - name: Mac_arm64 flutter_packaging_test
+    recipe: packaging_v2/packaging_v2
+    timeout: 60
+    bringup: true
+    properties:
+      task_name: flutter_packaging
+      tags: >
+        ["framework", "hostonly", "shard", "mac"]
+    dimensions:
+      cpu: "arm64"
+
   - name: Mac flutter_view_macos__start_up
     presubmit: false
     recipe: devicelab/devicelab_drone
@@ -3205,6 +3235,30 @@ targets:
       tags: >
         ["devicelab", "android", "mac"]
       task_name: microbenchmarks
+
+  - name: Mac_android run_debug_test_android
+    recipe: devicelab/devicelab_drone
+    bringup: true
+    presubmit: false
+    runIf:
+      - dev/**
+    timeout: 60
+    properties:
+      tags: >
+        ["devicelab", "android", "mac"]
+      task_name: run_debug_test_android
+
+  - name: Mac_arm64_android run_debug_test_android
+    recipe: devicelab/devicelab_drone
+    bringup: true
+    presubmit: false
+    runIf:
+      - dev/**
+    timeout: 60
+    properties:
+      tags: >
+        ["devicelab", "android", "mac", "arm64"]
+      task_name: run_debug_test_android
 
   - name: Mac_android run_release_test
     recipe: devicelab/devicelab_drone
@@ -3879,8 +3933,42 @@ targets:
       - bin/**
       - .ci.yaml
 
+  - name: Mac run_debug_test_macos
+    recipe: devicelab/devicelab_drone
+    bringup: true
+    timeout: 60
+    properties:
+      dependencies: >-
+        [
+          {"dependency": "xcode", "version": "14a5294e"},
+          {"dependency": "gems", "version": "v3.3.14"}
+        ]
+      tags: >
+        ["devicelab", "hostonly", "mac"]
+      task_name: run_debug_test_macos
+    runIf:
+      - dev/**
+      - packages/flutter_tools/**
+      - bin/**
+      - .ci.yaml
+
+  - name: Mac_arm64_ios run_debug_test_macos
+    recipe: devicelab/devicelab_drone
+    bringup: true
+    timeout: 60
+    properties:
+      tags: >
+        ["devicelab", "ios", "mac", "arm64"]
+      task_name: run_debug_test_macos
+    runIf:
+      - dev/**
+      - packages/flutter_tools/**
+      - bin/**
+      - .ci.yaml
+
   - name: Mac run_release_test_macos
     recipe: devicelab/devicelab_drone
+    presubmit: false
     timeout: 60
     properties:
       dependencies: >-
@@ -4193,9 +4281,28 @@ targets:
       - bin/**
       - .ci.yaml
 
-  - name: Windows run_release_test_windows
-    bringup: true
+  - name: Windows run_debug_test_windows
     recipe: devicelab/devicelab_drone
+    bringup: true
+    presubmit: false
+    timeout: 60
+    properties:
+      dependencies: >-
+        [
+          {"dependency": "vs_build", "version": "version:vs2019"}
+        ]
+      tags: >
+        ["devicelab", "hostonly", "windows"]
+      task_name: run_debug_test_windows
+    runIf:
+      - dev/**
+      - packages/flutter_tools/**
+      - bin/**
+      - .ci.yaml
+
+  - name: Windows run_release_test_windows
+    recipe: devicelab/devicelab_drone
+    presubmit: false
     timeout: 60
     properties:
       dependencies: >-
@@ -4608,6 +4715,15 @@ targets:
         ["devicelab", "android", "windows"]
       task_name: windows_chrome_dev_mode
 
+  - name: Windows flutter_packaging_test
+    recipe: packaging_v2/packaging_v2
+    timeout: 60
+    bringup: true
+    properties:
+      task_name: flutter_packaging
+      tags: >
+        ["framework", "hostonly", "shard", "windows"]
+
   - name: Windows windows_startup_test
     recipe: devicelab/devicelab_drone
     presubmit: false
@@ -4656,7 +4772,6 @@ targets:
     enabled_branches:
       - beta
       - stable
-      - main
     properties:
       task_name: flutter_packaging
       tags: >
@@ -4670,11 +4785,12 @@ targets:
     enabled_branches:
       - beta
       - stable
-      - main
     properties:
       task_name: flutter_packaging
       tags: >
         ["framework", "hostonly", "shard", "mac"]
+    dimensions:
+      cpu: "x86"
 
 
   - name: Mac_arm64 flutter_packaging
@@ -4685,7 +4801,6 @@ targets:
     enabled_branches:
       - beta
       - stable
-      - main
     properties:
       task_name: flutter_packaging
       tags: >
@@ -4701,7 +4816,6 @@ targets:
     enabled_branches:
       - beta
       - stable
-      - main
     properties:
       task_name: flutter_packaging
       tags: >
@@ -4714,7 +4828,6 @@ targets:
     bringup: true
     enabled_branches:
       - beta
-      - main
     presubmit: false
     timeout: 60
     properties:

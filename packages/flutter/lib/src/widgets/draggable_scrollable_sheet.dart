@@ -136,13 +136,12 @@ class DraggableScrollableController extends ChangeNotifier {
         animationController.value,
         _attachedController!.position.context.notificationContext!,
       );
-      if (animationController.value > _attachedController!.extent.maxSize ||
-          animationController.value < _attachedController!.extent.minSize) {
-        // Animation hit the max or min size, stop animating.
-        animationController.stop(canceled: false);
-      }
     });
-    await animationController.animateTo(size, duration: duration, curve: curve);
+    await animationController.animateTo(
+      clampDouble(size, _attachedController!.extent.minSize, _attachedController!.extent.maxSize),
+      duration: duration,
+      curve: curve,
+    );
   }
 
   /// Jumps the attached sheet from its current size to the given [size], a
@@ -579,7 +578,11 @@ class _DraggableSheetExtent {
   /// or a user drag.
   void updateSize(double newSize, BuildContext context) {
     assert(newSize != null);
-    _currentSize.value = clampDouble(newSize, minSize, maxSize);
+    final double clampedSize = clampDouble(newSize, minSize, maxSize);
+    if (_currentSize.value == clampedSize) {
+      return;
+    }
+    _currentSize.value = clampedSize;
     DraggableScrollableNotification(
       minExtent: minSize,
       maxExtent: maxSize,
@@ -899,7 +902,7 @@ class _DraggableScrollableSheetScrollPosition extends ScrollPositionWithSingleCo
   bool get _isAtSnapSize {
     return extent.snapSizes.any(
       (double snapSize) {
-        return (extent.currentSize - snapSize).abs() <= extent.pixelsToSize(physics.tolerance.distance);
+        return (extent.currentSize - snapSize).abs() <= extent.pixelsToSize(physics.toleranceFor(this).distance);
       },
     );
   }
@@ -934,7 +937,7 @@ class _DraggableScrollableSheetScrollPosition extends ScrollPositionWithSingleCo
         initialVelocity: velocity,
         pixelSnapSize: extent.pixelSnapSizes,
         snapAnimationDuration: extent.snapAnimationDuration,
-        tolerance: physics.tolerance,
+        tolerance: physics.toleranceFor(this),
       );
     } else {
       // The iOS bouncing simulation just isn't right here - once we delegate
@@ -943,7 +946,7 @@ class _DraggableScrollableSheetScrollPosition extends ScrollPositionWithSingleCo
         // Run the simulation in terms of pixels, not extent.
         position: extent.currentPixels,
         velocity: velocity,
-        tolerance: physics.tolerance,
+        tolerance: physics.toleranceFor(this),
       );
     }
 
@@ -962,7 +965,7 @@ class _DraggableScrollableSheetScrollPosition extends ScrollPositionWithSingleCo
         // Make sure we pass along enough velocity to keep scrolling - otherwise
         // we just "bounce" off the top making it look like the list doesn't
         // have more to scroll.
-        velocity = ballisticController.velocity + (physics.tolerance.velocity * ballisticController.velocity.sign);
+        velocity = ballisticController.velocity + (physics.toleranceFor(this).velocity * ballisticController.velocity.sign);
         super.goBallistic(velocity);
         ballisticController.stop();
       } else if (ballisticController.isCompleted) {

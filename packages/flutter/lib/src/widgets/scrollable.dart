@@ -42,7 +42,8 @@ export 'package:flutter/physics.dart' show Tolerance;
 /// scrollable content is displayed.
 typedef ViewportBuilder = Widget Function(BuildContext context, ViewportOffset position);
 
-///
+/// Signature used by [TwoDimensionalScrollable] to build the viewport through
+/// which the scrollable content is displayed.
 typedef TwoDimensionalViewportBuilder = Widget Function(BuildContext context, ViewportOffset verticalPosition, ViewportOffset horizontalPosition);
 
 /// A widget that scrolls.
@@ -138,6 +139,7 @@ class Scrollable extends StatefulWidget {
   ///    [BuildContext].
   final ScrollController? controller;
 
+  /// {@template flutter.widgets.Scrollable.physics}
   /// How the widgets should respond to user input.
   ///
   /// For example, determines how the widget continues to animate after the
@@ -163,6 +165,7 @@ class Scrollable extends StatefulWidget {
   ///  * [AlwaysScrollableScrollPhysics], which can be used to indicate that the
   ///    scrollable should react to scroll requests (and possible overscroll)
   ///    even if the scrollable's contents fit without scrolling being necessary.
+  /// {@endtemplate}
   final ScrollPhysics? physics;
 
   /// Builds the viewport through which the scrollable content is displayed.
@@ -177,6 +180,7 @@ class Scrollable extends StatefulWidget {
   ///    slivers and sizes itself based on the size of the slivers.
   final ViewportBuilder viewportBuilder;
 
+  /// {@template flutter.widgets.Scrollable.incrementCalculator}
   /// An optional function that will be called to calculate the distance to
   /// scroll when the scrollable is asked to scroll via the keyboard using a
   /// [ScrollAction].
@@ -188,8 +192,10 @@ class Scrollable extends StatefulWidget {
   /// If [incrementCalculator] is null, the default for
   /// [ScrollIncrementType.page] is 80% of the size of the scroll window, and
   /// for [ScrollIncrementType.line], 50 logical pixels.
+  /// {@endtemplate}
   final ScrollIncrementCalculator? incrementCalculator;
 
+  /// {@template flutter.widgets.scrollable.excludeFromSemantics}
   /// Whether the scroll actions introduced by this [Scrollable] are exposed
   /// in the semantics tree.
   ///
@@ -201,8 +207,10 @@ class Scrollable extends StatefulWidget {
   ///
   ///  * [GestureDetector.excludeFromSemantics], which is used to accomplish the
   ///    exclusion.
+  /// {@endtemplate}
   final bool excludeFromSemantics;
 
+  /// {@template flutter.widgets.scrollable.semanticChildCount}
   /// The number of children that will contribute semantic information.
   ///
   /// The value will be null if the number of children is unknown or unbounded.
@@ -218,6 +226,7 @@ class Scrollable extends StatefulWidget {
   ///
   ///  * [CustomScrollView], for an explanation of scroll semantics.
   ///  * [SemanticsConfiguration.scrollChildCount], the corresponding semantics property.
+  /// {@endtemplate}
   final int? semanticChildCount;
 
   // TODO(jslavitz): Set the DragStartBehavior default to be start across all widgets.
@@ -907,8 +916,16 @@ class ScrollableState extends State<Scrollable> with TickerProviderStateMixin, R
 class _OuterVerticalDimension extends Scrollable {
   const _OuterVerticalDimension({
     required super.viewportBuilder,
+    super.axisDirection,
     super.controller,
-  }) : super(axisDirection: AxisDirection.down);
+    super.physics,
+    super.clipBehavior,
+    super.incrementCalculator,
+    super.excludeFromSemantics,
+    super.semanticChildCount,
+    super.dragStartBehavior,
+    super.restorationId,
+  }) : assert(axisDirection == AxisDirection.up || axisDirection == AxisDirection.down);
 
   @override
   _OuterVerticalDimensionState createState() => _OuterVerticalDimensionState();
@@ -926,6 +943,9 @@ class _OuterVerticalDimensionState extends ScrollableState {
   @override
   void setCanDrag(bool value) {
     if (_alignPanAxis && value) {
+      // If _alignPanAxis is true, a panning gesture recognizer will be created
+      // in the _InnerHorizontalDimension. So in this case, the
+      // _OuterVerticalDimension does not require a gesture recognizer.
       _gestureRecognizers = const <Type, GestureRecognizerFactory>{};
       // Cancel the active hold/drag (if any) because the gesture recognizers
       // will soon be disposed by our RawGestureDetector, and we won't be
@@ -937,6 +957,8 @@ class _OuterVerticalDimensionState extends ScrollableState {
         _gestureDetectorKey.currentState!.replaceGestureRecognizers(_gestureRecognizers);
       }
     } else {
+      // If we aren't panning, the default vertical drag gesture recognizer is
+      // used.
       super.setCanDrag(value);
     }
   }
@@ -946,20 +968,28 @@ class _OuterVerticalDimensionState extends ScrollableState {
 class _InnerHorizontalDimension extends Scrollable {
   const _InnerHorizontalDimension({
     required super.viewportBuilder,
+    super.axisDirection,
     super.controller,
-  }) : super(axisDirection: AxisDirection.right);
+    super.physics,
+    super.clipBehavior,
+    super.incrementCalculator,
+    super.excludeFromSemantics,
+    super.semanticChildCount,
+    super.dragStartBehavior,
+    super.restorationId,
+  }) : assert(axisDirection == AxisDirection.left || axisDirection == AxisDirection.right);
 
   @override
   _InnerHorizontalDimensionState createState() => _InnerHorizontalDimensionState();
 }
 
 class _InnerHorizontalDimensionState extends ScrollableState {
-  late ScrollableState verticalScrollable;
+  late ScrollableState _verticalScrollable;
   late bool _alignPanAxis;
 
   @override
   void didChangeDependencies() {
-    verticalScrollable = Scrollable.of(context)!;
+    _verticalScrollable = Scrollable.of(context);
     _alignPanAxis = TwoDimensionalScrollable._alignPanAxis(context)!;
     super.didChangeDependencies();
   }
@@ -967,7 +997,7 @@ class _InnerHorizontalDimensionState extends ScrollableState {
   @override
   void _handleDragDown(DragDownDetails details) {
     if (_alignPanAxis) {
-      verticalScrollable._handleDragDown(details);
+      _verticalScrollable._handleDragDown(details);
     }
     super._handleDragDown(details);
   }
@@ -975,7 +1005,7 @@ class _InnerHorizontalDimensionState extends ScrollableState {
   @override
   void _handleDragStart(DragStartDetails details) {
     if (_alignPanAxis) {
-      verticalScrollable._handleDragStart(details);
+      _verticalScrollable._handleDragStart(details);
     }
     super._handleDragStart(details);
   }
@@ -983,45 +1013,45 @@ class _InnerHorizontalDimensionState extends ScrollableState {
   @override
   void _handleDragUpdate(DragUpdateDetails details) {
     if (_alignPanAxis) {
-      final DragUpdateDetails verticalDetails = DragUpdateDetails(
+      final DragUpdateDetails verticalDragDetails = DragUpdateDetails(
         sourceTimeStamp: details.sourceTimeStamp,
         delta: Offset(details.delta.dy, 0.0),
         primaryDelta: details.delta.dy,
         globalPosition: details.globalPosition,
         localPosition: details.localPosition,
       );
-      verticalScrollable._handleDragUpdate(verticalDetails);
+      _verticalScrollable._handleDragUpdate(verticalDragDetails);
     }
-    final DragUpdateDetails horizontalDetails = DragUpdateDetails(
+    final DragUpdateDetails horizontalDragDetails = DragUpdateDetails(
       sourceTimeStamp: details.sourceTimeStamp,
       delta: Offset(details.delta.dx, 0.0),
       primaryDelta: details.delta.dx,
       globalPosition: details.globalPosition,
       localPosition: details.localPosition,
     );
-    super._handleDragUpdate(horizontalDetails);
+    super._handleDragUpdate(horizontalDragDetails);
   }
 
   @override
   void _handleDragEnd(DragEndDetails details) {
     if (_alignPanAxis) {
-      final DragEndDetails verticalDetails = DragEndDetails(
+      final DragEndDetails verticalDragDetails = DragEndDetails(
         velocity: details.velocity,
         primaryVelocity: details.velocity.pixelsPerSecond.dy,
       );
-      verticalScrollable._handleDragEnd(verticalDetails);
+      _verticalScrollable._handleDragEnd(verticalDragDetails);
     }
-    final DragEndDetails horizontalDetails = DragEndDetails(
+    final DragEndDetails horizontalDragDetails = DragEndDetails(
       velocity: details.velocity,
       primaryVelocity: details.velocity.pixelsPerSecond.dx,
     );
-    super._handleDragEnd(horizontalDetails);
+    super._handleDragEnd(horizontalDragDetails);
   }
 
   @override
   void _handleDragCancel() {
     if (_alignPanAxis) {
-      verticalScrollable._handleDragCancel();
+      _verticalScrollable._handleDragCancel();
     }
     super._handleDragCancel();
   }
@@ -1029,6 +1059,10 @@ class _InnerHorizontalDimensionState extends ScrollableState {
   @override
   void setCanDrag(bool value) {
     if (_alignPanAxis && value) {
+      // Replaces the typical vertical/horizontal drag gesture recognizers with
+      // a pan gesture recognizer to allow bidirectional scrolling. Any
+      // horizontal delta is applied to this scrollable, while vertical deltas
+      // are routed to the vertical scrollable.
       _gestureRecognizers = <Type, GestureRecognizerFactory>{
         PanGestureRecognizer: GestureRecognizerFactoryWithHandlers<PanGestureRecognizer>(
           () => PanGestureRecognizer(supportedDevices: _configuration.dragDevices),
@@ -1044,7 +1078,7 @@ class _InnerHorizontalDimensionState extends ScrollableState {
               ..maxFlingVelocity = _physics?.maxFlingVelocity
               ..velocityTrackerBuilder = _configuration.velocityTrackerBuilder(context)
               ..dragStartBehavior = widget.dragStartBehavior
-              ..gestureSettings = _mediaQueryData?.gestureSettings;
+              ..gestureSettings = _mediaQueryGestureSettings;
           },
         ),
       };
@@ -1058,6 +1092,8 @@ class _InnerHorizontalDimensionState extends ScrollableState {
         _gestureDetectorKey.currentState!.replaceGestureRecognizers(_gestureRecognizers);
       }
     } else {
+      // If we aren't panning, the default horizontal drag gesture recognizer is
+      // used.
       super.setCanDrag(value);
     }
   }
@@ -1068,56 +1104,87 @@ class TwoDimensionalScrollable extends StatefulWidget {
   ///
   const TwoDimensionalScrollable({
     super.key,
-    this.horizontalController,
-    this.verticalController,
+    required this.horizontalDetails,
+    required this.verticalDetails,
     this.alignPanAxis = false,
     required this.viewportBuilder,
-    // TODO(Piinks): Add here and to V+H constructors via super
-    // physics
-    // viewportBuilder
-    // incrementCalculator
-    // excludeFromSemantics
-    // semanticChildCount
-    // dragStartBehavior
-    // restorationId
-    // scrollBehavior (Maybe not physics then?)
-    // clipBehavior
+    this.incrementCalculator,
+    this.excludeFromSemantics = false,
+    this.dragStartBehavior = DragStartBehavior.start,
   });
 
   ///
   final bool alignPanAxis;
 
   ///
-  final ScrollController? horizontalController;
+  final ScrollableDetails horizontalDetails;
 
   ///
-  final ScrollController? verticalController;
+  final ScrollableDetails verticalDetails;
 
+  /// Builds the viewport through which the scrollable content is displayed.
   ///
+  /// A [TwoDimensionalViewport] uses two given [ViewportOffset]s to determine
+  /// which part of its content is actually visible through the viewport.
+  ///
+  /// See also:
+  ///
+  ///  * [TwoDimensionalViewport], which is a viewport that displays a span of
+  ///    widgets in both dimensions.
   final  TwoDimensionalViewportBuilder viewportBuilder;
+
+  /// {@macro flutter.widgets.Scrollable.incrementCalculator}
+  ///
+  /// The increment counter calculator of a TwoDimensionalScrollable is the same
+  /// for both axes.
+  final ScrollIncrementCalculator? incrementCalculator;
+
+  /// {@macro flutter.widgets.scrollable.excludeFromSemantics}
+  ///
+  /// This value applies to both axes.
+  final bool excludeFromSemantics;
+
+  /// {@macro flutter.widgets.scrollable.dragStartBehavior}
+  ///
+  /// This value applies in both axes.
+  final DragStartBehavior dragStartBehavior;
 
   @override
   State<TwoDimensionalScrollable> createState() => _TwoDimensionalScrollableState();
 
-  ///
+  // Informs the scrollable widgets for gesture recognizers.
   static bool? _alignPanAxis(BuildContext context) {
     final _TwoDimensionalScrollableScope? widget = context.dependOnInheritedWidgetOfExactType<_TwoDimensionalScrollableScope>();
     return widget?.alignPanAxis;
   }
 }
 
-///
 class _TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
-
   @override
   Widget build(BuildContext context) {
     return _TwoDimensionalScrollableScope(
       alignPanAxis: widget.alignPanAxis,
       child: _OuterVerticalDimension(
-        controller: widget.verticalController,
+        axisDirection: widget.verticalDetails.direction,
+        controller: widget.verticalDetails.controller,
+        physics: widget.verticalDetails.physics,
+        clipBehavior: widget.verticalDetails.clipBehavior ?? Clip.hardEdge,
+        incrementCalculator: widget.incrementCalculator,
+        excludeFromSemantics: widget.excludeFromSemantics,
+        semanticChildCount: widget.horizontalDetails.semanticChildCount,
+        dragStartBehavior: widget.dragStartBehavior,
+        restorationId: widget.horizontalDetails.restorationId,
         viewportBuilder: (BuildContext context, ViewportOffset verticalOffset) {
           return _InnerHorizontalDimension(
-            controller: widget.horizontalController,
+            axisDirection: widget.horizontalDetails.direction,
+            controller: widget.horizontalDetails.controller,
+            physics: widget.horizontalDetails.physics,
+            clipBehavior: widget.horizontalDetails.clipBehavior ?? Clip.hardEdge,
+            incrementCalculator: widget.incrementCalculator,
+            excludeFromSemantics: widget.excludeFromSemantics,
+            semanticChildCount: widget.horizontalDetails.semanticChildCount,
+            dragStartBehavior: widget.dragStartBehavior,
+            restorationId: widget.horizontalDetails.restorationId,
             viewportBuilder: (BuildContext context, ViewportOffset horizontalOffset) {
               return widget.viewportBuilder(context, verticalOffset, horizontalOffset);
             },
@@ -1747,7 +1814,8 @@ Offset _getDeltaToScrollOrigin(ScrollableState scrollableState) {
 }
 
 /// Describes the aspects of a Scrollable widget to inform inherited widgets
-/// like [ScrollBehavior] for decorating.
+/// like [ScrollBehavior] for decorating, or enumerate the properties of combined
+/// Scrollables, like [TwoDimensionalScrollable].
 ///
 /// Decorations like [GlowingOverscrollIndicator]s and [Scrollbar]s require
 /// information about the Scrollable in order to be initialized.
@@ -1758,6 +1826,9 @@ class ScrollableDetails {
   const ScrollableDetails({
     required this.direction,
     required this.controller,
+    this.physics,
+    this.restorationId,
+    this.semanticChildCount,
     this.clipBehavior,
   });
 
@@ -1769,9 +1840,18 @@ class ScrollableDetails {
   /// A [ScrollController] that can be used to control the position of the
   /// [Scrollable] widget.
   ///
-  /// This can be used by [ScrollBehavior] to apply a [Scrollbar] to the associated
-  /// [Scrollable].
+  /// This can be used by [ScrollBehavior] to apply a [Scrollbar] to the
+  /// associated [Scrollable].
   final ScrollController controller;
+
+  /// {@macro flutter.widgets.Scrollable.physics}
+  final ScrollPhysics? physics;
+
+  /// {@macro flutter.widgets.scrollable.restorationId}
+  final String? restorationId;
+
+  /// {@macro flutter.widgets.scrollable.semanticChildCount}
+  final int? semanticChildCount;
 
   /// {@macro flutter.material.Material.clipBehavior}
   ///

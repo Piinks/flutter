@@ -1214,19 +1214,19 @@ class TwoDimensionalScrollable extends StatefulWidget {
   /// Typical usage is as follows:
   ///
   /// ```dart
-  /// ScrollableState scrollable = Scrollable.of(context);
+  /// TwoDimensionalScrollableState scrollable = TwoDimensionalScrollable.of(context);
   /// ```
   ///
-  /// Calling this method will create a dependency on the closest [Scrollable]
-  /// in the [context].
+  /// Calling this method will create a dependency on the closest
+  /// [TwoDimensionalScrollable] in the [context].
   ///
-  /// If no [Scrollable] ancestor is found, then this method will assert in
-  /// debug mode, and throw an exception in release mode.
+  /// If no [TwoDimensionalScrollable] ancestor is found, then this method will
+  /// assert in debug mode, and throw an exception in release mode.
   ///
   /// See also:
   ///
-  /// * [Scrollable.maybeOf], which is similar to this method, but returns null
-  ///   if no [Scrollable] ancestor is found.
+  /// * [TwoDimensionalScrollable.maybeOf], which is similar to this method,
+  ///   but returns null if no [TwoDimensionalScrollable] ancestor is found.
   static TwoDimensionalScrollableState of(BuildContext context) {
     final TwoDimensionalScrollableState? scrollableState = maybeOf(context);
     assert(() {

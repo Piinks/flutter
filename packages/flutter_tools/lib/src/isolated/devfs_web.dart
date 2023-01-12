@@ -27,6 +27,7 @@ import '../base/logger.dart';
 import '../base/net.dart';
 import '../base/platform.dart';
 import '../build_info.dart';
+import '../build_system/targets/scene_importer.dart';
 import '../build_system/targets/shader_compiler.dart';
 import '../build_system/targets/web.dart';
 import '../bundle_builder.dart';
@@ -83,11 +84,11 @@ const String _kDefaultIndex = '''
 /// This is only used in development mode.
 class WebExpressionCompiler implements ExpressionCompiler {
   WebExpressionCompiler(this._generator, {
-    required FileSystem? fileSystem,
+    required FileSystem fileSystem,
   }) : _fileSystem = fileSystem;
 
   final ResidentCompiler _generator;
-  final FileSystem? _fileSystem;
+  final FileSystem _fileSystem;
 
   @override
   Future<ExpressionCompilationResult> compileExpressionToJs(
@@ -106,7 +107,7 @@ class WebExpressionCompiler implements ExpressionCompiler {
 
     if (compilerOutput != null && compilerOutput.outputFilename != null) {
       final String content = utf8.decode(
-          _fileSystem!.file(compilerOutput.outputFilename).readAsBytesSync());
+          _fileSystem.file(compilerOutput.outputFilename).readAsBytesSync());
       return ExpressionCompilationResult(
           content, compilerOutput.errorCount > 0);
     }
@@ -561,8 +562,9 @@ class WebAssetServer implements AssetReader {
 
     // Otherwise it must be a Dart SDK source or a Flutter Web SDK source.
     final Directory dartSdkParent = globals.fs
-        .directory(
-            globals.artifacts!.getHostArtifact(HostArtifact.engineDartSdkPath))
+        .directory(globals.artifacts!.getArtifactPath(
+          Artifact.engineDartSdkPath,
+          platform: TargetPlatform.web_javascript))
         .parent;
     final File dartSdkFile = globals.fs.file(dartSdkParent.uri.resolve(path));
     if (dartSdkFile.existsSync()) {
@@ -815,6 +817,7 @@ class WebDevFS implements DevFS {
     required PackageConfig packageConfig,
     required String dillOutputPath,
     required DevelopmentShaderCompiler shaderCompiler,
+    DevelopmentSceneImporter? sceneImporter,
     DevFSWriter? devFSWriter,
     String? target,
     AssetBundle? bundle,
@@ -868,6 +871,7 @@ class WebDevFS implements DevFS {
           globals.fs.directory(getAssetBuildDirectory()),
           bundle.entries,
           bundle.entryKinds,
+          targetPlatform: TargetPlatform.web_javascript,
         );
       }
     }
@@ -924,18 +928,35 @@ class WebDevFS implements DevFS {
   }
 
   @visibleForTesting
-  final File requireJS = globals.fs.file(globals.fs.path.join(
-    globals.artifacts!.getHostArtifact(HostArtifact.engineDartSdkPath).path,
-    'lib',
-    'dev_compiler',
-    'kernel',
-    'amd',
-    'require.js',
-  ));
+  final File requireJS = (() {
+    // TODO(nshahan): Remove the initilizing function once the file location
+    //                change in the Dart SDK has landed and rolled to the engine
+    //                and flutter repos. There is no long-term need for the
+    //                fallback logic.
+    //                See https://github.com/flutter/flutter/issues/118119
+    final File oldFile = globals.fs.file(globals.fs.path.join(
+      globals.artifacts!.getArtifactPath(Artifact.engineDartSdkPath, platform: TargetPlatform.web_javascript),
+      'lib',
+      'dev_compiler',
+      'kernel',
+      'amd',
+      'require.js',
+    ));
+
+    return oldFile.existsSync()
+      ? oldFile
+      : globals.fs.file(globals.fs.path.join(
+          globals.artifacts!.getArtifactPath(Artifact.engineDartSdkPath, platform: TargetPlatform.web_javascript),
+          'lib',
+          'dev_compiler',
+          'amd',
+          'require.js',
+        ));
+  })();
 
   @visibleForTesting
   final File stackTraceMapper = globals.fs.file(globals.fs.path.join(
-    globals.artifacts!.getHostArtifact(HostArtifact.engineDartSdkPath).path,
+    globals.artifacts!.getArtifactPath(Artifact.engineDartSdkPath, platform: TargetPlatform.web_javascript),
     'lib',
     'dev_compiler',
     'web',
@@ -949,6 +970,9 @@ class WebDevFS implements DevFS {
 
   @override
   Set<String> get shaderPathsToEvict => <String>{};
+
+  @override
+  Set<String> get scenePathsToEvict => <String>{};
 }
 
 class ReleaseAssetServer {

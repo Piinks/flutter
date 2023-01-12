@@ -507,6 +507,7 @@ class HotRunner extends ResidentRunner {
       }
       devFS.assetPathsToEvict.clear();
       devFS.shaderPathsToEvict.clear();
+      devFS.scenePathsToEvict.clear();
     }
   }
 
@@ -629,16 +630,19 @@ class HotRunner extends ResidentRunner {
         if (uiIsolatesIds.contains(isolateRef.id)) {
           continue;
         }
-        operations.add(device.vmService!.service.kill(isolateRef.id!)
-          // TODO(srawlins): Fix this static issue,
-          // https://github.com/flutter/flutter/issues/105750.
-          // ignore: body_might_complete_normally_catch_error
+        operations.add(
+          device.vmService!.service.kill(isolateRef.id!)
+          // Since we never check the value of this Future, only await its
+          // completion, make its type nullable so we can return null when
+          // catching errors.
+          .then<vm_service.Success?>((vm_service.Success success) => success)
           .catchError((dynamic error, StackTrace stackTrace) {
             // Do nothing on a SentinelException since it means the isolate
             // has already been killed.
             // Error code 105 indicates the isolate is not yet runnable, and might
             // be triggered if the tool is attempting to kill the asset parsing
             // isolate before it has finished starting up.
+            return null;
           }, test: (dynamic error) => error is vm_service.SentinelException
             || (error is vm_service.RPCError && error.code == 105)));
       }
@@ -1041,7 +1045,9 @@ class HotRunner extends ResidentRunner {
   Future<void> evictDirtyAssets() async {
     final List<Future<void>> futures = <Future<void>>[];
     for (final FlutterDevice? device in flutterDevices) {
-      if (device!.devFS!.assetPathsToEvict.isEmpty && device.devFS!.shaderPathsToEvict.isEmpty) {
+      if (device!.devFS!.assetPathsToEvict.isEmpty &&
+          device.devFS!.shaderPathsToEvict.isEmpty &&
+          device.devFS!.scenePathsToEvict.isEmpty) {
         continue;
       }
       final List<FlutterView> views = await device.vmService!.getFlutterViews();
@@ -1093,8 +1099,18 @@ class HotRunner extends ResidentRunner {
             )
         );
       }
+      for (final String assetPath in device.devFS!.scenePathsToEvict) {
+        futures.add(
+          device.vmService!
+            .flutterEvictScene(
+              assetPath,
+              isolateId: views.first.uiIsolate!.id!,
+            )
+        );
+      }
       device.devFS!.assetPathsToEvict.clear();
       device.devFS!.shaderPathsToEvict.clear();
+      device.devFS!.scenePathsToEvict.clear();
     }
     await Future.wait<void>(futures);
   }

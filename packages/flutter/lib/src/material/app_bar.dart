@@ -873,7 +873,9 @@ class _AppBarState extends State<AppBar> {
         case AxisDirection.right:
         case AxisDirection.left:
           // Scrolled under is only supported in the vertical axis.
-          // _scrolledUnder = false;
+          // TODO(Piinks): 2D handling should not toggle false when scrolling
+          //  horizontally, and scrolled under vertically
+          _scrolledUnder = false;
           break;
       }
 

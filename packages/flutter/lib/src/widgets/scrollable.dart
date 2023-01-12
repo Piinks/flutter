@@ -915,6 +915,7 @@ class ScrollableState extends State<Scrollable> with TickerProviderStateMixin, R
 // Vertical outer scrollable of 2D scrolling
 class _OuterVerticalDimension extends Scrollable {
   const _OuterVerticalDimension({
+    super.key,
     required super.viewportBuilder,
     super.axisDirection,
     super.controller,
@@ -967,6 +968,7 @@ class _OuterVerticalDimensionState extends ScrollableState {
 // Horizontal inner scrollable of 2D scrolling
 class _InnerHorizontalDimension extends Scrollable {
   const _InnerHorizontalDimension({
+    super.key,
     required super.viewportBuilder,
     super.axisDirection,
     super.controller,
@@ -1252,6 +1254,8 @@ class TwoDimensionalScrollable extends StatefulWidget {
     final _TwoDimensionalScrollableScope? widget = context.dependOnInheritedWidgetOfExactType<_TwoDimensionalScrollableScope>();
     return widget?.alignPanAxis;
   }
+
+  // TODO(Piinks): Ensure visible for 2D
 }
 
 ///
@@ -1259,14 +1263,14 @@ class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
   /// The [ScrollableState] of the vertical axis.
   ///
   /// Accessible by calling [TwoDimensionalScrollable.of].
-  ScrollableState get verticalScrollable => _verticalScrollable;
-  late ScrollableState _verticalScrollable;
+  ScrollableState get verticalScrollable => _verticalScrollableKey.currentState!;
+  final GlobalKey<ScrollableState> _verticalScrollableKey = GlobalKey<ScrollableState>();
 
   /// The [ScrollableState] of the horizontal axis.
   ///
   /// Accessible by calling [TwoDimensionalScrollable.of].
-  ScrollableState get horizontalScrollable => _horizontalScrollable;
-  late ScrollableState _horizontalScrollable;
+  ScrollableState get horizontalScrollable => _horizontalScrollableKey.currentState!;
+  final GlobalKey<ScrollableState> _horizontalScrollableKey = GlobalKey<ScrollableState>();
 
   @override
   Widget build(BuildContext context) {
@@ -1274,6 +1278,7 @@ class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
       alignPanAxis: widget.panAxes,
       scrollable: this,
       child: _OuterVerticalDimension(
+        key: _verticalScrollableKey,
         axisDirection: widget.verticalDetails.direction,
         controller: widget.verticalDetails.controller,
         physics: widget.verticalDetails.physics,
@@ -1284,8 +1289,8 @@ class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
         dragStartBehavior: widget.dragStartBehavior,
         restorationId: widget.horizontalDetails.restorationId,
         viewportBuilder: (BuildContext context, ViewportOffset verticalOffset) {
-          _verticalScrollable = Scrollable.of(context);
           return _InnerHorizontalDimension(
+            key: _horizontalScrollableKey,
             axisDirection: widget.horizontalDetails.direction,
             controller: widget.horizontalDetails.controller,
             physics: widget.horizontalDetails.physics,
@@ -1296,7 +1301,6 @@ class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
             dragStartBehavior: widget.dragStartBehavior,
             restorationId: widget.horizontalDetails.restorationId,
             viewportBuilder: (BuildContext context, ViewportOffset horizontalOffset) {
-              _horizontalScrollable = Scrollable.of(context);
               return widget.viewportBuilder(context, verticalOffset, horizontalOffset);
             },
           );

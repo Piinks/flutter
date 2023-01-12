@@ -611,9 +611,6 @@ class ScrollableState extends State<Scrollable> with TickerProviderStateMixin, R
   final GlobalKey _ignorePointerKey = GlobalKey();
 
   // This field is set during layout, and then reused until the next time it is set.
-  /// Doc
-  @protected
-  Map<Type, GestureRecognizerFactory> get gestures => _gestureRecognizers;
   Map<Type, GestureRecognizerFactory> _gestureRecognizers = const <Type, GestureRecognizerFactory>{};
   bool _shouldIgnorePointer = false;
 
@@ -1207,7 +1204,7 @@ class TwoDimensionalScrollable extends StatefulWidget {
   ///   asserts if no [Scrollable] ancestor is found.
   static TwoDimensionalScrollableState? maybeOf(BuildContext context) {
     final _TwoDimensionalScrollableScope? widget = context.dependOnInheritedWidgetOfExactType<_TwoDimensionalScrollableScope>();
-    return widget?.scrollable;
+    return widget?.twoDimensionalScrollable;
   }
 
   /// The state from the closest instance of this class that encloses the given
@@ -1255,11 +1252,14 @@ class TwoDimensionalScrollable extends StatefulWidget {
     return widget?.alignPanAxis;
   }
 
-  // TODO(Piinks): Ensure visible for 2D
+  // TODO(Piinks): ensureVisible for 2D
 }
 
 ///
 class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
+  // TODO(Piinks): Add assertions and error messaging when accessing the
+  //  scrollable states are null.
+
   /// The [ScrollableState] of the vertical axis.
   ///
   /// Accessible by calling [TwoDimensionalScrollable.of].
@@ -1276,7 +1276,7 @@ class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
   Widget build(BuildContext context) {
     return _TwoDimensionalScrollableScope(
       alignPanAxis: widget.panAxes,
-      scrollable: this,
+      twoDimensionalScrollable: this,
       child: _OuterVerticalDimension(
         key: _verticalScrollableKey,
         axisDirection: widget.verticalDetails.direction,
@@ -1317,14 +1317,14 @@ class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
 class _TwoDimensionalScrollableScope extends InheritedWidget {
   const _TwoDimensionalScrollableScope({
     required this.alignPanAxis,
-    required this.scrollable,
+    required this.twoDimensionalScrollable,
     required super.child,
   }) : assert(alignPanAxis != null),
-       assert(scrollable != null),
+       assert(twoDimensionalScrollable != null),
        assert(child != null);
 
   final bool alignPanAxis;
-  final TwoDimensionalScrollableState scrollable;
+  final TwoDimensionalScrollableState twoDimensionalScrollable;
 
   @override
   bool updateShouldNotify(_TwoDimensionalScrollableScope old) {

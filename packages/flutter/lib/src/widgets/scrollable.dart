@@ -959,7 +959,7 @@ class _InnerHorizontalDimensionState extends ScrollableState {
 
   @override
   void didChangeDependencies() {
-    verticalScrollable = Scrollable.of(context)!;
+    verticalScrollable = Scrollable.of(context);
     _alignPanAxis = TwoDimensionalScrollable._alignPanAxis(context)!;
     super.didChangeDependencies();
   }
@@ -1044,7 +1044,7 @@ class _InnerHorizontalDimensionState extends ScrollableState {
               ..maxFlingVelocity = _physics?.maxFlingVelocity
               ..velocityTrackerBuilder = _configuration.velocityTrackerBuilder(context)
               ..dragStartBehavior = widget.dragStartBehavior
-              ..gestureSettings = _mediaQueryData?.gestureSettings;
+              ..gestureSettings = _mediaQueryGestureSettings;
           },
         ),
       };

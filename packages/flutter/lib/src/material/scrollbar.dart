@@ -95,6 +95,7 @@ class Scrollbar extends StatelessWidget {
     this.notificationPredicate,
     this.interactive,
     this.scrollbarOrientation,
+    this.padding,
     @Deprecated(
       'Use thumbVisibility instead. '
       'This feature was deprecated after v2.9.0-1.0.pre.',
@@ -212,6 +213,13 @@ class Scrollbar extends StatelessWidget {
   /// {@macro flutter.widgets.Scrollbar.scrollbarOrientation}
   final ScrollbarOrientation? scrollbarOrientation;
 
+  /// The insets by which the scrollbar thumb and track should be padded.
+  ///
+  /// When null, the inherited [MediaQueryData.padding] is used.
+  ///
+  /// Defaults to null.
+  final EdgeInsets? padding;
+
   @override
   Widget build(BuildContext context) {
     if (Theme.of(context).platform == TargetPlatform.iOS) {
@@ -224,6 +232,7 @@ class Scrollbar extends StatelessWidget {
         controller: controller,
         notificationPredicate: notificationPredicate,
         scrollbarOrientation: scrollbarOrientation,
+        padding: padding,
         child: child,
       );
     }
@@ -238,6 +247,7 @@ class Scrollbar extends StatelessWidget {
       notificationPredicate: notificationPredicate,
       interactive: interactive,
       scrollbarOrientation: scrollbarOrientation,
+      padding: padding,
       child: child,
     );
   }
@@ -256,6 +266,7 @@ class _MaterialScrollbar extends RawScrollbar {
     ScrollNotificationPredicate? notificationPredicate,
     super.interactive,
     super.scrollbarOrientation,
+    super.padding,
   }) : super(
          fadeDuration: _kScrollbarFadeDuration,
          timeToFade: _kScrollbarTimeToFade,
@@ -427,7 +438,7 @@ class _MaterialScrollbarState extends RawScrollbarState<_MaterialScrollbar> {
       ..crossAxisMargin = _scrollbarTheme.crossAxisMargin ?? (_useAndroidScrollbar ? 0.0 : _kScrollbarMargin)
       ..mainAxisMargin = _scrollbarTheme.mainAxisMargin ?? 0.0
       ..minLength = _scrollbarTheme.minThumbLength ?? _kScrollbarMinLength
-      ..padding = MediaQuery.paddingOf(context)
+      ..padding = widget.padding ?? MediaQuery.paddingOf(context)
       ..scrollbarOrientation = widget.scrollbarOrientation
       ..ignorePointer = !enableGestures;
   }

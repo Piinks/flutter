@@ -839,6 +839,44 @@ class MaterialScrollBehavior extends ScrollBehavior {
   }
 
   @override
+  Widget buildDualScrollbars(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails verticalDetails,
+    ScrollableDetails horizontalDetails,
+  ) {
+    print('from material');
+    // When modifying this function, consider modifying the implementation in
+    // the base and Cupertino subclasses as well.
+    final MediaQueryData mediaQueryData = MediaQuery.of(context);
+    final GlobalKey<RawScrollbarState<RawScrollbar>> verticalKey = GlobalKey<RawScrollbarState<RawScrollbar>>();
+    final GlobalKey<RawScrollbarState<RawScrollbar>> horizontalKey = GlobalKey<RawScrollbarState<RawScrollbar>>();
+    
+    switch (getPlatform(context)) {
+      case TargetPlatform.linux:
+      case TargetPlatform.macOS:
+      case TargetPlatform.windows:
+        return Scrollbar(
+          key: verticalKey,
+          padding: mediaQueryData.padding +
+            (horizontalKey.currentState?.scrollbarInsets ?? EdgeInsets.zero),
+          controller: verticalDetails.controller,
+          child: Scrollbar(
+            key: horizontalKey,
+            padding: mediaQueryData.padding +
+              (verticalKey.currentState?.scrollbarInsets ?? EdgeInsets.zero),
+            controller: horizontalDetails.controller,
+            child: child,
+          ),
+        );
+      case TargetPlatform.android:
+      case TargetPlatform.fuchsia:
+      case TargetPlatform.iOS:
+        return child;
+    }
+  }
+
+  @override
   Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) {
     // When modifying this function, consider modifying the implementation in
     // the base class ScrollBehavior as well.

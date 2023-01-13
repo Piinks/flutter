@@ -7,6 +7,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 
 import 'framework.dart';
+import 'media_query.dart';
 import 'overscroll_indicator.dart';
 import 'scroll_physics.dart';
 import 'scrollable.dart';
@@ -143,6 +144,47 @@ class ScrollBehavior {
         return RawScrollbar(
           controller: details.controller,
           child: child,
+        );
+      case TargetPlatform.android:
+      case TargetPlatform.fuchsia:
+      case TargetPlatform.iOS:
+        return child;
+    }
+  }
+
+  /// Applies two [RawScrollbar]s to the child widget on desktop platforms,
+  /// pairing them so as to avoid overlapping.
+  ///
+  /// Used by the [TwoDimensionalScrollable].
+  Widget buildDualScrollbars(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails verticalDetails,
+    ScrollableDetails horizontalDetails,
+  ) {
+    // When modifying this function, consider modifying the implementation in
+    // the Material and Cupertino subclasses as well.
+    final MediaQueryData mediaQueryData = MediaQuery.of(context);
+    final GlobalKey<RawScrollbarState<RawScrollbar>> verticalKey = GlobalKey<RawScrollbarState<RawScrollbar>>();
+    final GlobalKey<RawScrollbarState<RawScrollbar>> horizontalKey = GlobalKey<RawScrollbarState<RawScrollbar>>();
+    print('h insets: ${horizontalKey.currentState?.scrollbarInsets}');
+    print('v insets: ${verticalKey.currentState?.scrollbarInsets}');
+    switch (getPlatform(context)) {
+      case TargetPlatform.linux:
+      case TargetPlatform.macOS:
+      case TargetPlatform.windows:
+        return RawScrollbar(
+          key: verticalKey,
+          padding: mediaQueryData.padding +
+            (horizontalKey.currentState?.scrollbarInsets ?? EdgeInsets.zero),
+          controller: verticalDetails.controller,
+          child: RawScrollbar(
+            key: horizontalKey,
+            padding: mediaQueryData.padding +
+              (verticalKey.currentState?.scrollbarInsets ?? EdgeInsets.zero),
+            controller: horizontalDetails.controller,
+            child: child,
+          ),
         );
       case TargetPlatform.android:
       case TargetPlatform.fuchsia:
@@ -295,6 +337,24 @@ class _WrappedScrollBehavior implements ScrollBehavior {
   Widget buildScrollbar(BuildContext context, Widget child, ScrollableDetails details) {
     if (scrollbars) {
       return delegate.buildScrollbar(context, child, details);
+    }
+    return child;
+  }
+
+  @override
+  Widget buildDualScrollbars(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails verticalDetails,
+    ScrollableDetails horizontalDetails,
+  ) {
+    if (scrollbars) {
+      return delegate.buildDualScrollbars(
+        context,
+        child,
+        verticalDetails,
+        horizontalDetails,
+      );
     }
     return child;
   }

@@ -822,6 +822,19 @@ class ScrollableState extends State<Scrollable> with TickerProviderStateMixin, R
     return false;
   }
 
+  Widget _buildChrome(Widget child) {
+    final ScrollableDetails details = ScrollableDetails(
+      direction: widget.axisDirection,
+      controller: _effectiveScrollController,
+      clipBehavior: widget.clipBehavior,
+    );
+    return _configuration.buildScrollbar(
+      context,
+      _configuration.buildOverscrollIndicator(context, child, details),
+      details,
+    );
+  }
+
   // DESCRIPTION
 
   @override
@@ -872,17 +885,8 @@ class ScrollableState extends State<Scrollable> with TickerProviderStateMixin, R
       );
     }
 
-    final ScrollableDetails details = ScrollableDetails(
-      direction: widget.axisDirection,
-      controller: _effectiveScrollController,
-      clipBehavior: widget.clipBehavior,
-    );
-
-    result = _configuration.buildScrollbar(
-      context,
-      _configuration.buildOverscrollIndicator(context, result, details),
-      details,
-    );
+    // Apply chrome like scrollbars and overscroll indicators.
+    result = _buildChrome(result);
 
     // Selection is only enabled when there is a parent registrar.
     final SelectionRegistrar? registrar = SelectionContainer.maybeOf(context);
@@ -959,6 +963,19 @@ class _OuterVerticalDimensionState extends ScrollableState {
       // used.
       super.setCanDrag(value);
     }
+  }
+
+  @override
+  Widget _buildChrome(Widget child) {
+    print('outer build chrome');
+    final ScrollableDetails details = ScrollableDetails(
+      direction: widget.axisDirection,
+      controller: _effectiveScrollController,
+      clipBehavior: widget.clipBehavior,
+    );
+    // Skip building a scrollbar here, the dual scrollbar is added in
+    // TwoDimensionalScrollableState.
+    return _configuration.buildOverscrollIndicator(context, child, details);
   }
 }
 
@@ -1095,6 +1112,19 @@ class _InnerHorizontalDimensionState extends ScrollableState {
       // used.
       super.setCanDrag(value);
     }
+  }
+
+  @override
+  Widget _buildChrome(Widget child) {
+    print('inner build chrome');
+    final ScrollableDetails details = ScrollableDetails(
+      direction: widget.axisDirection,
+      controller: _effectiveScrollController,
+      clipBehavior: widget.clipBehavior,
+    );
+    // Skip building a scrollbar here, the dual scrollbar is added in
+    // TwoDimensionalScrollableState.
+    return _configuration.buildOverscrollIndicator(context, child, details);
   }
 }
 
@@ -1271,41 +1301,58 @@ class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
   /// Accessible by calling [TwoDimensionalScrollable.of].
   ScrollableState get horizontalScrollable => _horizontalScrollableKey.currentState!;
   final GlobalKey<ScrollableState> _horizontalScrollableKey = GlobalKey<ScrollableState>();
+  late ScrollBehavior _configuration;
+
+  @override
+  void didChangeDependencies() {
+    _configuration = ScrollConfiguration.of(context);
+    super.didChangeDependencies();
+  }
 
   @override
   Widget build(BuildContext context) {
+    Widget result = _OuterVerticalDimension(
+      key: _verticalScrollableKey,
+      axisDirection: widget.verticalDetails.direction,
+      controller: widget.verticalDetails.controller,
+      physics: widget.verticalDetails.physics,
+      clipBehavior: widget.verticalDetails.clipBehavior ?? Clip.hardEdge,
+      incrementCalculator: widget.incrementCalculator,
+      excludeFromSemantics: widget.excludeFromSemantics,
+      semanticChildCount: widget.horizontalDetails.semanticChildCount,
+      dragStartBehavior: widget.dragStartBehavior,
+      restorationId: widget.horizontalDetails.restorationId,
+      viewportBuilder: (BuildContext context, ViewportOffset verticalOffset) {
+        return _InnerHorizontalDimension(
+          key: _horizontalScrollableKey,
+          axisDirection: widget.horizontalDetails.direction,
+          controller: widget.horizontalDetails.controller,
+          physics: widget.horizontalDetails.physics,
+          clipBehavior: widget.horizontalDetails.clipBehavior ?? Clip.hardEdge,
+          incrementCalculator: widget.incrementCalculator,
+          excludeFromSemantics: widget.excludeFromSemantics,
+          semanticChildCount: widget.horizontalDetails.semanticChildCount,
+          dragStartBehavior: widget.dragStartBehavior,
+          restorationId: widget.horizontalDetails.restorationId,
+          viewportBuilder: (BuildContext context, ViewportOffset horizontalOffset) {
+            return widget.viewportBuilder(context, verticalOffset, horizontalOffset);
+          },
+        );
+      },
+    );
+
+    print('Building dual scrollbars....');
+    result = _configuration.buildDualScrollbars(
+      context,
+      result,
+      widget.verticalDetails,
+      widget.horizontalDetails,
+    );
+
     return _TwoDimensionalScrollableScope(
       alignPanAxis: widget.panAxes,
       twoDimensionalScrollable: this,
-      child: _OuterVerticalDimension(
-        key: _verticalScrollableKey,
-        axisDirection: widget.verticalDetails.direction,
-        controller: widget.verticalDetails.controller,
-        physics: widget.verticalDetails.physics,
-        clipBehavior: widget.verticalDetails.clipBehavior ?? Clip.hardEdge,
-        incrementCalculator: widget.incrementCalculator,
-        excludeFromSemantics: widget.excludeFromSemantics,
-        semanticChildCount: widget.horizontalDetails.semanticChildCount,
-        dragStartBehavior: widget.dragStartBehavior,
-        restorationId: widget.horizontalDetails.restorationId,
-        viewportBuilder: (BuildContext context, ViewportOffset verticalOffset) {
-          return _InnerHorizontalDimension(
-            key: _horizontalScrollableKey,
-            axisDirection: widget.horizontalDetails.direction,
-            controller: widget.horizontalDetails.controller,
-            physics: widget.horizontalDetails.physics,
-            clipBehavior: widget.horizontalDetails.clipBehavior ?? Clip.hardEdge,
-            incrementCalculator: widget.incrementCalculator,
-            excludeFromSemantics: widget.excludeFromSemantics,
-            semanticChildCount: widget.horizontalDetails.semanticChildCount,
-            dragStartBehavior: widget.dragStartBehavior,
-            restorationId: widget.horizontalDetails.restorationId,
-            viewportBuilder: (BuildContext context, ViewportOffset horizontalOffset) {
-              return widget.viewportBuilder(context, verticalOffset, horizontalOffset);
-            },
-          );
-        },
-      ),
+      child: result,
     );
   }
 }

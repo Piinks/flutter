@@ -379,6 +379,25 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
     notifyListeners();
   }
 
+  /// EdgeInsets representing the space taken up by the scrollbar along the
+  /// viewport edge.
+  ///
+  /// When using scrollbars in the context of a [TwoDimensionalScrollable], this
+  /// inset informs the scrollbars so as to not overlap one another.
+  EdgeInsets get scrollbarInsets {
+    final double inset = _crossAxisMargin + _thickness;
+    switch (_resolvedOrientation) {
+      case ScrollbarOrientation.left:
+        return EdgeInsets.only(left: inset);
+      case ScrollbarOrientation.right:
+        return EdgeInsets.only(right: inset);
+      case ScrollbarOrientation.top:
+        return EdgeInsets.only(top: inset);
+      case ScrollbarOrientation.bottom:
+        return EdgeInsets.only(bottom: inset);
+    }
+  }
+
   /// Whether the painter will be ignored during hit testing.
   bool get ignorePointer => _ignorePointer;
   bool _ignorePointer;
@@ -415,7 +434,7 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
   Rect? _thumbRect;
   // The current scroll position + _leadingThumbMainAxisOffset
   late double _thumbOffset;
-  // The fraction visible in relation to the trversable length of the track.
+  // The fraction visible in relation to the traversable length of the track.
   late double _thumbExtent;
   // Thumb Offsets
   // The thumb is offset by padding and margins.
@@ -1458,17 +1477,18 @@ class RawScrollbar extends StatefulWidget {
 /// scrollbar track.
 class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProviderStateMixin<T> {
   Offset? _startDragScrollbarAxisOffset;
-  Offset? _lastDragUpdateOffset;
   double? _startDragThumbOffset;
-  ScrollController? _cachedController;
+  Offset? _lastDragUpdateOffset;
   Timer? _fadeoutTimer;
   late AnimationController _fadeoutAnimationController;
   late Animation<double> _fadeoutOpacityAnimation;
-  final GlobalKey  _scrollbarPainterKey = GlobalKey();
   bool _hoverIsActive = false;
   bool _thumbDragging = false;
 
   ScrollController? get _effectiveScrollController => widget.controller ?? PrimaryScrollController.maybeOf(context);
+  ScrollController? _cachedController;
+
+  final GlobalKey  _scrollbarPainterKey = GlobalKey();
 
   /// Used to paint the scrollbar.
   ///

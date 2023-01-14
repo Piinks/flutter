@@ -107,6 +107,21 @@ class CupertinoScrollbar extends RawScrollbar {
          notificationPredicate: notificationPredicate ?? defaultScrollNotificationPredicate,
        );
 
+  ///
+  factory CupertinoScrollbar.dual({
+    required ScrollController verticalController,
+    required ScrollController horizontalController,
+    required Widget child,
+  }) {
+    return CupertinoScrollbar(
+      controller: verticalController,
+      child: CupertinoScrollbar(
+        controller: horizontalController,
+        child: child,
+      ),
+    );
+  }
+
   /// Default value for [thickness] if it's not specified in [CupertinoScrollbar].
   static const double defaultThickness = 3;
 
@@ -172,7 +187,7 @@ class _CupertinoScrollbarState extends RawScrollbarState<CupertinoScrollbar> {
       ..mainAxisMargin = _kScrollbarMainAxisMargin
       ..crossAxisMargin = _kScrollbarCrossAxisMargin
       ..radius = _radius
-      ..padding = widget.padding ?? MediaQuery.paddingOf(context)
+      ..padding = MediaQuery.paddingOf(context)
       ..minLength = _kScrollbarMinLength
       ..minOverscrollLength = _kScrollbarMinOverscrollLength
       ..scrollbarOrientation = widget.scrollbarOrientation;

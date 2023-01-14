@@ -1545,8 +1545,8 @@ class _RestorableScrollOffset extends RestorableValue<double?> {
 // 2D Scrollable
 
 // Vertical outer scrollable of 2D scrolling
-class _OuterVerticalDimension extends Scrollable {
-  const _OuterVerticalDimension({
+class _OuterDimension extends Scrollable {
+  const _OuterDimension({
     super.key,
     required super.viewportBuilder,
     super.axisDirection,
@@ -1598,7 +1598,6 @@ class _OuterVerticalDimensionState extends ScrollableState {
 
   @override
   Widget _buildChrome(Widget child) {
-    print('outer build chrome');
     final ScrollableDetails details = ScrollableDetails(
       direction: widget.axisDirection,
       controller: _effectiveScrollController,
@@ -1611,8 +1610,8 @@ class _OuterVerticalDimensionState extends ScrollableState {
 }
 
 // Horizontal inner scrollable of 2D scrolling
-class _InnerHorizontalDimension extends Scrollable {
-  const _InnerHorizontalDimension({
+class _InnerDimension extends Scrollable {
+  const _InnerDimension({
     super.key,
     required super.viewportBuilder,
     super.axisDirection,
@@ -1747,7 +1746,6 @@ class _InnerHorizontalDimensionState extends ScrollableState {
 
   @override
   Widget _buildChrome(Widget child) {
-    print('inner build chrome');
     final ScrollableDetails details = ScrollableDetails(
       direction: widget.axisDirection,
       controller: _effectiveScrollController,
@@ -1788,6 +1786,7 @@ class TwoDimensionalScrollable extends StatefulWidget {
     required this.horizontalDetails,
     required this.verticalDetails,
     this.panAxes = false,
+    this.mainAxis = Axis.vertical,
     required this.viewportBuilder,
     this.incrementCalculator,
     this.excludeFromSemantics = false,
@@ -1805,6 +1804,10 @@ class TwoDimensionalScrollable extends StatefulWidget {
   /// stopping and beginning a new gesture. This is a common
   /// pattern in tables where data is displayed in columns and rows.
   final bool panAxes;
+
+  /// column/row major ordering
+  /// focus and semantics traversal
+  final Axis mainAxis;
 
   /// The configuration of the horizontal Scrollable.
   ///
@@ -1920,19 +1923,24 @@ class TwoDimensionalScrollable extends StatefulWidget {
 class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
   // TODO(Piinks): Add assertions and error messaging when accessing the
   //  scrollable states are null.
+  final GlobalKey<ScrollableState> _outerScrollableKey = GlobalKey<ScrollableState>();
+  final GlobalKey<ScrollableState> _innerScrollableKey = GlobalKey<ScrollableState>();
+  late ScrollBehavior _configuration;
+  bool get _verticalMain => widget.mainAxis == Axis.vertical;
 
   /// The [ScrollableState] of the vertical axis.
   ///
   /// Accessible by calling [TwoDimensionalScrollable.of].
-  ScrollableState get verticalScrollable => _verticalScrollableKey.currentState!;
-  final GlobalKey<ScrollableState> _verticalScrollableKey = GlobalKey<ScrollableState>();
+  ScrollableState get verticalScrollable => _verticalMain
+    ? _innerScrollableKey.currentState!
+    : _outerScrollableKey.currentState!;
 
   /// The [ScrollableState] of the horizontal axis.
   ///
   /// Accessible by calling [TwoDimensionalScrollable.of].
-  ScrollableState get horizontalScrollable => _horizontalScrollableKey.currentState!;
-  final GlobalKey<ScrollableState> _horizontalScrollableKey = GlobalKey<ScrollableState>();
-  late ScrollBehavior _configuration;
+  ScrollableState get horizontalScrollable => _verticalMain
+    ? _outerScrollableKey.currentState!
+    : _innerScrollableKey.currentState!;
 
   @override
   void didChangeDependencies() {
@@ -1940,31 +1948,38 @@ class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
     super.didChangeDependencies();
   }
 
+  ScrollableDetails get _outerDetails => _verticalMain
+    ? widget.horizontalDetails
+    : widget.verticalDetails;
+  ScrollableDetails get _innerDetails => _verticalMain
+      ? widget.verticalDetails
+      : widget.horizontalDetails;
+
   @override
   Widget build(BuildContext context) {
-    Widget result = _OuterVerticalDimension(
-      key: _verticalScrollableKey,
-      axisDirection: widget.verticalDetails.direction,
-      controller: widget.verticalDetails.controller,
-      physics: widget.verticalDetails.physics,
-      clipBehavior: widget.verticalDetails.clipBehavior ?? Clip.hardEdge,
+    Widget result = _OuterDimension(
+      key: _outerScrollableKey,
+      axisDirection: _outerDetails.direction,
+      controller: _outerDetails.controller,
+      physics: _outerDetails.physics,
+      clipBehavior: _outerDetails.clipBehavior ?? Clip.hardEdge,
       incrementCalculator: widget.incrementCalculator,
       excludeFromSemantics: widget.excludeFromSemantics,
-      semanticChildCount: widget.horizontalDetails.semanticChildCount,
+      semanticChildCount: _outerDetails.semanticChildCount,
       dragStartBehavior: widget.dragStartBehavior,
-      restorationId: widget.horizontalDetails.restorationId,
+      restorationId: _outerDetails.restorationId,
       viewportBuilder: (BuildContext context, ViewportOffset verticalOffset) {
-        return _InnerHorizontalDimension(
-          key: _horizontalScrollableKey,
-          axisDirection: widget.horizontalDetails.direction,
-          controller: widget.horizontalDetails.controller,
-          physics: widget.horizontalDetails.physics,
-          clipBehavior: widget.horizontalDetails.clipBehavior ?? Clip.hardEdge,
+        return _InnerDimension(
+          key: _innerScrollableKey,
+          axisDirection: _innerDetails.direction,
+          controller: _innerDetails.controller,
+          physics: _innerDetails.physics,
+          clipBehavior: _innerDetails.clipBehavior ?? Clip.hardEdge,
           incrementCalculator: widget.incrementCalculator,
           excludeFromSemantics: widget.excludeFromSemantics,
-          semanticChildCount: widget.horizontalDetails.semanticChildCount,
+          semanticChildCount: _innerDetails.semanticChildCount,
           dragStartBehavior: widget.dragStartBehavior,
-          restorationId: widget.horizontalDetails.restorationId,
+          restorationId: _innerDetails.restorationId,
           viewportBuilder: (BuildContext context, ViewportOffset horizontalOffset) {
             return widget.viewportBuilder(context, verticalOffset, horizontalOffset);
           },
@@ -1972,18 +1987,11 @@ class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
       },
     );
 
-    result = _configuration.buildScrollbar(
+    result = _configuration.buildDualScrollbars(
       context,
-      _configuration.buildScrollbar(
-        context,
-        result,
-        ScrollableDetails(
-          direction: AxisDirection.down,
-          // TODO(Piinks): temp hack
-          controller: widget.horizontalDetails.controller,
-        ),
-      ),
+      result,
       widget.verticalDetails,
+      widget.horizontalDetails,
     );
 
     return _TwoDimensionalScrollableScope(

@@ -87,7 +87,6 @@ class Scrollbar extends StatelessWidget {
   const Scrollbar({
     super.key,
     required this.child,
-    this.axis,
     this.controller,
     this.thumbVisibility,
     this.trackVisibility,
@@ -120,9 +119,6 @@ class Scrollbar extends StatelessWidget {
 
   /// {@macro flutter.widgets.Scrollbar.child}
   final Widget child;
-
-  ///
-  final Axis? axis;
 
   /// {@macro flutter.widgets.Scrollbar.controller}
   final ScrollController? controller;
@@ -237,7 +233,6 @@ class Scrollbar extends StatelessWidget {
         notificationPredicate: notificationPredicate,
         scrollbarOrientation: scrollbarOrientation,
         padding: padding,
-        axis: axis,
         child: child,
       );
     }
@@ -253,7 +248,6 @@ class Scrollbar extends StatelessWidget {
       interactive: interactive,
       scrollbarOrientation: scrollbarOrientation,
       padding: padding,
-      axis: axis,
       child: child,
     );
   }
@@ -262,7 +256,6 @@ class Scrollbar extends StatelessWidget {
 class _MaterialScrollbar extends RawScrollbar {
   const _MaterialScrollbar({
     required super.child,
-    super.axis,
     super.controller,
     super.thumbVisibility,
     super.trackVisibility,
@@ -435,7 +428,6 @@ class _MaterialScrollbarState extends RawScrollbarState<_MaterialScrollbar> {
 
   @override
   void updateScrollbarPainter() {
-    print(scrollbarPainter.resolvedOrientation);
     scrollbarPainter
       ..color = _thumbColor.resolve(_states)
       ..trackColor = _trackColor.resolve(_states)

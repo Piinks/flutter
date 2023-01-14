@@ -1972,12 +1972,18 @@ class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
       },
     );
 
-    print('Building dual scrollbars....');
-    result = _configuration.buildDualScrollbars(
+    result = _configuration.buildScrollbar(
       context,
-      result,
+      _configuration.buildScrollbar(
+        context,
+        result,
+        ScrollableDetails(
+          direction: AxisDirection.down,
+          // TODO(Piinks): temp hack
+          controller: widget.horizontalDetails.controller,
+        ),
+      ),
       widget.verticalDetails,
-      widget.horizontalDetails,
     );
 
     return _TwoDimensionalScrollableScope(

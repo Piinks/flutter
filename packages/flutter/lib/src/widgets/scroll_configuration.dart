@@ -152,40 +152,6 @@ class ScrollBehavior {
     }
   }
 
-  /// Applies two [RawScrollbar]s to the child widget on desktop platforms,
-  /// pairing them so as to avoid overlapping.
-  ///
-  /// Used by the [TwoDimensionalScrollable].
-  Widget buildDualScrollbars(
-    BuildContext context,
-    Widget child,
-    ScrollableDetails verticalDetails,
-    ScrollableDetails horizontalDetails,
-  ) {
-    // When modifying this function, consider modifying the implementation in
-    // the Material and Cupertino subclasses as well.
-    switch (getPlatform(context)) {
-      case TargetPlatform.linux:
-      case TargetPlatform.macOS:
-      case TargetPlatform.windows:
-        return ScrollbarInsetManager(
-          child: RawScrollbar(
-            axis: Axis.vertical,
-            controller: verticalDetails.controller,
-            child: RawScrollbar(
-              axis: Axis.horizontal,
-              controller: horizontalDetails.controller,
-              child: child,
-            ), 
-          ),
-        );
-      case TargetPlatform.android:
-      case TargetPlatform.fuchsia:
-      case TargetPlatform.iOS:
-        return child;
-    }
-  }
-
   /// Applies a [GlowingOverscrollIndicator] to the child widget on
   /// [TargetPlatform.android] and [TargetPlatform.fuchsia].
   Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) {
@@ -335,24 +301,6 @@ class _WrappedScrollBehavior implements ScrollBehavior {
   }
 
   @override
-  Widget buildDualScrollbars(
-    BuildContext context,
-    Widget child,
-    ScrollableDetails verticalDetails,
-    ScrollableDetails horizontalDetails,
-  ) {
-    if (scrollbars) {
-      return delegate.buildDualScrollbars(
-        context,
-        child,
-        verticalDetails,
-        horizontalDetails,
-      );
-    }
-    return child;
-  }
-
-  @override
   ScrollBehavior copyWith({
     bool? scrollbars,
     bool? overscroll,
@@ -439,62 +387,4 @@ class ScrollConfiguration extends InheritedWidget {
     super.debugFillProperties(properties);
     properties.add(DiagnosticsProperty<ScrollBehavior>('behavior', behavior));
   }
-}
-
-///
-class ScrollbarInsetManager extends StatefulWidget {
-  ///
-  const ScrollbarInsetManager({
-    super.key,
-    required this.child,
-  }) : assert(child != null);
-
-  ///
-  final Widget child;
-
-  ///
-  static ScrollbarInsetManagerState? maybeOf(BuildContext context) {
-    assert(context != null);
-
-    final _ScrollbarInsetScope? scope = context.dependOnInheritedWidgetOfExactType<_ScrollbarInsetScope>();
-    return scope?._scrollbarInsetState;
-  }
-
-  @override
-  ScrollbarInsetManagerState createState() => ScrollbarInsetManagerState();
-}
-
-///
-class ScrollbarInsetManagerState extends State<ScrollbarInsetManager> {
-  ///
-  EdgeInsets get insets => _insets;
-  EdgeInsets _insets = EdgeInsets.zero;
-  set insets(EdgeInsets value) {
-    if (insets == value){
-      return;
-    }
-    _insets = value;
-    print(_insets);
-  }
-
-
-  @override
-  Widget build(BuildContext context) {
-    return _ScrollbarInsetScope(
-      scrollbarInsetState: this,
-      child: widget.child,
-    );
-  }
-}
-
-class _ScrollbarInsetScope extends InheritedWidget {
-  const _ScrollbarInsetScope({
-    required super.child,
-    required ScrollbarInsetManagerState scrollbarInsetState,
-  }) : _scrollbarInsetState = scrollbarInsetState;
-
-  final ScrollbarInsetManagerState _scrollbarInsetState;
-
-  @override
-  bool updateShouldNotify(_ScrollbarInsetScope old) => _scrollbarInsetState != old._scrollbarInsetState;
 }

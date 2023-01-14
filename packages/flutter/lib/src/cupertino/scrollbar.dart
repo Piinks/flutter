@@ -83,7 +83,6 @@ class CupertinoScrollbar extends RawScrollbar {
     ScrollNotificationPredicate? notificationPredicate,
     super.scrollbarOrientation,
     super.padding,
-    super.axis,
     @Deprecated(
       'Use thumbVisibility instead. '
       'This feature was deprecated after v2.9.0-1.0.pre.',
@@ -166,7 +165,6 @@ class _CupertinoScrollbarState extends RawScrollbarState<CupertinoScrollbar> {
 
   @override
   void updateScrollbarPainter() {
-    print(scrollbarPainter.resolvedOrientation);
     scrollbarPainter
       ..color = CupertinoDynamicColor.resolve(_kScrollbarColor, context)
       ..textDirection = Directionality.of(context)

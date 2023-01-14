@@ -20,6 +20,7 @@ import 'scroll_controller.dart';
 import 'scroll_notification.dart';
 import 'scroll_physics.dart';
 import 'scrollable.dart';
+import 'scrollable_helpers.dart';
 import 'sliver.dart';
 import 'sliver_prototype_extent_list.dart';
 import 'viewport.dart';
@@ -1951,5 +1952,126 @@ class GridView extends BoxScrollView {
       delegate: childrenDelegate,
       gridDelegate: gridDelegate,
     );
+  }
+}
+
+// 2D ScrollView
+
+///
+abstract class TwoDimensionalScrollView extends StatelessWidget {
+  ///
+  const TwoDimensionalScrollView({
+    super.key,
+    this.mainAxis = Axis.vertical,
+    this.panAxes = false,
+    this.primary,
+    // TODO(Piinks): Assert these arent the same axis
+    this.verticalDetails = const ScrollableDetails.vertical(),
+    this.horizontalDetails = const ScrollableDetails.horizontal(),
+    // this.center,
+    // this.anchor = 0.0,
+    // this.cacheExtent,
+    this.dragStartBehavior = DragStartBehavior.start,
+    this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
+    this.clipBehavior = Clip.hardEdge,
+  }) : assert(mainAxis != null),
+       assert(dragStartBehavior != null),
+       assert(clipBehavior != null);
+       // assert(
+       //   !(controller != null && (primary ?? false)),
+       //   'Primary ScrollViews obtain their ScrollController via inheritance '
+       //   'from a PrimaryScrollController widget. You cannot both set primary to '
+       //   'true and pass an explicit controller.',
+       // ),
+       // assert(!shrinkWrap || center == null),
+       // assert(anchor != null),
+       // assert(anchor >= 0.0 && anchor <= 1.0),
+       // assert(semanticChildCount == null || semanticChildCount >= 0);
+       // TODO(Piinks): Assert primary/mainAxis stuff
+
+  ///
+  final Axis mainAxis;
+
+  ///
+  final bool panAxes;
+
+  ///
+  final bool? primary;
+
+  ///
+  final ScrollableDetails verticalDetails;
+
+  ///
+  final ScrollableDetails horizontalDetails;
+
+  ///
+  final DragStartBehavior dragStartBehavior;
+
+  ///
+  final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
+
+  ///
+  final Clip clipBehavior;
+
+  ///
+  Widget buildViewport(
+    BuildContext context,
+    ViewportOffset verticalOffset,
+    ViewportOffset horizontalOffset,
+    // delegate,
+  );
+
+  ScrollableDetails get _mainAxisDetails => mainAxis == Axis.vertical
+      ? verticalDetails
+      : horizontalDetails;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool effectivePrimary = primary
+      ?? _mainAxisDetails.controller == null && PrimaryScrollController.shouldInherit(context, mainAxis);
+
+    final ScrollController? scrollController = effectivePrimary
+      ? PrimaryScrollController.maybeOf(context)
+      : _mainAxisDetails.controller;
+
+    final TwoDimensionalScrollable scrollable = TwoDimensionalScrollable(
+      horizontalDetails : horizontalDetails,
+      verticalDetails: verticalDetails,
+      panAxes: panAxes,
+      mainAxis: mainAxis,
+      viewportBuilder: (BuildContext context, ViewportOffset verticalOffset, ViewportOffset horizontalOffset) {
+        return buildViewport(context, verticalOffset, horizontalOffset);
+      },
+      dragStartBehavior: dragStartBehavior,
+    );
+
+    final Widget scrollableResult = effectivePrimary && scrollController != null
+    // Further descendant ScrollViews will not inherit the same PrimaryScrollController
+        ? PrimaryScrollController.none(child: scrollable)
+        : scrollable;
+
+    if (keyboardDismissBehavior == ScrollViewKeyboardDismissBehavior.onDrag) {
+      return NotificationListener<ScrollUpdateNotification>(
+        child: scrollableResult,
+        onNotification: (ScrollUpdateNotification notification) {
+          final FocusScopeNode focusScope = FocusScope.of(context);
+          if (notification.dragDetails != null && focusScope.hasFocus) {
+            focusScope.unfocus();
+          }
+          return false;
+        },
+      );
+    } else {
+      return scrollableResult;
+    }
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(EnumProperty<Axis>('mainAxis', mainAxis));
+    properties.add(FlagProperty('primary', value: primary, ifTrue: 'using primary controller', showName: true));
+    properties.add(DiagnosticsProperty<ScrollableDetails>('verticalDetails', verticalDetails, showName: false));
+    properties.add(DiagnosticsProperty<ScrollableDetails>('horizontalDetails', horizontalDetails, showName: false));
   }
 }

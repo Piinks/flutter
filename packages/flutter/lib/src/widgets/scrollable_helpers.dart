@@ -178,12 +178,32 @@ class ScrollableDetails {
   /// cannot be null.
   const ScrollableDetails({
     required this.direction,
-    required this.controller,
+    this.controller,
     this.physics,
     this.restorationId,
     this.semanticChildCount,
     this.clipBehavior,
   });
+
+  ///
+  const ScrollableDetails.vertical({
+    bool reverse = false,
+    this.controller,
+    this.physics,
+    this.restorationId,
+    this.semanticChildCount,
+    this.clipBehavior,
+  }) : direction = reverse ? AxisDirection.up : AxisDirection.down;
+
+  ///
+  const ScrollableDetails.horizontal({
+    bool reverse = false,
+    this.controller,
+    this.physics,
+    this.restorationId,
+    this.semanticChildCount,
+    this.clipBehavior,
+  }) : direction = reverse ? AxisDirection.right : AxisDirection.left;
 
   /// The direction in which this widget scrolls.
   ///
@@ -195,7 +215,7 @@ class ScrollableDetails {
   ///
   /// This can be used by [ScrollBehavior] to apply a [Scrollbar] to the
   /// associated [Scrollable].
-  final ScrollController controller;
+  final ScrollController? controller;
 
   /// {@macro flutter.widgets.Scrollable.physics}
   final ScrollPhysics? physics;
@@ -212,6 +232,8 @@ class ScrollableDetails {
   ///
   /// Defaults to null.
   final Clip? clipBehavior;
+
+  // TODO(Piinks): toString
 }
 
 /// A typedef for a function that can calculate the offset for a type of scroll

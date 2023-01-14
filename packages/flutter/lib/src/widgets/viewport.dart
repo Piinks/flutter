@@ -399,3 +399,16 @@ class ShrinkWrappingViewport extends MultiChildRenderObjectWidget {
     properties.add(DiagnosticsProperty<ViewportOffset>('offset', offset));
   }
 }
+
+// 2D Viewport
+///
+abstract class TwoDimensionalViewport extends RenderObjectWidget {
+  ///
+  const TwoDimensionalViewport({ super.key });
+
+}
+
+abstract class _RawTableViewportElement extends RenderObjectElement with NotifiableElementMixin, ViewportElementMixin
+   {//}implements _CellManager {
+  _RawTableViewportElement(super.widget);
+}

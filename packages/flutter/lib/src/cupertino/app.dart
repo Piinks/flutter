@@ -484,8 +484,9 @@ class CupertinoScrollBehavior extends ScrollBehavior {
       case TargetPlatform.macOS:
       case TargetPlatform.windows:
         return CupertinoScrollbar.dual(
-          verticalController: verticalDetails.controller,
-          horizontalController: horizontalDetails.controller,
+          // TODO(Piinks): Add assertions for these
+          verticalController: verticalDetails.controller!,
+          horizontalController: horizontalDetails.controller!,
           child: child,
         );
       case TargetPlatform.android:

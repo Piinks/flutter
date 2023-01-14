@@ -1544,7 +1544,7 @@ class _RestorableScrollOffset extends RestorableValue<double?> {
 
 // 2D Scrollable
 
-// Vertical outer scrollable of 2D scrolling
+// Outer scrollable of 2D scrolling
 class _OuterDimension extends Scrollable {
   const _OuterDimension({
     super.key,
@@ -1558,13 +1558,13 @@ class _OuterDimension extends Scrollable {
     super.semanticChildCount,
     super.dragStartBehavior,
     super.restorationId,
-  }) : assert(axisDirection == AxisDirection.up || axisDirection == AxisDirection.down);
+  });
 
   @override
-  _OuterVerticalDimensionState createState() => _OuterVerticalDimensionState();
+  _OuterDimensionState createState() => _OuterDimensionState();
 }
 
-class _OuterVerticalDimensionState extends ScrollableState {
+class _OuterDimensionState extends ScrollableState {
   late bool _panAxes;
 
   @override
@@ -1623,13 +1623,13 @@ class _InnerDimension extends Scrollable {
     super.semanticChildCount,
     super.dragStartBehavior,
     super.restorationId,
-  }) : assert(axisDirection == AxisDirection.left || axisDirection == AxisDirection.right);
+  });
 
   @override
-  _InnerHorizontalDimensionState createState() => _InnerHorizontalDimensionState();
+  _InnerDimensionState createState() => _InnerDimensionState();
 }
 
-class _InnerHorizontalDimensionState extends ScrollableState {
+class _InnerDimensionState extends ScrollableState {
   late ScrollableState _verticalScrollable;
   late bool _panAxes;
 
@@ -1791,7 +1791,7 @@ class TwoDimensionalScrollable extends StatefulWidget {
     this.incrementCalculator,
     this.excludeFromSemantics = false,
     this.dragStartBehavior = DragStartBehavior.start,
-  });
+  }); // TODO(Piinks) : assert detail axes are vert/horiz & that they do not conflict
 
   /// Whether scrolling gestures should lock to one axes, or allow free movement
   /// in both axes.
@@ -1896,13 +1896,13 @@ class TwoDimensionalScrollable extends StatefulWidget {
       if (scrollableState == null) {
         throw FlutterError(
           'TwoDimensionalScrollable.of() was called with a context that does not '
-              'contain a TwoDimensionalScrollable widget.\n'
-              'No TwoDimensionalScrollable widget ancestor could be found starting '
-              'from the context that was passed to TwoDimensionalScrollable.of(). '
-              'This can happen because you are using a widget that looks for a '
-              'TwoDimensionalScrollable ancestor, but no such ancestor exists.\n'
-              'The context used was:\n'
-              '  $context',
+          'contain a TwoDimensionalScrollable widget.\n'
+          'No TwoDimensionalScrollable widget ancestor could be found starting '
+          'from the context that was passed to TwoDimensionalScrollable.of(). '
+          'This can happen because you are using a widget that looks for a '
+          'TwoDimensionalScrollable ancestor, but no such ancestor exists.\n'
+          'The context used was:\n'
+          '  $context',
         );
       }
       return true;

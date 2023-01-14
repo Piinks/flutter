@@ -848,25 +848,20 @@ class MaterialScrollBehavior extends ScrollBehavior {
     print('from material');
     // When modifying this function, consider modifying the implementation in
     // the base and Cupertino subclasses as well.
-    final MediaQueryData mediaQueryData = MediaQuery.of(context);
-    final GlobalKey<RawScrollbarState<RawScrollbar>> verticalKey = GlobalKey<RawScrollbarState<RawScrollbar>>();
-    final GlobalKey<RawScrollbarState<RawScrollbar>> horizontalKey = GlobalKey<RawScrollbarState<RawScrollbar>>();
-    
+
     switch (getPlatform(context)) {
       case TargetPlatform.linux:
       case TargetPlatform.macOS:
       case TargetPlatform.windows:
-        return Scrollbar(
-          key: verticalKey,
-          padding: mediaQueryData.padding +
-            (horizontalKey.currentState?.scrollbarInsets ?? EdgeInsets.zero),
-          controller: verticalDetails.controller,
+        return ScrollbarInsetManager(
           child: Scrollbar(
-            key: horizontalKey,
-            padding: mediaQueryData.padding +
-              (verticalKey.currentState?.scrollbarInsets ?? EdgeInsets.zero),
-            controller: horizontalDetails.controller,
-            child: child,
+            axis: Axis.vertical,
+            controller: verticalDetails.controller,
+            child: Scrollbar(
+              axis: Axis.horizontal,
+              controller: horizontalDetails.controller,
+              child: child,
+            ),
           ),
         );
       case TargetPlatform.android:

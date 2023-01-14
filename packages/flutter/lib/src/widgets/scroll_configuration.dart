@@ -7,10 +7,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 
 import 'framework.dart';
-import 'media_query.dart';
 import 'overscroll_indicator.dart';
 import 'scroll_physics.dart';
 import 'scrollable.dart';
+import 'scrollable_helpers.dart';
 import 'scrollbar.dart';
 
 const Color _kDefaultGlowColor = Color(0xFFFFFFFF);
@@ -164,26 +164,19 @@ class ScrollBehavior {
   ) {
     // When modifying this function, consider modifying the implementation in
     // the Material and Cupertino subclasses as well.
-    final MediaQueryData mediaQueryData = MediaQuery.of(context);
-    final GlobalKey<RawScrollbarState<RawScrollbar>> verticalKey = GlobalKey<RawScrollbarState<RawScrollbar>>();
-    final GlobalKey<RawScrollbarState<RawScrollbar>> horizontalKey = GlobalKey<RawScrollbarState<RawScrollbar>>();
-    print('h insets: ${horizontalKey.currentState?.scrollbarInsets}');
-    print('v insets: ${verticalKey.currentState?.scrollbarInsets}');
     switch (getPlatform(context)) {
       case TargetPlatform.linux:
       case TargetPlatform.macOS:
       case TargetPlatform.windows:
-        return RawScrollbar(
-          key: verticalKey,
-          padding: mediaQueryData.padding +
-            (horizontalKey.currentState?.scrollbarInsets ?? EdgeInsets.zero),
-          controller: verticalDetails.controller,
+        return ScrollbarInsetManager(
           child: RawScrollbar(
-            key: horizontalKey,
-            padding: mediaQueryData.padding +
-              (verticalKey.currentState?.scrollbarInsets ?? EdgeInsets.zero),
-            controller: horizontalDetails.controller,
-            child: child,
+            axis: Axis.vertical,
+            controller: verticalDetails.controller,
+            child: RawScrollbar(
+              axis: Axis.horizontal,
+              controller: horizontalDetails.controller,
+              child: child,
+            ), 
           ),
         );
       case TargetPlatform.android:
@@ -446,4 +439,62 @@ class ScrollConfiguration extends InheritedWidget {
     super.debugFillProperties(properties);
     properties.add(DiagnosticsProperty<ScrollBehavior>('behavior', behavior));
   }
+}
+
+///
+class ScrollbarInsetManager extends StatefulWidget {
+  ///
+  const ScrollbarInsetManager({
+    super.key,
+    required this.child,
+  }) : assert(child != null);
+
+  ///
+  final Widget child;
+
+  ///
+  static ScrollbarInsetManagerState? maybeOf(BuildContext context) {
+    assert(context != null);
+
+    final _ScrollbarInsetScope? scope = context.dependOnInheritedWidgetOfExactType<_ScrollbarInsetScope>();
+    return scope?._scrollbarInsetState;
+  }
+
+  @override
+  ScrollbarInsetManagerState createState() => ScrollbarInsetManagerState();
+}
+
+///
+class ScrollbarInsetManagerState extends State<ScrollbarInsetManager> {
+  ///
+  EdgeInsets get insets => _insets;
+  EdgeInsets _insets = EdgeInsets.zero;
+  set insets(EdgeInsets value) {
+    if (insets == value){
+      return;
+    }
+    _insets = value;
+    print(_insets);
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return _ScrollbarInsetScope(
+      scrollbarInsetState: this,
+      child: widget.child,
+    );
+  }
+}
+
+class _ScrollbarInsetScope extends InheritedWidget {
+  const _ScrollbarInsetScope({
+    required super.child,
+    required ScrollbarInsetManagerState scrollbarInsetState,
+  }) : _scrollbarInsetState = scrollbarInsetState;
+
+  final ScrollbarInsetManagerState _scrollbarInsetState;
+
+  @override
+  bool updateShouldNotify(_ScrollbarInsetScope old) => _scrollbarInsetState != old._scrollbarInsetState;
 }

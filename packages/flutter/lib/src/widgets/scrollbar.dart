@@ -22,6 +22,7 @@ import 'scroll_metrics.dart';
 import 'scroll_notification.dart';
 import 'scroll_position.dart';
 import 'scrollable.dart';
+import 'scrollable_helpers.dart';
 import 'ticker_provider.dart';
 
 const double _kMinThumbExtent = 18.0;
@@ -379,24 +380,24 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
     notifyListeners();
   }
 
-  /// EdgeInsets representing the space taken up by the scrollbar along the
-  /// viewport edge.
-  ///
-  /// When using scrollbars in the context of a [TwoDimensionalScrollable], this
-  /// inset informs the scrollbars so as to not overlap one another.
-  EdgeInsets get scrollbarInsets {
-    final double inset = _crossAxisMargin + _thickness;
-    switch (_resolvedOrientation) {
-      case ScrollbarOrientation.left:
-        return EdgeInsets.only(left: inset);
-      case ScrollbarOrientation.right:
-        return EdgeInsets.only(right: inset);
-      case ScrollbarOrientation.top:
-        return EdgeInsets.only(top: inset);
-      case ScrollbarOrientation.bottom:
-        return EdgeInsets.only(bottom: inset);
-    }
-  }
+  // /// EdgeInsets representing the space taken up by the scrollbar along the
+  // /// viewport edge.
+  // ///
+  // /// When using scrollbars in the context of a [TwoDimensionalScrollable], this
+  // /// inset informs the scrollbars so as to not overlap one another.
+  // EdgeInsets get scrollbarInsets {
+  //   final double inset = _crossAxisMargin + _thickness;
+  //   switch (_resolvedOrientation) {
+  //     case ScrollbarOrientation.left:
+  //       return EdgeInsets.only(left: inset + padding.left);
+  //     case ScrollbarOrientation.right:
+  //       return EdgeInsets.only(right: inset + padding.right);
+  //     case ScrollbarOrientation.top:
+  //       return EdgeInsets.only(top: inset + padding.top);
+  //     case ScrollbarOrientation.bottom:
+  //       return EdgeInsets.only(bottom: inset + padding.bottom);
+  //   }
+  // }
 
   /// Whether the painter will be ignored during hit testing.
   bool get ignorePointer => _ignorePointer;
@@ -421,7 +422,7 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
   // The track is offset by only padding.
   double get _totalTrackMainAxisOffsets => _isVertical ? padding.vertical : padding.horizontal;
   double get _leadingTrackMainAxisOffset {
-    switch(_resolvedOrientation) {
+    switch(resolvedOrientation) {
       case ScrollbarOrientation.left:
       case ScrollbarOrientation.right:
         return padding.top;
@@ -439,7 +440,7 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
   // Thumb Offsets
   // The thumb is offset by padding and margins.
   double get _leadingThumbMainAxisOffset {
-    switch(_resolvedOrientation) {
+    switch(resolvedOrientation) {
       case ScrollbarOrientation.left:
       case ScrollbarOrientation.right:
         return padding.top + mainAxisMargin;
@@ -506,7 +507,8 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
       + _lastMetrics!.viewportDimension;
   }
 
-  ScrollbarOrientation get _resolvedOrientation {
+  ///
+  ScrollbarOrientation get resolvedOrientation {
     if (scrollbarOrientation == null) {
       if (_isVertical) {
         return textDirection == TextDirection.ltr
@@ -594,8 +596,8 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
     final double x, y;
     final Size thumbSize, trackSize;
     final Offset trackOffset, borderStart, borderEnd;
-    _debugAssertIsValidOrientation(_resolvedOrientation);
-    switch(_resolvedOrientation) {
+    _debugAssertIsValidOrientation(resolvedOrientation);
+    switch(resolvedOrientation) {
       case ScrollbarOrientation.left:
         thumbSize = Size(thickness, _thumbExtent);
         trackSize = Size(thickness + 2 * crossAxisMargin, _trackExtent);
@@ -1005,6 +1007,7 @@ class RawScrollbar extends StatefulWidget {
   const RawScrollbar({
     super.key,
     required this.child,
+    this.axis,
     this.controller,
     this.thumbVisibility,
     this.shape,
@@ -1064,6 +1067,9 @@ class RawScrollbar extends StatefulWidget {
   /// Typically a [ListView] or [CustomScrollView].
   /// {@endtemplate}
   final Widget child;
+
+  ///
+  final Axis? axis;
 
   /// {@template flutter.widgets.Scrollbar.controller}
   /// The [ScrollController] used to implement Scrollbar dragging.
@@ -1438,6 +1444,7 @@ class RawScrollbar extends StatefulWidget {
   final bool? interactive;
 
   /// {@macro flutter.widgets.Scrollbar.scrollbarOrientation}
+  /// Defaults to null - deprecate to use details.
   final ScrollbarOrientation? scrollbarOrientation;
 
   /// Distance from the scrollbar thumb's start or end to the nearest edge of
@@ -1446,7 +1453,7 @@ class RawScrollbar extends StatefulWidget {
   ///
   /// The scrollbar track consumes this space.
   ///
-  /// Mustn't be null and defaults to 0.
+  /// Defaults to null - deprecate to use details.
   final double mainAxisMargin;
 
   /// Distance from the scrollbar thumb's side to the nearest cross axis edge
@@ -1454,14 +1461,14 @@ class RawScrollbar extends StatefulWidget {
   ///
   /// The scrollbar track consumes this space.
   ///
-  /// Must not be null and defaults to 0.
+  /// Defaults to null - deprecate to use details.
   final double crossAxisMargin;
 
   /// The insets by which the scrollbar thumb and track should be padded.
   ///
   /// When null, the inherited [MediaQueryData.padding] is used.
   ///
-  /// Defaults to null.
+  /// Defaults to null - deprecate to use details.
   final EdgeInsets? padding;
 
   @override
@@ -1484,6 +1491,8 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
   late Animation<double> _fadeoutOpacityAnimation;
   bool _hoverIsActive = false;
   bool _thumbDragging = false;
+  late final TextDirection _textDirection;
+  late final ScrollbarInsetManagerState? _insetManager;
 
   ScrollController? get _effectiveScrollController => widget.controller ?? PrimaryScrollController.maybeOf(context);
   ScrollController? _cachedController;
@@ -1542,23 +1551,48 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
       parent: _fadeoutAnimationController,
       curve: Curves.fastOutSlowIn,
     );
+  }
+
+  ScrollbarOrientation _getDefaultOrientation(Axis axis) {
+    switch (axis) {
+      case Axis.horizontal:
+        return ScrollbarOrientation.bottom;
+      case Axis.vertical:
+        return _textDirection == TextDirection.ltr
+          ? ScrollbarOrientation.right
+          : ScrollbarOrientation.left;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    _textDirection = Directionality.of(context);
+    _insetManager = ScrollbarInsetManager.maybeOf(context);
+    late final ScrollbarOrientation? resolvedOrientation;
+    if (widget.scrollbarOrientation != null){
+      resolvedOrientation = widget.scrollbarOrientation;
+    } else if (widget.axis != null) {
+      resolvedOrientation = _getDefaultOrientation(widget.axis!);
+    } else if (_effectiveScrollController != null && _effectiveScrollController!.hasClients) {
+      _debugCheckHasValidScrollPosition();
+      resolvedOrientation = _getDefaultOrientation(_effectiveScrollController!.position.axis);
+    } else {
+      resolvedOrientation = null;
+    }
+
     scrollbarPainter = ScrollbarPainter(
       color: widget.thumbColor ?? const Color(0x66BCBCBC),
       fadeoutOpacityAnimation: _fadeoutOpacityAnimation,
       thickness: widget.thickness ?? _kScrollbarThickness,
       radius: widget.radius,
       trackRadius: widget.trackRadius,
-      scrollbarOrientation: widget.scrollbarOrientation,
+      scrollbarOrientation: resolvedOrientation,
       mainAxisMargin: widget.mainAxisMargin,
       shape: widget.shape,
       crossAxisMargin: widget.crossAxisMargin,
       minLength: widget.minThumbLength,
       minOverscrollLength: widget.minOverscrollLength ?? widget.minThumbLength,
     );
-  }
-
-  @override
-  void didChangeDependencies() {
     super.didChangeDependencies();
     assert(_debugScheduleCheckHasValidScrollPosition());
   }
@@ -1683,6 +1717,46 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
   /// Subclasses can override to configure the [scrollbarPainter].
   @protected
   void updateScrollbarPainter() {
+    print(scrollbarPainter.resolvedOrientation);
+    EdgeInsets? padding = widget.padding ?? MediaQuery.of(context).padding;
+    if (_insetManager != null) {
+      final EdgeInsets oldInsets = _insetManager!.insets;
+      final double inset = widget.thickness ?? _kScrollbarThickness + widget.crossAxisMargin;
+      switch (scrollbarPainter.resolvedOrientation) {
+        case ScrollbarOrientation.left:
+          _insetManager!.insets = oldInsets.copyWith(
+            left: inset + padding.left
+          );
+          padding = _insetManager!.insets.copyWith(
+            left: 0.0
+          );
+          break;
+        case ScrollbarOrientation.right:
+          _insetManager!.insets = oldInsets.copyWith(
+              right: inset + padding.right
+          );
+          padding = _insetManager!.insets.copyWith(
+              right: 0.0
+          );
+          break;
+        case ScrollbarOrientation.top:
+          _insetManager!.insets = oldInsets.copyWith(
+              top: inset + padding.top
+          );
+          padding = _insetManager!.insets.copyWith(
+              top: 0.0
+          );
+          break;
+        case ScrollbarOrientation.bottom:
+          _insetManager!.insets = oldInsets.copyWith(
+              bottom: inset + padding.bottom
+          );
+          padding = _insetManager!.insets.copyWith(
+              bottom: 0.0
+          );
+          break;
+      }
+    }
     scrollbarPainter
       ..color = widget.thumbColor ?? const Color(0x66BCBCBC)
       ..trackRadius = widget.trackRadius
@@ -1692,10 +1766,10 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
       ..trackBorderColor = _showTrack
           ? widget.trackBorderColor ?? const Color(0x1a000000)
           : const Color(0x00000000)
-      ..textDirection = Directionality.of(context)
+      ..textDirection = _textDirection
       ..thickness = widget.thickness ?? _kScrollbarThickness
       ..radius = widget.radius
-      ..padding = widget.padding ?? MediaQuery.paddingOf(context)
+      ..padding = padding
       ..scrollbarOrientation = widget.scrollbarOrientation
       ..mainAxisMargin = widget.mainAxisMargin
       ..shape = widget.shape
@@ -1784,6 +1858,9 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
   /// current scroll controller does not have any attached positions.
   @protected
   Axis? getScrollbarDirection() {
+    if (widget.axis != null) {
+      return widget.axis;
+    }
     assert(_cachedController != null);
     if (_cachedController!.hasClients) {
       return _cachedController!.position.axis;

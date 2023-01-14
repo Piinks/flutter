@@ -479,23 +479,16 @@ class CupertinoScrollBehavior extends ScrollBehavior {
   ) {
     // When modifying this function, consider modifying the implementation in
     // the base and Cupertino subclasses as well.
-    final MediaQueryData mediaQueryData = MediaQuery.of(context);
-    final GlobalKey<RawScrollbarState<RawScrollbar>> verticalKey = GlobalKey<RawScrollbarState<RawScrollbar>>();
-    final GlobalKey<RawScrollbarState<RawScrollbar>> horizontalKey = GlobalKey<RawScrollbarState<RawScrollbar>>();
 
     switch (getPlatform(context)) {
       case TargetPlatform.linux:
       case TargetPlatform.macOS:
       case TargetPlatform.windows:
         return CupertinoScrollbar(
-          key: verticalKey,
-          padding: mediaQueryData.padding +
-            (horizontalKey.currentState?.scrollbarInsets ?? EdgeInsets.zero),
+          axis: Axis.vertical,
           controller: verticalDetails.controller,
           child: CupertinoScrollbar(
-            key: horizontalKey,
-            padding: mediaQueryData.padding +
-              (verticalKey.currentState?.scrollbarInsets ?? EdgeInsets.zero),
+            axis: Axis.horizontal,
             controller: horizontalDetails.controller,
             child: child,
           ),

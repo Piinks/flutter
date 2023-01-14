@@ -11,23 +11,20 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
-import 'actions.dart';
 import 'basic.dart';
-import 'focus_manager.dart';
 import 'framework.dart';
 import 'gesture_detector.dart';
 import 'media_query.dart';
 import 'notification_listener.dart';
-import 'primary_scroll_controller.dart';
 import 'restoration.dart';
 import 'restoration_properties.dart';
 import 'scroll_activity.dart';
 import 'scroll_configuration.dart';
 import 'scroll_context.dart';
 import 'scroll_controller.dart';
-import 'scroll_metrics.dart';
 import 'scroll_physics.dart';
 import 'scroll_position.dart';
+import 'scrollable_helpers.dart';
 import 'selectable_region.dart';
 import 'selection_container.dart';
 import 'ticker_provider.dart';
@@ -470,8 +467,25 @@ class ScrollableState extends State<Scrollable> with TickerProviderStateMixin, R
   @override
   AxisDirection get axisDirection => widget.axisDirection;
 
-  late ScrollBehavior _configuration;
+  /// The resolved [ScrollPhysics] of the  Scrollable.
+  ScrollPhysics? get physics => _physics;
   ScrollPhysics? _physics;
+
+  ///
+  Offset get deltaToScrollOrigin {
+    switch (axisDirection) {
+      case AxisDirection.down:
+        return Offset(0, position.pixels);
+      case AxisDirection.up:
+        return Offset(0, -position.pixels);
+      case AxisDirection.left:
+        return Offset(-position.pixels, 0);
+      case AxisDirection.right:
+        return Offset(position.pixels, 0);
+    }
+  }
+
+  late ScrollBehavior _configuration;
   ScrollController? _fallbackScrollController;
   DeviceGestureSettings? _mediaQueryGestureSettings;
 
@@ -913,472 +927,6 @@ class ScrollableState extends State<Scrollable> with TickerProviderStateMixin, R
   String? get restorationId => widget.restorationId;
 }
 
-// Vertical outer scrollable of 2D scrolling
-class _OuterVerticalDimension extends Scrollable {
-  const _OuterVerticalDimension({
-    super.key,
-    required super.viewportBuilder,
-    super.axisDirection,
-    super.controller,
-    super.physics,
-    super.clipBehavior,
-    super.incrementCalculator,
-    super.excludeFromSemantics,
-    super.semanticChildCount,
-    super.dragStartBehavior,
-    super.restorationId,
-  }) : assert(axisDirection == AxisDirection.up || axisDirection == AxisDirection.down);
-
-  @override
-  _OuterVerticalDimensionState createState() => _OuterVerticalDimensionState();
-}
-
-class _OuterVerticalDimensionState extends ScrollableState {
-  late bool _panAxes;
-
-  @override
-  void didChangeDependencies() {
-    _panAxes = TwoDimensionalScrollable._panAxes(context)!;
-    super.didChangeDependencies();
-  }
-
-  @override
-  void setCanDrag(bool value) {
-    if (_panAxes && value) {
-      // If _panAxes is true, a panning gesture recognizer will be created
-      // in the _InnerHorizontalDimension. So in this case, the
-      // _OuterVerticalDimension does not require a gesture recognizer.
-      _gestureRecognizers = const <Type, GestureRecognizerFactory>{};
-      // Cancel the active hold/drag (if any) because the gesture recognizers
-      // will soon be disposed by our RawGestureDetector, and we won't be
-      // receiving pointer up events to cancel the hold/drag.
-      _handleDragCancel();
-      _lastCanDrag = value;
-      _lastAxisDirection = widget.axis;
-      if (_gestureDetectorKey.currentState != null) {
-        _gestureDetectorKey.currentState!.replaceGestureRecognizers(_gestureRecognizers);
-      }
-    } else {
-      // If we aren't panning, the default vertical drag gesture recognizer is
-      // used.
-      super.setCanDrag(value);
-    }
-  }
-
-  @override
-  Widget _buildChrome(Widget child) {
-    print('outer build chrome');
-    final ScrollableDetails details = ScrollableDetails(
-      direction: widget.axisDirection,
-      controller: _effectiveScrollController,
-      clipBehavior: widget.clipBehavior,
-    );
-    // Skip building a scrollbar here, the dual scrollbar is added in
-    // TwoDimensionalScrollableState.
-    return _configuration.buildOverscrollIndicator(context, child, details);
-  }
-}
-
-// Horizontal inner scrollable of 2D scrolling
-class _InnerHorizontalDimension extends Scrollable {
-  const _InnerHorizontalDimension({
-    super.key,
-    required super.viewportBuilder,
-    super.axisDirection,
-    super.controller,
-    super.physics,
-    super.clipBehavior,
-    super.incrementCalculator,
-    super.excludeFromSemantics,
-    super.semanticChildCount,
-    super.dragStartBehavior,
-    super.restorationId,
-  }) : assert(axisDirection == AxisDirection.left || axisDirection == AxisDirection.right);
-
-  @override
-  _InnerHorizontalDimensionState createState() => _InnerHorizontalDimensionState();
-}
-
-class _InnerHorizontalDimensionState extends ScrollableState {
-  late ScrollableState _verticalScrollable;
-  late bool _panAxes;
-
-  @override
-  void didChangeDependencies() {
-    _verticalScrollable = Scrollable.of(context);
-    _panAxes = TwoDimensionalScrollable._panAxes(context)!;
-    super.didChangeDependencies();
-  }
-
-  @override
-  void _handleDragDown(DragDownDetails details) {
-    if (_panAxes) {
-      _verticalScrollable._handleDragDown(details);
-    }
-    super._handleDragDown(details);
-  }
-
-  @override
-  void _handleDragStart(DragStartDetails details) {
-    if (_panAxes) {
-      _verticalScrollable._handleDragStart(details);
-    }
-    super._handleDragStart(details);
-  }
-
-  @override
-  void _handleDragUpdate(DragUpdateDetails details) {
-    if (_panAxes) {
-      final DragUpdateDetails verticalDragDetails = DragUpdateDetails(
-        sourceTimeStamp: details.sourceTimeStamp,
-        delta: Offset(details.delta.dy, 0.0),
-        primaryDelta: details.delta.dy,
-        globalPosition: details.globalPosition,
-        localPosition: details.localPosition,
-      );
-      _verticalScrollable._handleDragUpdate(verticalDragDetails);
-    }
-    final DragUpdateDetails horizontalDragDetails = DragUpdateDetails(
-      sourceTimeStamp: details.sourceTimeStamp,
-      delta: Offset(details.delta.dx, 0.0),
-      primaryDelta: details.delta.dx,
-      globalPosition: details.globalPosition,
-      localPosition: details.localPosition,
-    );
-    super._handleDragUpdate(horizontalDragDetails);
-  }
-
-  @override
-  void _handleDragEnd(DragEndDetails details) {
-    if (_panAxes) {
-      final DragEndDetails verticalDragDetails = DragEndDetails(
-        velocity: details.velocity,
-        primaryVelocity: details.velocity.pixelsPerSecond.dy,
-      );
-      _verticalScrollable._handleDragEnd(verticalDragDetails);
-    }
-    final DragEndDetails horizontalDragDetails = DragEndDetails(
-      velocity: details.velocity,
-      primaryVelocity: details.velocity.pixelsPerSecond.dx,
-    );
-    super._handleDragEnd(horizontalDragDetails);
-  }
-
-  @override
-  void _handleDragCancel() {
-    if (_panAxes) {
-      _verticalScrollable._handleDragCancel();
-    }
-    super._handleDragCancel();
-  }
-
-  @override
-  void setCanDrag(bool value) {
-    if (_panAxes && value) {
-      // Replaces the typical vertical/horizontal drag gesture recognizers with
-      // a pan gesture recognizer to allow bidirectional scrolling. Any
-      // horizontal delta is applied to this scrollable, while vertical deltas
-      // are routed to the vertical scrollable.
-      _gestureRecognizers = <Type, GestureRecognizerFactory>{
-        PanGestureRecognizer: GestureRecognizerFactoryWithHandlers<PanGestureRecognizer>(
-          () => PanGestureRecognizer(supportedDevices: _configuration.dragDevices),
-          (PanGestureRecognizer instance) {
-            instance
-              ..onDown = _handleDragDown
-              ..onStart = _handleDragStart
-              ..onUpdate = _handleDragUpdate
-              ..onEnd = _handleDragEnd
-              ..onCancel = _handleDragCancel
-              ..minFlingDistance = _physics?.minFlingDistance
-              ..minFlingVelocity = _physics?.minFlingVelocity
-              ..maxFlingVelocity = _physics?.maxFlingVelocity
-              ..velocityTrackerBuilder = _configuration.velocityTrackerBuilder(context)
-              ..dragStartBehavior = widget.dragStartBehavior
-              ..gestureSettings = _mediaQueryGestureSettings;
-          },
-        ),
-      };
-      // Cancel the active hold/drag (if any) because the gesture recognizers
-      // will soon be disposed by our RawGestureDetector, and we won't be
-      // receiving pointer up events to cancel the hold/drag.
-      _handleDragCancel();
-      _lastCanDrag = value;
-      _lastAxisDirection = widget.axis;
-      if (_gestureDetectorKey.currentState != null) {
-        _gestureDetectorKey.currentState!.replaceGestureRecognizers(_gestureRecognizers);
-      }
-    } else {
-      // If we aren't panning, the default horizontal drag gesture recognizer is
-      // used.
-      super.setCanDrag(value);
-    }
-  }
-
-  @override
-  Widget _buildChrome(Widget child) {
-    print('inner build chrome');
-    final ScrollableDetails details = ScrollableDetails(
-      direction: widget.axisDirection,
-      controller: _effectiveScrollController,
-      clipBehavior: widget.clipBehavior,
-    );
-    // Skip building a scrollbar here, the dual scrollbar is added in
-    // TwoDimensionalScrollableState.
-    return _configuration.buildOverscrollIndicator(context, child, details);
-  }
-}
-
-/// A widget that scrolls in two dimensions.
-///
-/// [TwoDimensionalScrollable] implements the interaction model for a scrollable
-/// widget, including gesture recognition, but does not have an opinion about
-/// how the viewport, which actually displays the children, is constructed.
-///
-/// It's rare to construct a [TwoDimensionalScrollable] directly. Instead,
-/// consider [TableView], which combine scrolling, viewporting, and a layout
-/// model in both dimensions.
-///
-/// The static [TwoDimensionalScrollable.of] and
-/// [TwoDimensionalScrollable.ensureVisible] functions are often used to
-/// interact with the [TwoDimensionalScrollable] widget inside a [TableView].
-///
-/// See also:
-///
-///  * [TableView], which is a commonly used two-dimensional scroll view that
-///    displays a scrolling array of children in both directions.
-///  * [TwoDimensionalViewport], which can be used to customize the child layout
-///    model.
-class TwoDimensionalScrollable extends StatefulWidget {
-  /// Creates a widget that scrolls in two dimensions.
-  ///
-  /// The [viewportBuilder] must not be null.
-  const TwoDimensionalScrollable({
-    super.key,
-    required this.horizontalDetails,
-    required this.verticalDetails,
-    this.panAxes = false,
-    required this.viewportBuilder,
-    this.incrementCalculator,
-    this.excludeFromSemantics = false,
-    this.dragStartBehavior = DragStartBehavior.start,
-  });
-
-  /// Whether scrolling gestures should lock to one axes, or allow free movement
-  /// in both axes.
-  ///
-  /// If false, panning is only allowed in the direction of the horizontal axis
-  /// or the vertical axis during a given gesture.
-  ///
-  /// When this is true, diagonal scrolling is allowed. A single gesture begun
-  /// along one axis cannot also cause panning along the other axis without
-  /// stopping and beginning a new gesture. This is a common
-  /// pattern in tables where data is displayed in columns and rows.
-  final bool panAxes;
-
-  /// The configuration of the horizontal Scrollable.
-  ///
-  /// These [ScrollableDetails] can be used to set the [AxisDirection],
-  /// [ScrollController], [ScrollPhysics] and more for the horizontal axis.
-  final ScrollableDetails horizontalDetails;
-
-  /// The configuration of the vertical Scrollable.
-  ///
-  /// These [ScrollableDetails] can be used to set the [AxisDirection],
-  /// [ScrollController], [ScrollPhysics] and more for the vertical axis.
-  final ScrollableDetails verticalDetails;
-
-  /// Builds the viewport through which the scrollable content is displayed.
-  ///
-  /// A [TwoDimensionalViewport] uses two given [ViewportOffset]s to determine
-  /// which part of its content is actually visible through the viewport.
-  ///
-  /// See also:
-  ///
-  ///  * [TwoDimensionalViewport], which is a viewport that displays a span of
-  ///    widgets in both dimensions.
-  final  TwoDimensionalViewportBuilder viewportBuilder;
-
-  /// {@macro flutter.widgets.Scrollable.incrementCalculator}
-  ///
-  /// This value applies in both axes.
-  final ScrollIncrementCalculator? incrementCalculator;
-
-  /// {@macro flutter.widgets.scrollable.excludeFromSemantics}
-  ///
-  /// This value applies to both axes.
-  final bool excludeFromSemantics;
-
-  /// {@macro flutter.widgets.scrollable.dragStartBehavior}
-  ///
-  /// This value applies in both axes.
-  final DragStartBehavior dragStartBehavior;
-
-  @override
-  State<TwoDimensionalScrollable> createState() => TwoDimensionalScrollableState();
-
-  /// The state from the closest instance of this class that encloses the given
-  /// context, or null if none is found.
-  ///
-  /// Typical usage is as follows:
-  ///
-  /// ```dart
-  /// TwoDimensionalScrollableState? 2DScrollable = TwoDimensionalScrollable.maybeOf(context);
-  /// ```
-  ///
-  /// Calling this method will create a dependency on the closest [Scrollable]
-  /// in the [context], if there is one.
-  ///
-  /// See also:
-  ///
-  /// * [TwoDimensionalScrollable.of], which is similar to this method, but
-  ///   asserts if no [Scrollable] ancestor is found.
-  static TwoDimensionalScrollableState? maybeOf(BuildContext context) {
-    final _TwoDimensionalScrollableScope? widget = context.dependOnInheritedWidgetOfExactType<_TwoDimensionalScrollableScope>();
-    return widget?.twoDimensionalScrollable;
-  }
-
-  /// The state from the closest instance of this class that encloses the given
-  /// context.
-  ///
-  /// Typical usage is as follows:
-  ///
-  /// ```dart
-  /// TwoDimensionalScrollableState scrollable = TwoDimensionalScrollable.of(context);
-  /// ```
-  ///
-  /// Calling this method will create a dependency on the closest
-  /// [TwoDimensionalScrollable] in the [context].
-  ///
-  /// If no [TwoDimensionalScrollable] ancestor is found, then this method will
-  /// assert in debug mode, and throw an exception in release mode.
-  ///
-  /// See also:
-  ///
-  /// * [TwoDimensionalScrollable.maybeOf], which is similar to this method,
-  ///   but returns null if no [TwoDimensionalScrollable] ancestor is found.
-  static TwoDimensionalScrollableState of(BuildContext context) {
-    final TwoDimensionalScrollableState? scrollableState = maybeOf(context);
-    assert(() {
-      if (scrollableState == null) {
-        throw FlutterError(
-          'TwoDimensionalScrollable.of() was called with a context that does not '
-          'contain a TwoDimensionalScrollable widget.\n'
-          'No TwoDimensionalScrollable widget ancestor could be found starting '
-          'from the context that was passed to TwoDimensionalScrollable.of(). '
-          'This can happen because you are using a widget that looks for a '
-          'TwoDimensionalScrollable ancestor, but no such ancestor exists.\n'
-          'The context used was:\n'
-          '  $context',
-        );
-      }
-      return true;
-    }());
-    return scrollableState!;
-  }
-
-  // Informs the scrollable widgets for gesture recognizers.
-  static bool? _panAxes(BuildContext context) {
-    final _TwoDimensionalScrollableScope? widget = context.dependOnInheritedWidgetOfExactType<_TwoDimensionalScrollableScope>();
-    return widget?.alignPanAxis;
-  }
-
-  // TODO(Piinks): ensureVisible for 2D
-}
-
-///
-class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
-  // TODO(Piinks): Add assertions and error messaging when accessing the
-  //  scrollable states are null.
-
-  /// The [ScrollableState] of the vertical axis.
-  ///
-  /// Accessible by calling [TwoDimensionalScrollable.of].
-  ScrollableState get verticalScrollable => _verticalScrollableKey.currentState!;
-  final GlobalKey<ScrollableState> _verticalScrollableKey = GlobalKey<ScrollableState>();
-
-  /// The [ScrollableState] of the horizontal axis.
-  ///
-  /// Accessible by calling [TwoDimensionalScrollable.of].
-  ScrollableState get horizontalScrollable => _horizontalScrollableKey.currentState!;
-  final GlobalKey<ScrollableState> _horizontalScrollableKey = GlobalKey<ScrollableState>();
-  late ScrollBehavior _configuration;
-
-  @override
-  void didChangeDependencies() {
-    _configuration = ScrollConfiguration.of(context);
-    super.didChangeDependencies();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    Widget result = _OuterVerticalDimension(
-      key: _verticalScrollableKey,
-      axisDirection: widget.verticalDetails.direction,
-      controller: widget.verticalDetails.controller,
-      physics: widget.verticalDetails.physics,
-      clipBehavior: widget.verticalDetails.clipBehavior ?? Clip.hardEdge,
-      incrementCalculator: widget.incrementCalculator,
-      excludeFromSemantics: widget.excludeFromSemantics,
-      semanticChildCount: widget.horizontalDetails.semanticChildCount,
-      dragStartBehavior: widget.dragStartBehavior,
-      restorationId: widget.horizontalDetails.restorationId,
-      viewportBuilder: (BuildContext context, ViewportOffset verticalOffset) {
-        return _InnerHorizontalDimension(
-          key: _horizontalScrollableKey,
-          axisDirection: widget.horizontalDetails.direction,
-          controller: widget.horizontalDetails.controller,
-          physics: widget.horizontalDetails.physics,
-          clipBehavior: widget.horizontalDetails.clipBehavior ?? Clip.hardEdge,
-          incrementCalculator: widget.incrementCalculator,
-          excludeFromSemantics: widget.excludeFromSemantics,
-          semanticChildCount: widget.horizontalDetails.semanticChildCount,
-          dragStartBehavior: widget.dragStartBehavior,
-          restorationId: widget.horizontalDetails.restorationId,
-          viewportBuilder: (BuildContext context, ViewportOffset horizontalOffset) {
-            return widget.viewportBuilder(context, verticalOffset, horizontalOffset);
-          },
-        );
-      },
-    );
-
-    print('Building dual scrollbars....');
-    result = _configuration.buildDualScrollbars(
-      context,
-      result,
-      widget.verticalDetails,
-      widget.horizontalDetails,
-    );
-
-    return _TwoDimensionalScrollableScope(
-      alignPanAxis: widget.panAxes,
-      twoDimensionalScrollable: this,
-      child: result,
-    );
-  }
-}
-
-// Enable TwoDimensionalScrollable.of() to work as if
-// TwoDimensionalScrollableState was an inherited widget.
-// TwoDimensionalScrollableState.build() always rebuilds its
-// _TwoDimensionalScrollableScope.
-class _TwoDimensionalScrollableScope extends InheritedWidget {
-  const _TwoDimensionalScrollableScope({
-    required this.alignPanAxis,
-    required this.twoDimensionalScrollable,
-    required super.child,
-  }) : assert(alignPanAxis != null),
-       assert(twoDimensionalScrollable != null),
-       assert(child != null);
-
-  final bool alignPanAxis;
-  final TwoDimensionalScrollableState twoDimensionalScrollable;
-
-  @override
-  bool updateShouldNotify(_TwoDimensionalScrollableScope old) {
-    return alignPanAxis != old.alignPanAxis;
-  }
-}
-
 /// A widget to handle selection for a scrollable.
 ///
 /// This widget registers itself to the [registrar] and uses
@@ -1433,151 +981,6 @@ class _ScrollableSelectionHandlerState extends State<_ScrollableSelectionHandler
       delegate: _selectionDelegate,
       child: widget.child,
     );
-  }
-}
-
-/// An auto scroller that scrolls the [scrollable] if a drag gesture drags close
-/// to its edge.
-///
-/// The scroll velocity is controlled by the [velocityScalar]:
-///
-/// velocity = <distance of overscroll> * [velocityScalar].
-class EdgeDraggingAutoScroller {
-  /// Creates a auto scroller that scrolls the [scrollable].
-  EdgeDraggingAutoScroller(this.scrollable, {this.onScrollViewScrolled, this.velocityScalar = _kDefaultAutoScrollVelocityScalar});
-
-  // An eyeballed value for a smooth scrolling experience.
-  static const double _kDefaultAutoScrollVelocityScalar = 7;
-
-  /// The [Scrollable] this auto scroller is scrolling.
-  final ScrollableState scrollable;
-
-  /// Called when a scroll view is scrolled.
-  ///
-  /// The scroll view may be scrolled multiple times in a row until the drag
-  /// target no longer triggers the auto scroll. This callback will be called
-  /// in between each scroll.
-  final VoidCallback? onScrollViewScrolled;
-
-  /// The velocity scalar per pixel over scroll.
-  ///
-  /// It represents how the velocity scale with the over scroll distance. The
-  /// auto-scroll velocity = <distance of overscroll> * velocityScalar.
-  final double velocityScalar;
-
-  late Rect _dragTargetRelatedToScrollOrigin;
-
-  /// Whether the auto scroll is in progress.
-  bool get scrolling => _scrolling;
-  bool _scrolling = false;
-
-  double _offsetExtent(Offset offset, Axis scrollDirection) {
-    switch (scrollDirection) {
-      case Axis.horizontal:
-        return offset.dx;
-      case Axis.vertical:
-        return offset.dy;
-    }
-  }
-
-  double _sizeExtent(Size size, Axis scrollDirection) {
-    switch (scrollDirection) {
-      case Axis.horizontal:
-        return size.width;
-      case Axis.vertical:
-        return size.height;
-    }
-  }
-
-  AxisDirection get _axisDirection => scrollable.axisDirection;
-  Axis get _scrollDirection => axisDirectionToAxis(_axisDirection);
-
-  /// Starts the auto scroll if the [dragTarget] is close to the edge.
-  ///
-  /// The scroll starts to scroll the [scrollable] if the target rect is close
-  /// to the edge of the [scrollable]; otherwise, it remains stationary.
-  ///
-  /// If the scrollable is already scrolling, calling this method updates the
-  /// previous dragTarget to the new value and continues scrolling if necessary.
-  void startAutoScrollIfNecessary(Rect dragTarget) {
-    final Offset deltaToOrigin = _getDeltaToScrollOrigin(scrollable);
-    _dragTargetRelatedToScrollOrigin = dragTarget.translate(deltaToOrigin.dx, deltaToOrigin.dy);
-    if (_scrolling) {
-      // The change will be picked up in the next scroll.
-      return;
-    }
-    if (!_scrolling) {
-      _scroll();
-    }
-  }
-
-  /// Stop any ongoing auto scrolling.
-  void stopAutoScroll() {
-    _scrolling = false;
-  }
-
-  Future<void> _scroll() async {
-    final RenderBox scrollRenderBox = scrollable.context.findRenderObject()! as RenderBox;
-    final Rect globalRect = MatrixUtils.transformRect(
-        scrollRenderBox.getTransformTo(null),
-        Rect.fromLTWH(0, 0, scrollRenderBox.size.width, scrollRenderBox.size.height)
-    );
-    assert(
-      globalRect.size.width >= _dragTargetRelatedToScrollOrigin.size.width &&
-      globalRect.size.height >= _dragTargetRelatedToScrollOrigin.size.height,
-      'Drag target size is larger than scrollable size, which may cause bouncing',
-    );
-    _scrolling = true;
-    double? newOffset;
-    const double overDragMax = 20.0;
-
-    final Offset deltaToOrigin = _getDeltaToScrollOrigin(scrollable);
-    final Offset viewportOrigin = globalRect.topLeft.translate(deltaToOrigin.dx, deltaToOrigin.dy);
-    final double viewportStart = _offsetExtent(viewportOrigin, _scrollDirection);
-    final double viewportEnd = viewportStart + _sizeExtent(globalRect.size, _scrollDirection);
-
-    final double proxyStart = _offsetExtent(_dragTargetRelatedToScrollOrigin.topLeft, _scrollDirection);
-    final double proxyEnd = _offsetExtent(_dragTargetRelatedToScrollOrigin.bottomRight, _scrollDirection);
-    switch (_axisDirection) {
-      case AxisDirection.up:
-      case AxisDirection.left:
-        if (proxyEnd > viewportEnd && scrollable.position.pixels > scrollable.position.minScrollExtent) {
-          final double overDrag = math.min(proxyEnd - viewportEnd, overDragMax);
-          newOffset = math.max(scrollable.position.minScrollExtent, scrollable.position.pixels - overDrag);
-        } else if (proxyStart < viewportStart && scrollable.position.pixels < scrollable.position.maxScrollExtent) {
-          final double overDrag = math.min(viewportStart - proxyStart, overDragMax);
-          newOffset = math.min(scrollable.position.maxScrollExtent, scrollable.position.pixels + overDrag);
-        }
-        break;
-      case AxisDirection.right:
-      case AxisDirection.down:
-        if (proxyStart < viewportStart && scrollable.position.pixels > scrollable.position.minScrollExtent) {
-          final double overDrag = math.min(viewportStart - proxyStart, overDragMax);
-          newOffset = math.max(scrollable.position.minScrollExtent, scrollable.position.pixels -  overDrag);
-        } else if (proxyEnd > viewportEnd && scrollable.position.pixels < scrollable.position.maxScrollExtent) {
-          final double overDrag = math.min(proxyEnd - viewportEnd, overDragMax);
-          newOffset = math.min(scrollable.position.maxScrollExtent, scrollable.position.pixels + overDrag);
-        }
-        break;
-    }
-
-    if (newOffset == null || (newOffset - scrollable.position.pixels).abs() < 1.0) {
-      // Drag should not trigger scroll.
-      _scrolling = false;
-      return;
-    }
-    final Duration duration = Duration(milliseconds: (1000 / velocityScalar).round());
-    await scrollable.position.animateTo(
-      newOffset,
-      duration: duration,
-      curve: Curves.linear,
-    );
-    if (onScrollViewScrolled != null) {
-      onScrollViewScrolled!();
-    }
-    if (_scrolling) {
-      await _scroll();
-    }
   }
 }
 
@@ -1682,7 +1085,7 @@ class _ScrollableSelectionContainerDelegate extends MultiSelectableSelectionCont
       assert(!_selectionStartsInScrollable);
       _selectionStartsInScrollable = _globalPositionInScrollable(event.globalPosition);
     }
-    final Offset deltaToOrigin = _getDeltaToScrollOrigin(state);
+    final Offset deltaToOrigin = state.deltaToScrollOrigin;
     if (event.type == SelectionEventType.endEdgeUpdate) {
       _currentDragEndRelatedToOrigin = _inferPositionRelatedToOrigin(event.globalPosition);
       final Offset endOffset = _currentDragEndRelatedToOrigin!.translate(-deltaToOrigin.dx, -deltaToOrigin.dy);
@@ -1725,7 +1128,7 @@ class _ScrollableSelectionContainerDelegate extends MultiSelectableSelectionCont
         return Offset.infinite;
       }
     }
-    final Offset deltaToOrigin = _getDeltaToScrollOrigin(state);
+    final Offset deltaToOrigin = state.deltaToScrollOrigin;
     return box.localToGlobal(localPosition.translate(deltaToOrigin.dx, deltaToOrigin.dy));
   }
 
@@ -1737,7 +1140,7 @@ class _ScrollableSelectionContainerDelegate extends MultiSelectableSelectionCont
   /// [_currentDragStartRelatedToOrigin] and [_currentDragEndRelatedToOrigin]
   /// are essential to handle future [SelectionEdgeUpdateEvent]s.
   void _updateDragLocationsFromGeometries({bool forceUpdateStart = true, bool forceUpdateEnd = true}) {
-    final Offset deltaToOrigin = _getDeltaToScrollOrigin(state);
+    final Offset deltaToOrigin = state.deltaToScrollOrigin;
     final RenderBox box = state.context.findRenderObject()! as RenderBox;
     final Matrix4 transform = box.getTransformTo(null);
     if (currentSelectionStartIndex != -1 && (_currentDragStartRelatedToOrigin == null || forceUpdateStart)) {
@@ -1941,7 +1344,7 @@ class _ScrollableSelectionContainerDelegate extends MultiSelectableSelectionCont
     if (_currentDragStartRelatedToOrigin != null &&
         (previousStartRecord == null || (newRecord - previousStartRecord).abs() > precisionErrorTolerance)) {
       // Make sure the selectable has up to date events.
-      final Offset deltaToOrigin = _getDeltaToScrollOrigin(state);
+      final Offset deltaToOrigin = state.deltaToScrollOrigin;
       final Offset startOffset = _currentDragStartRelatedToOrigin!.translate(-deltaToOrigin.dx, -deltaToOrigin.dy);
       selectable.dispatchSelectionEvent(SelectionEdgeUpdateEvent.forStart(globalPosition: startOffset));
     }
@@ -1949,7 +1352,7 @@ class _ScrollableSelectionContainerDelegate extends MultiSelectableSelectionCont
     if (_currentDragEndRelatedToOrigin != null &&
         (previousEndRecord == null || (newRecord - previousEndRecord).abs() > precisionErrorTolerance)) {
       // Make sure the selectable has up to date events.
-      final Offset deltaToOrigin = _getDeltaToScrollOrigin(state);
+      final Offset deltaToOrigin = state.deltaToScrollOrigin;
       final Offset endOffset = _currentDragEndRelatedToOrigin!.translate(-deltaToOrigin.dx, -deltaToOrigin.dy);
       selectable.dispatchSelectionEvent(SelectionEdgeUpdateEvent.forEnd(globalPosition: endOffset));
     }
@@ -1963,67 +1366,6 @@ class _ScrollableSelectionContainerDelegate extends MultiSelectableSelectionCont
     _autoScroller.stopAutoScroll();
     super.dispose();
   }
-}
-
-Offset _getDeltaToScrollOrigin(ScrollableState scrollableState) {
-  switch (scrollableState.axisDirection) {
-    case AxisDirection.down:
-      return Offset(0, scrollableState.position.pixels);
-    case AxisDirection.up:
-      return Offset(0, -scrollableState.position.pixels);
-    case AxisDirection.left:
-      return Offset(-scrollableState.position.pixels, 0);
-    case AxisDirection.right:
-      return Offset(scrollableState.position.pixels, 0);
-  }
-}
-
-/// Describes the aspects of a Scrollable widget to inform inherited widgets
-/// like [ScrollBehavior] for decorating, or enumerate the properties of combined
-/// Scrollables, like [TwoDimensionalScrollable].
-///
-/// Decorations like [GlowingOverscrollIndicator]s and [Scrollbar]s require
-/// information about the Scrollable in order to be initialized.
-@immutable
-class ScrollableDetails {
-  /// Creates a set of details describing the [Scrollable]. The [direction]
-  /// cannot be null.
-  const ScrollableDetails({
-    required this.direction,
-    required this.controller,
-    this.physics,
-    this.restorationId,
-    this.semanticChildCount,
-    this.clipBehavior,
-  });
-
-  /// The direction in which this widget scrolls.
-  ///
-  /// Cannot be null.
-  final AxisDirection direction;
-
-  /// A [ScrollController] that can be used to control the position of the
-  /// [Scrollable] widget.
-  ///
-  /// This can be used by [ScrollBehavior] to apply a [Scrollbar] to the
-  /// associated [Scrollable].
-  final ScrollController controller;
-
-  /// {@macro flutter.widgets.Scrollable.physics}
-  final ScrollPhysics? physics;
-
-  /// {@macro flutter.widgets.scrollable.restorationId}
-  final String? restorationId;
-
-  /// {@macro flutter.widgets.scrollable.semanticChildCount}
-  final int? semanticChildCount;
-
-  /// {@macro flutter.material.Material.clipBehavior}
-  ///
-  /// This can be used by [MaterialScrollBehavior] to clip [StretchingOverscrollIndicator].
-  ///
-  /// Defaults to null.
-  final Clip? clipBehavior;
 }
 
 /// With [_ScrollSemantics] certain child [SemanticsNode]s can be
@@ -2175,256 +1517,6 @@ class _RenderScrollSemantics extends RenderProxyBox {
   }
 }
 
-/// A typedef for a function that can calculate the offset for a type of scroll
-/// increment given a [ScrollIncrementDetails].
-///
-/// This function is used as the type for [Scrollable.incrementCalculator],
-/// which is called from a [ScrollAction].
-typedef ScrollIncrementCalculator = double Function(ScrollIncrementDetails details);
-
-/// Describes the type of scroll increment that will be performed by a
-/// [ScrollAction] on a [Scrollable].
-///
-/// This is used to configure a [ScrollIncrementDetails] object to pass to a
-/// [ScrollIncrementCalculator] function on a [Scrollable].
-///
-/// {@template flutter.widgets.ScrollIncrementType.intent}
-/// This indicates the *intent* of the scroll, not necessarily the size. Not all
-/// scrollable areas will have the concept of a "line" or "page", but they can
-/// respond to the different standard key bindings that cause scrolling, which
-/// are bound to keys that people use to indicate a "line" scroll (e.g.
-/// control-arrowDown keys) or a "page" scroll (e.g. pageDown key). It is
-/// recommended that at least the relative magnitudes of the scrolls match
-/// expectations.
-/// {@endtemplate}
-enum ScrollIncrementType {
-  /// Indicates that the [ScrollIncrementCalculator] should return the scroll
-  /// distance it should move when the user requests to scroll by a "line".
-  ///
-  /// The distance a "line" scrolls refers to what should happen when the key
-  /// binding for "scroll down/up by a line" is triggered. It's up to the
-  /// [ScrollIncrementCalculator] function to decide what that means for a
-  /// particular scrollable.
-  line,
-
-  /// Indicates that the [ScrollIncrementCalculator] should return the scroll
-  /// distance it should move when the user requests to scroll by a "page".
-  ///
-  /// The distance a "page" scrolls refers to what should happen when the key
-  /// binding for "scroll down/up by a page" is triggered. It's up to the
-  /// [ScrollIncrementCalculator] function to decide what that means for a
-  /// particular scrollable.
-  page,
-}
-
-/// A details object that describes the type of scroll increment being requested
-/// of a [ScrollIncrementCalculator] function, as well as the current metrics
-/// for the scrollable.
-class ScrollIncrementDetails {
-  /// A const constructor for a [ScrollIncrementDetails].
-  ///
-  /// All of the arguments must not be null, and are required.
-  const ScrollIncrementDetails({
-    required this.type,
-    required this.metrics,
-  })  : assert(type != null),
-        assert(metrics != null);
-
-  /// The type of scroll this is (e.g. line, page, etc.).
-  ///
-  /// {@macro flutter.widgets.ScrollIncrementType.intent}
-  final ScrollIncrementType type;
-
-  /// The current metrics of the scrollable that is being scrolled.
-  final ScrollMetrics metrics;
-}
-
-/// An [Intent] that represents scrolling the nearest scrollable by an amount
-/// appropriate for the [type] specified.
-///
-/// The actual amount of the scroll is determined by the
-/// [Scrollable.incrementCalculator], or by its defaults if that is not
-/// specified.
-class ScrollIntent extends Intent {
-  /// Creates a const [ScrollIntent] that requests scrolling in the given
-  /// [direction], with the given [type].
-  const ScrollIntent({
-    required this.direction,
-    this.type = ScrollIncrementType.line,
-  })  : assert(direction != null),
-        assert(type != null);
-
-  /// The direction in which to scroll the scrollable containing the focused
-  /// widget.
-  final AxisDirection direction;
-
-  /// The type of scrolling that is intended.
-  final ScrollIncrementType type;
-}
-
-/// An [Action] that scrolls the [Scrollable] that encloses the current
-/// [primaryFocus] by the amount configured in the [ScrollIntent] given to it.
-///
-/// If a Scrollable cannot be found above the current [primaryFocus], the
-/// [PrimaryScrollController] will be considered for default handling of
-/// [ScrollAction]s.
-///
-/// If [Scrollable.incrementCalculator] is null for the scrollable, the default
-/// for a [ScrollIntent.type] set to [ScrollIncrementType.page] is 80% of the
-/// size of the scroll window, and for [ScrollIncrementType.line], 50 logical
-/// pixels.
-class ScrollAction extends Action<ScrollIntent> {
-  @override
-  bool isEnabled(ScrollIntent intent) {
-    final FocusNode? focus = primaryFocus;
-    final bool contextIsValid = focus != null && focus.context != null;
-    if (contextIsValid) {
-      // Check for primary scrollable within the current context
-      if (Scrollable.maybeOf(focus.context!) != null) {
-        return true;
-      }
-      // Check for fallback scrollable with context from PrimaryScrollController
-      final ScrollController? primaryScrollController = PrimaryScrollController.maybeOf(focus.context!);
-      return primaryScrollController != null && primaryScrollController.hasClients;
-    }
-    return false;
-  }
-
-  /// Returns the scroll increment for a single scroll request, for use when
-  /// scrolling using a hardware keyboard.
-  ///
-  /// Must not be called when the position is null, or when any of the position
-  /// metrics (pixels, viewportDimension, maxScrollExtent, minScrollExtent) are
-  /// null. The type and state arguments must not be null, and the widget must
-  /// have already been laid out so that the position fields are valid.
-  static double _calculateScrollIncrement(ScrollableState state, { ScrollIncrementType type = ScrollIncrementType.line }) {
-    assert(type != null);
-    assert(state.position != null);
-    assert(state.position.hasPixels);
-    assert(state.position.viewportDimension != null);
-    assert(state.position.maxScrollExtent != null);
-    assert(state.position.minScrollExtent != null);
-    assert(state._physics == null || state._physics!.shouldAcceptUserOffset(state.position));
-    if (state.widget.incrementCalculator != null) {
-      return state.widget.incrementCalculator!(
-        ScrollIncrementDetails(
-          type: type,
-          metrics: state.position,
-        ),
-      );
-    }
-    switch (type) {
-      case ScrollIncrementType.line:
-        return 50.0;
-      case ScrollIncrementType.page:
-        return 0.8 * state.position.viewportDimension;
-    }
-  }
-
-  /// Find out how much of an increment to move by, taking the different
-  /// directions into account.
-  static double getDirectionalIncrement(ScrollableState state, ScrollIntent intent) {
-    final double increment = _calculateScrollIncrement(state, type: intent.type);
-    switch (intent.direction) {
-      case AxisDirection.down:
-        switch (state.axisDirection) {
-          case AxisDirection.up:
-            return -increment;
-          case AxisDirection.down:
-            return increment;
-          case AxisDirection.right:
-          case AxisDirection.left:
-            return 0.0;
-        }
-      case AxisDirection.up:
-        switch (state.axisDirection) {
-          case AxisDirection.up:
-            return increment;
-          case AxisDirection.down:
-            return -increment;
-          case AxisDirection.right:
-          case AxisDirection.left:
-            return 0.0;
-        }
-      case AxisDirection.left:
-        switch (state.axisDirection) {
-          case AxisDirection.right:
-            return -increment;
-          case AxisDirection.left:
-            return increment;
-          case AxisDirection.up:
-          case AxisDirection.down:
-            return 0.0;
-        }
-      case AxisDirection.right:
-        switch (state.axisDirection) {
-          case AxisDirection.right:
-            return increment;
-          case AxisDirection.left:
-            return -increment;
-          case AxisDirection.up:
-          case AxisDirection.down:
-            return 0.0;
-        }
-    }
-  }
-
-  @override
-  void invoke(ScrollIntent intent) {
-    ScrollableState? state = Scrollable.maybeOf(primaryFocus!.context!);
-    if (state == null) {
-      final ScrollController primaryScrollController = PrimaryScrollController.of(primaryFocus!.context!);
-      assert (() {
-        if (primaryScrollController.positions.length != 1) {
-          throw FlutterError.fromParts(<DiagnosticsNode>[
-            ErrorSummary(
-              'A ScrollAction was invoked with the PrimaryScrollController, but '
-              'more than one ScrollPosition is attached.',
-            ),
-            ErrorDescription(
-              'Only one ScrollPosition can be manipulated by a ScrollAction at '
-              'a time.',
-            ),
-            ErrorHint(
-              'The PrimaryScrollController can be inherited automatically by '
-              'descendant ScrollViews based on the TargetPlatform and scroll '
-              'direction. By default, the PrimaryScrollController is '
-              'automatically inherited on mobile platforms for vertical '
-              'ScrollViews. ScrollView.primary can also override this behavior.',
-            ),
-          ]);
-        }
-        return true;
-      }());
-
-      if (primaryScrollController.position.context.notificationContext == null
-          && Scrollable.maybeOf(primaryScrollController.position.context.notificationContext!) == null) {
-        return;
-      }
-      state = Scrollable.maybeOf(primaryScrollController.position.context.notificationContext!);
-    }
-    assert(state != null, '$ScrollAction was invoked on a context that has no scrollable parent');
-    assert(state!.position.hasPixels, 'Scrollable must be laid out before it can be scrolled via a ScrollAction');
-    assert(state!.position.viewportDimension != null);
-    assert(state!.position.maxScrollExtent != null);
-    assert(state!.position.minScrollExtent != null);
-
-    // Don't do anything if the user isn't allowed to scroll.
-    if (state!._physics != null && !state._physics!.shouldAcceptUserOffset(state.position)) {
-      return;
-    }
-    final double increment = getDirectionalIncrement(state, intent);
-    if (increment == 0.0) {
-      return;
-    }
-    state.position.moveTo(
-      state.position.pixels + increment,
-      duration: const Duration(milliseconds: 100),
-      curve: Curves.easeInOut,
-    );
-  }
-}
-
 // Not using a RestorableDouble because we want to allow null values and override
 // [enabled].
 class _RestorableScrollOffset extends RestorableValue<double?> {
@@ -2448,4 +1540,472 @@ class _RestorableScrollOffset extends RestorableValue<double?> {
 
   @override
   bool get enabled => value != null;
+}
+
+// 2D Scrollable
+
+// Vertical outer scrollable of 2D scrolling
+class _OuterVerticalDimension extends Scrollable {
+  const _OuterVerticalDimension({
+    super.key,
+    required super.viewportBuilder,
+    super.axisDirection,
+    super.controller,
+    super.physics,
+    super.clipBehavior,
+    super.incrementCalculator,
+    super.excludeFromSemantics,
+    super.semanticChildCount,
+    super.dragStartBehavior,
+    super.restorationId,
+  }) : assert(axisDirection == AxisDirection.up || axisDirection == AxisDirection.down);
+
+  @override
+  _OuterVerticalDimensionState createState() => _OuterVerticalDimensionState();
+}
+
+class _OuterVerticalDimensionState extends ScrollableState {
+  late bool _panAxes;
+
+  @override
+  void didChangeDependencies() {
+    _panAxes = TwoDimensionalScrollable._panAxes(context)!;
+    super.didChangeDependencies();
+  }
+
+  @override
+  void setCanDrag(bool value) {
+    if (_panAxes && value) {
+      // If _panAxes is true, a panning gesture recognizer will be created
+      // in the _InnerHorizontalDimension. So in this case, the
+      // _OuterVerticalDimension does not require a gesture recognizer.
+      _gestureRecognizers = const <Type, GestureRecognizerFactory>{};
+      // Cancel the active hold/drag (if any) because the gesture recognizers
+      // will soon be disposed by our RawGestureDetector, and we won't be
+      // receiving pointer up events to cancel the hold/drag.
+      _handleDragCancel();
+      _lastCanDrag = value;
+      _lastAxisDirection = widget.axis;
+      if (_gestureDetectorKey.currentState != null) {
+        _gestureDetectorKey.currentState!.replaceGestureRecognizers(_gestureRecognizers);
+      }
+    } else {
+      // If we aren't panning, the default vertical drag gesture recognizer is
+      // used.
+      super.setCanDrag(value);
+    }
+  }
+
+  @override
+  Widget _buildChrome(Widget child) {
+    print('outer build chrome');
+    final ScrollableDetails details = ScrollableDetails(
+      direction: widget.axisDirection,
+      controller: _effectiveScrollController,
+      clipBehavior: widget.clipBehavior,
+    );
+    // Skip building a scrollbar here, the dual scrollbar is added in
+    // TwoDimensionalScrollableState.
+    return _configuration.buildOverscrollIndicator(context, child, details);
+  }
+}
+
+// Horizontal inner scrollable of 2D scrolling
+class _InnerHorizontalDimension extends Scrollable {
+  const _InnerHorizontalDimension({
+    super.key,
+    required super.viewportBuilder,
+    super.axisDirection,
+    super.controller,
+    super.physics,
+    super.clipBehavior,
+    super.incrementCalculator,
+    super.excludeFromSemantics,
+    super.semanticChildCount,
+    super.dragStartBehavior,
+    super.restorationId,
+  }) : assert(axisDirection == AxisDirection.left || axisDirection == AxisDirection.right);
+
+  @override
+  _InnerHorizontalDimensionState createState() => _InnerHorizontalDimensionState();
+}
+
+class _InnerHorizontalDimensionState extends ScrollableState {
+  late ScrollableState _verticalScrollable;
+  late bool _panAxes;
+
+  @override
+  void didChangeDependencies() {
+    _verticalScrollable = Scrollable.of(context);
+    _panAxes = TwoDimensionalScrollable._panAxes(context)!;
+    super.didChangeDependencies();
+  }
+
+  @override
+  void _handleDragDown(DragDownDetails details) {
+    if (_panAxes) {
+      _verticalScrollable._handleDragDown(details);
+    }
+    super._handleDragDown(details);
+  }
+
+  @override
+  void _handleDragStart(DragStartDetails details) {
+    if (_panAxes) {
+      _verticalScrollable._handleDragStart(details);
+    }
+    super._handleDragStart(details);
+  }
+
+  @override
+  void _handleDragUpdate(DragUpdateDetails details) {
+    if (_panAxes) {
+      final DragUpdateDetails verticalDragDetails = DragUpdateDetails(
+        sourceTimeStamp: details.sourceTimeStamp,
+        delta: Offset(details.delta.dy, 0.0),
+        primaryDelta: details.delta.dy,
+        globalPosition: details.globalPosition,
+        localPosition: details.localPosition,
+      );
+      _verticalScrollable._handleDragUpdate(verticalDragDetails);
+    }
+    final DragUpdateDetails horizontalDragDetails = DragUpdateDetails(
+      sourceTimeStamp: details.sourceTimeStamp,
+      delta: Offset(details.delta.dx, 0.0),
+      primaryDelta: details.delta.dx,
+      globalPosition: details.globalPosition,
+      localPosition: details.localPosition,
+    );
+    super._handleDragUpdate(horizontalDragDetails);
+  }
+
+  @override
+  void _handleDragEnd(DragEndDetails details) {
+    if (_panAxes) {
+      final DragEndDetails verticalDragDetails = DragEndDetails(
+        velocity: details.velocity,
+        primaryVelocity: details.velocity.pixelsPerSecond.dy,
+      );
+      _verticalScrollable._handleDragEnd(verticalDragDetails);
+    }
+    final DragEndDetails horizontalDragDetails = DragEndDetails(
+      velocity: details.velocity,
+      primaryVelocity: details.velocity.pixelsPerSecond.dx,
+    );
+    super._handleDragEnd(horizontalDragDetails);
+  }
+
+  @override
+  void _handleDragCancel() {
+    if (_panAxes) {
+      _verticalScrollable._handleDragCancel();
+    }
+    super._handleDragCancel();
+  }
+
+  @override
+  void setCanDrag(bool value) {
+    if (_panAxes && value) {
+      // Replaces the typical vertical/horizontal drag gesture recognizers with
+      // a pan gesture recognizer to allow bidirectional scrolling. Any
+      // horizontal delta is applied to this scrollable, while vertical deltas
+      // are routed to the vertical scrollable.
+      _gestureRecognizers = <Type, GestureRecognizerFactory>{
+        PanGestureRecognizer: GestureRecognizerFactoryWithHandlers<PanGestureRecognizer>(
+              () => PanGestureRecognizer(supportedDevices: _configuration.dragDevices),
+              (PanGestureRecognizer instance) {
+            instance
+              ..onDown = _handleDragDown
+              ..onStart = _handleDragStart
+              ..onUpdate = _handleDragUpdate
+              ..onEnd = _handleDragEnd
+              ..onCancel = _handleDragCancel
+              ..minFlingDistance = _physics?.minFlingDistance
+              ..minFlingVelocity = _physics?.minFlingVelocity
+              ..maxFlingVelocity = _physics?.maxFlingVelocity
+              ..velocityTrackerBuilder = _configuration.velocityTrackerBuilder(context)
+              ..dragStartBehavior = widget.dragStartBehavior
+              ..gestureSettings = _mediaQueryGestureSettings;
+          },
+        ),
+      };
+      // Cancel the active hold/drag (if any) because the gesture recognizers
+      // will soon be disposed by our RawGestureDetector, and we won't be
+      // receiving pointer up events to cancel the hold/drag.
+      _handleDragCancel();
+      _lastCanDrag = value;
+      _lastAxisDirection = widget.axis;
+      if (_gestureDetectorKey.currentState != null) {
+        _gestureDetectorKey.currentState!.replaceGestureRecognizers(_gestureRecognizers);
+      }
+    } else {
+      // If we aren't panning, the default horizontal drag gesture recognizer is
+      // used.
+      super.setCanDrag(value);
+    }
+  }
+
+  @override
+  Widget _buildChrome(Widget child) {
+    print('inner build chrome');
+    final ScrollableDetails details = ScrollableDetails(
+      direction: widget.axisDirection,
+      controller: _effectiveScrollController,
+      clipBehavior: widget.clipBehavior,
+    );
+    // Skip building a scrollbar here, the dual scrollbar is added in
+    // TwoDimensionalScrollableState.
+    return _configuration.buildOverscrollIndicator(context, child, details);
+  }
+}
+
+/// A widget that scrolls in two dimensions.
+///
+/// [TwoDimensionalScrollable] implements the interaction model for a scrollable
+/// widget, including gesture recognition, but does not have an opinion about
+/// how the viewport, which actually displays the children, is constructed.
+///
+/// It's rare to construct a [TwoDimensionalScrollable] directly. Instead,
+/// consider [TableView], which combine scrolling, viewporting, and a layout
+/// model in both dimensions.
+///
+/// The static [TwoDimensionalScrollable.of] and
+/// [TwoDimensionalScrollable.ensureVisible] functions are often used to
+/// interact with the [TwoDimensionalScrollable] widget inside a [TableView].
+///
+/// See also:
+///
+///  * [TableView], which is a commonly used two-dimensional scroll view that
+///    displays a scrolling array of children in both directions.
+///  * [TwoDimensionalViewport], which can be used to customize the child layout
+///    model.
+class TwoDimensionalScrollable extends StatefulWidget {
+  /// Creates a widget that scrolls in two dimensions.
+  ///
+  /// The [viewportBuilder] must not be null.
+  const TwoDimensionalScrollable({
+    super.key,
+    required this.horizontalDetails,
+    required this.verticalDetails,
+    this.panAxes = false,
+    required this.viewportBuilder,
+    this.incrementCalculator,
+    this.excludeFromSemantics = false,
+    this.dragStartBehavior = DragStartBehavior.start,
+  });
+
+  /// Whether scrolling gestures should lock to one axes, or allow free movement
+  /// in both axes.
+  ///
+  /// If false, panning is only allowed in the direction of the horizontal axis
+  /// or the vertical axis during a given gesture.
+  ///
+  /// When this is true, diagonal scrolling is allowed. A single gesture begun
+  /// along one axis cannot also cause panning along the other axis without
+  /// stopping and beginning a new gesture. This is a common
+  /// pattern in tables where data is displayed in columns and rows.
+  final bool panAxes;
+
+  /// The configuration of the horizontal Scrollable.
+  ///
+  /// These [ScrollableDetails] can be used to set the [AxisDirection],
+  /// [ScrollController], [ScrollPhysics] and more for the horizontal axis.
+  final ScrollableDetails horizontalDetails;
+
+  /// The configuration of the vertical Scrollable.
+  ///
+  /// These [ScrollableDetails] can be used to set the [AxisDirection],
+  /// [ScrollController], [ScrollPhysics] and more for the vertical axis.
+  final ScrollableDetails verticalDetails;
+
+  /// Builds the viewport through which the scrollable content is displayed.
+  ///
+  /// A [TwoDimensionalViewport] uses two given [ViewportOffset]s to determine
+  /// which part of its content is actually visible through the viewport.
+  ///
+  /// See also:
+  ///
+  ///  * [TwoDimensionalViewport], which is a viewport that displays a span of
+  ///    widgets in both dimensions.
+  final  TwoDimensionalViewportBuilder viewportBuilder;
+
+  /// {@macro flutter.widgets.Scrollable.incrementCalculator}
+  ///
+  /// This value applies in both axes.
+  final ScrollIncrementCalculator? incrementCalculator;
+
+  /// {@macro flutter.widgets.scrollable.excludeFromSemantics}
+  ///
+  /// This value applies to both axes.
+  final bool excludeFromSemantics;
+
+  /// {@macro flutter.widgets.scrollable.dragStartBehavior}
+  ///
+  /// This value applies in both axes.
+  final DragStartBehavior dragStartBehavior;
+
+  @override
+  State<TwoDimensionalScrollable> createState() => TwoDimensionalScrollableState();
+
+  /// The state from the closest instance of this class that encloses the given
+  /// context, or null if none is found.
+  ///
+  /// Typical usage is as follows:
+  ///
+  /// ```dart
+  /// TwoDimensionalScrollableState? 2DScrollable = TwoDimensionalScrollable.maybeOf(context);
+  /// ```
+  ///
+  /// Calling this method will create a dependency on the closest [Scrollable]
+  /// in the [context], if there is one.
+  ///
+  /// See also:
+  ///
+  /// * [TwoDimensionalScrollable.of], which is similar to this method, but
+  ///   asserts if no [Scrollable] ancestor is found.
+  static TwoDimensionalScrollableState? maybeOf(BuildContext context) {
+    final _TwoDimensionalScrollableScope? widget = context.dependOnInheritedWidgetOfExactType<_TwoDimensionalScrollableScope>();
+    return widget?.twoDimensionalScrollable;
+  }
+
+  /// The state from the closest instance of this class that encloses the given
+  /// context.
+  ///
+  /// Typical usage is as follows:
+  ///
+  /// ```dart
+  /// TwoDimensionalScrollableState scrollable = TwoDimensionalScrollable.of(context);
+  /// ```
+  ///
+  /// Calling this method will create a dependency on the closest
+  /// [TwoDimensionalScrollable] in the [context].
+  ///
+  /// If no [TwoDimensionalScrollable] ancestor is found, then this method will
+  /// assert in debug mode, and throw an exception in release mode.
+  ///
+  /// See also:
+  ///
+  /// * [TwoDimensionalScrollable.maybeOf], which is similar to this method,
+  ///   but returns null if no [TwoDimensionalScrollable] ancestor is found.
+  static TwoDimensionalScrollableState of(BuildContext context) {
+    final TwoDimensionalScrollableState? scrollableState = maybeOf(context);
+    assert(() {
+      if (scrollableState == null) {
+        throw FlutterError(
+          'TwoDimensionalScrollable.of() was called with a context that does not '
+              'contain a TwoDimensionalScrollable widget.\n'
+              'No TwoDimensionalScrollable widget ancestor could be found starting '
+              'from the context that was passed to TwoDimensionalScrollable.of(). '
+              'This can happen because you are using a widget that looks for a '
+              'TwoDimensionalScrollable ancestor, but no such ancestor exists.\n'
+              'The context used was:\n'
+              '  $context',
+        );
+      }
+      return true;
+    }());
+    return scrollableState!;
+  }
+
+  // Informs the scrollable widgets for gesture recognizers.
+  static bool? _panAxes(BuildContext context) {
+    final _TwoDimensionalScrollableScope? widget = context.dependOnInheritedWidgetOfExactType<_TwoDimensionalScrollableScope>();
+    return widget?.alignPanAxis;
+  }
+
+// TODO(Piinks): ensureVisible for 2D
+}
+
+///
+class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
+  // TODO(Piinks): Add assertions and error messaging when accessing the
+  //  scrollable states are null.
+
+  /// The [ScrollableState] of the vertical axis.
+  ///
+  /// Accessible by calling [TwoDimensionalScrollable.of].
+  ScrollableState get verticalScrollable => _verticalScrollableKey.currentState!;
+  final GlobalKey<ScrollableState> _verticalScrollableKey = GlobalKey<ScrollableState>();
+
+  /// The [ScrollableState] of the horizontal axis.
+  ///
+  /// Accessible by calling [TwoDimensionalScrollable.of].
+  ScrollableState get horizontalScrollable => _horizontalScrollableKey.currentState!;
+  final GlobalKey<ScrollableState> _horizontalScrollableKey = GlobalKey<ScrollableState>();
+  late ScrollBehavior _configuration;
+
+  @override
+  void didChangeDependencies() {
+    _configuration = ScrollConfiguration.of(context);
+    super.didChangeDependencies();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget result = _OuterVerticalDimension(
+      key: _verticalScrollableKey,
+      axisDirection: widget.verticalDetails.direction,
+      controller: widget.verticalDetails.controller,
+      physics: widget.verticalDetails.physics,
+      clipBehavior: widget.verticalDetails.clipBehavior ?? Clip.hardEdge,
+      incrementCalculator: widget.incrementCalculator,
+      excludeFromSemantics: widget.excludeFromSemantics,
+      semanticChildCount: widget.horizontalDetails.semanticChildCount,
+      dragStartBehavior: widget.dragStartBehavior,
+      restorationId: widget.horizontalDetails.restorationId,
+      viewportBuilder: (BuildContext context, ViewportOffset verticalOffset) {
+        return _InnerHorizontalDimension(
+          key: _horizontalScrollableKey,
+          axisDirection: widget.horizontalDetails.direction,
+          controller: widget.horizontalDetails.controller,
+          physics: widget.horizontalDetails.physics,
+          clipBehavior: widget.horizontalDetails.clipBehavior ?? Clip.hardEdge,
+          incrementCalculator: widget.incrementCalculator,
+          excludeFromSemantics: widget.excludeFromSemantics,
+          semanticChildCount: widget.horizontalDetails.semanticChildCount,
+          dragStartBehavior: widget.dragStartBehavior,
+          restorationId: widget.horizontalDetails.restorationId,
+          viewportBuilder: (BuildContext context, ViewportOffset horizontalOffset) {
+            return widget.viewportBuilder(context, verticalOffset, horizontalOffset);
+          },
+        );
+      },
+    );
+
+    print('Building dual scrollbars....');
+    result = _configuration.buildDualScrollbars(
+      context,
+      result,
+      widget.verticalDetails,
+      widget.horizontalDetails,
+    );
+
+    return _TwoDimensionalScrollableScope(
+      alignPanAxis: widget.panAxes,
+      twoDimensionalScrollable: this,
+      child: result,
+    );
+  }
+}
+
+// Enable TwoDimensionalScrollable.of() to work as if
+// TwoDimensionalScrollableState was an inherited widget.
+// TwoDimensionalScrollableState.build() always rebuilds its
+// _TwoDimensionalScrollableScope.
+class _TwoDimensionalScrollableScope extends InheritedWidget {
+  const _TwoDimensionalScrollableScope({
+    required this.alignPanAxis,
+    required this.twoDimensionalScrollable,
+    required super.child,
+  }) : assert(alignPanAxis != null),
+        assert(twoDimensionalScrollable != null),
+        assert(child != null);
+
+  final bool alignPanAxis;
+  final TwoDimensionalScrollableState twoDimensionalScrollable;
+
+  @override
+  bool updateShouldNotify(_TwoDimensionalScrollableScope old) {
+    return alignPanAxis != old.alignPanAxis;
+  }
 }

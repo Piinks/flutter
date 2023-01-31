@@ -18,6 +18,22 @@
 # * Fixes in this file are from the Services library. *
 version: 1
 transforms:
+  # Changes made in https://github.com/flutter/flutter/pull/82594 and https://github.com/flutter/flutter/pull/119187
+  - title: "Migrate to 'routeInformationUpdated'"
+    date: 2023-01-30
+    element:
+      uris: [ 'services.dart' ]
+      method: 'routeUpdated'
+      inClass: 'SystemNavigator'
+    changes:
+      - kind: 'removeParameter'
+        name: 'previousRouteName'
+      - kind: 'renameParameter'
+        oldName: 'routeName'
+        newName: 'location'
+      - kind: 'rename'
+        newName: 'routeInformationUpdated'
+
   # Changes made in https://github.com/flutter/flutter/pull/60320
   - title: "Migrate to 'viewId'"
     date: 2020-07-05

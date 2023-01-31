@@ -36,6 +36,7 @@ transforms:
         style: optional_named
         argumentValue:
           expression: '{% location %}'
+          requiredIf: "location != null"
       - kind: 'rename'
         newName: 'routeInformationUpdated'
     variables:

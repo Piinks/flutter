@@ -28,21 +28,11 @@ transforms:
     changes:
       - kind: 'removeParameter'
         name: 'previousRouteName'
-      - kind: 'removeParameter'
-        name: 'routeName'
-      - kind: 'addParameter'
-        index: 0
-        name: 'location'
-        style: optional_named
-        argumentValue:
-          expression: '{% location %}'
-          requiredIf: "location != null"
+      - kind: 'renameParameter'
+        oldName: 'routeName'
+        newName: 'location'
       - kind: 'rename'
         newName: 'routeInformationUpdated'
-    variables:
-      location:
-        kind: 'fragment'
-        value: 'arguments[routeName]'
 
   # Changes made in https://github.com/flutter/flutter/pull/60320
   - title: "Migrate to 'viewId'"

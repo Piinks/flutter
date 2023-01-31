@@ -5,6 +5,9 @@
 import 'package:flutter/services.dart';
 
 void main() {
+  // Changes made in https://github.com/flutter/flutter/pull/82594 and https://github.com/flutter/flutter/pull/119187
+  SystemNavigator.routeUpdated(routeName: 'foo', previousRouteName: 'bar');
+
   // Changes made in https://github.com/flutter/flutter/pull/60320
   final SurfaceAndroidViewController surfaceController = SurfaceAndroidViewController(
       viewId: 10,

@@ -82,7 +82,6 @@ class CupertinoScrollbar extends RawScrollbar {
     this.radiusWhileDragging = defaultRadiusWhileDragging,
     ScrollNotificationPredicate? notificationPredicate,
     super.scrollbarOrientation,
-    super.padding,
     @Deprecated(
       'Use thumbVisibility instead. '
       'This feature was deprecated after v2.9.0-1.0.pre.',

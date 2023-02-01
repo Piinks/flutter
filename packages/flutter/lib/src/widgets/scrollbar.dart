@@ -488,7 +488,6 @@ class ScrollbarPainter extends ChangeNotifier implements CustomPainter {
       + _lastMetrics!.viewportDimension;
   }
 
-  ///
   ScrollbarOrientation get _resolvedOrientation {
     if (scrollbarOrientation == null) {
       if (_isVertical) {
@@ -1041,6 +1040,11 @@ class RawScrollbar extends StatefulWidget {
     required ScrollController horizontalController,
     required Widget child,
   }) {
+    // TODO(Piinks): Refactor
+    // This should be revisited to instead create 2 internal custom painters for
+    // each scrollbar. Each painter needs to have knowledge of the other to
+    // avoid overlapping. After exploring a bunch of options, managing this
+    // internally seems like the best option.
     return RawScrollbar(
       controller: verticalController,
       child: RawScrollbar(
@@ -1452,7 +1456,7 @@ class RawScrollbar extends StatefulWidget {
   ///
   /// The scrollbar track consumes this space.
   ///
-  /// Mustn't be null and defaults to 0.
+  /// Must not be null and defaults to 0.
   final double crossAxisMargin;
 
   /// The insets by which the scrollbar thumb and track should be padded.
@@ -1484,6 +1488,7 @@ class RawScrollbarState<T extends RawScrollbar> extends State<T> with TickerProv
   final GlobalKey  _scrollbarPainterKey = GlobalKey();
   bool _hoverIsActive = false;
   bool _thumbDragging = false;
+
   ScrollController? get _effectiveScrollController => widget.controller ?? PrimaryScrollController.maybeOf(context);
 
   /// Used to paint the scrollbar.

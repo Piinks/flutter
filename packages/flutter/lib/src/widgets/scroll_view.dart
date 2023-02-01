@@ -1965,7 +1965,7 @@ abstract class TwoDimensionalScrollView extends StatelessWidget {
     this.mainAxis = Axis.vertical,
     this.panAxes = false,
     this.primary,
-    // TODO(Piinks): Assert these arent the same axis
+    // TODO(Piinks): Assert these aren't the same axis
     this.verticalDetails = const ScrollableDetails.vertical(),
     this.horizontalDetails = const ScrollableDetails.horizontal(),
     // this.center,
@@ -1989,7 +1989,11 @@ abstract class TwoDimensionalScrollView extends StatelessWidget {
        // assert(semanticChildCount == null || semanticChildCount >= 0);
        // TODO(Piinks): Assert primary/mainAxis stuff
 
-  ///
+  ///   * column/row major order
+  ///   * paint
+  ///   * focus traversal
+  ///   * semantics traversal
+  ///   * primary scroll controller
   final Axis mainAxis;
 
   ///
@@ -2018,6 +2022,7 @@ abstract class TwoDimensionalScrollView extends StatelessWidget {
     BuildContext context,
     ViewportOffset verticalOffset,
     ViewportOffset horizontalOffset,
+    Axis mainAxis,
     // delegate,
   );
 
@@ -2038,9 +2043,9 @@ abstract class TwoDimensionalScrollView extends StatelessWidget {
       horizontalDetails : horizontalDetails,
       verticalDetails: verticalDetails,
       panAxes: panAxes,
-      mainAxis: mainAxis,
-      viewportBuilder: (BuildContext context, ViewportOffset verticalOffset, ViewportOffset horizontalOffset) {
-        return buildViewport(context, verticalOffset, horizontalOffset);
+      // mainAxis: mainAxis,
+      viewportBuilder: (BuildContext context, ViewportOffset verticalPosition, ViewportOffset horizontalPosition) {
+        return buildViewport(context, verticalPosition, horizontalPosition, mainAxis);
       },
       dragStartBehavior: dragStartBehavior,
     );

@@ -2111,20 +2111,3 @@ class RenderShrinkWrappingViewport extends RenderViewportBase<SliverLogicalConta
     return children;
   }
 }
-
-// 2D RenderViewport
-
-///
-abstract class RenderTwoDimensionalViewportBase extends RenderBox implements RenderAbstractViewport {
-
-}
-
-// Basic 2D Delegate
-
-// _CellIndex -> _ChildLocale(index[r/c], position[x/y])
-
-// _CellManager -> _ChildManager
-
-// Parent data
-
-

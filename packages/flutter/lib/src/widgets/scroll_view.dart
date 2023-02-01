@@ -1971,6 +1971,7 @@ abstract class TwoDimensionalScrollView extends StatelessWidget {
     // this.center,
     // this.anchor = 0.0,
     // this.cacheExtent,
+    // this.delegate,
     this.dragStartBehavior = DragStartBehavior.start,
     this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
     this.clipBehavior = Clip.hardEdge,

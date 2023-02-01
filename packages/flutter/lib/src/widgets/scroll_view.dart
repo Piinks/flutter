@@ -1965,13 +1965,12 @@ abstract class TwoDimensionalScrollView extends StatelessWidget {
     this.mainAxis = Axis.vertical,
     this.panAxes = false,
     this.primary,
-    // TODO(Piinks): Assert these aren't the same axis
     this.verticalDetails = const ScrollableDetails.vertical(),
     this.horizontalDetails = const ScrollableDetails.horizontal(),
     // this.center,
     // this.anchor = 0.0,
-    // this.cacheExtent,
-    // this.delegate,
+    this.cacheExtent,
+    required this.delegate,
     this.dragStartBehavior = DragStartBehavior.start,
     this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
     this.clipBehavior = Clip.hardEdge,
@@ -1998,6 +1997,12 @@ abstract class TwoDimensionalScrollView extends StatelessWidget {
   final Axis mainAxis;
 
   ///
+  final TwoDimensionalChildDelegate delegate;
+
+  ///
+  final double? cacheExtent;
+
+  ///
   final bool panAxes;
 
   ///
@@ -2019,12 +2024,11 @@ abstract class TwoDimensionalScrollView extends StatelessWidget {
   final Clip clipBehavior;
 
   ///
+  // mainAxis, delegate, cacheExtent, clipBehavior
   Widget buildViewport(
     BuildContext context,
     ViewportOffset verticalOffset,
     ViewportOffset horizontalOffset,
-    Axis mainAxis,
-    // delegate,
   );
 
   ScrollableDetails get _mainAxisDetails => mainAxis == Axis.vertical
@@ -2041,13 +2045,14 @@ abstract class TwoDimensionalScrollView extends StatelessWidget {
       : _mainAxisDetails.controller;
 
     final TwoDimensionalScrollable scrollable = TwoDimensionalScrollable(
-      horizontalDetails : horizontalDetails,
-      verticalDetails: verticalDetails,
+      horizontalDetails : mainAxis == Axis.horizontal
+        ? horizontalDetails.copyWith(controller: scrollController)
+        : horizontalDetails,
+      verticalDetails: mainAxis == Axis.vertical
+          ? verticalDetails.copyWith(controller: scrollController)
+          : verticalDetails,
       panAxes: panAxes,
-      // mainAxis: mainAxis,
-      viewportBuilder: (BuildContext context, ViewportOffset verticalPosition, ViewportOffset horizontalPosition) {
-        return buildViewport(context, verticalPosition, horizontalPosition, mainAxis);
-      },
+      viewportBuilder: buildViewport,
       dragStartBehavior: dragStartBehavior,
     );
 

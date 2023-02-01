@@ -405,11 +405,18 @@ class ShrinkWrappingViewport extends MultiChildRenderObjectWidget {
 ///
 abstract class TwoDimensionalChildDelegate implements RawTwoDimensionalDelegate {
   ///
-  Widget buildChild(BuildContext context, int column, int row);
+  const TwoDimensionalChildDelegate();
+
+  ///
+  Widget build(BuildContext context, int y, int x);
 
   ///
   @override
-  bool shouldRebuild(RawTwoDimensionalDelegate oldDelegate);
+  bool shouldRebuild(covariant RawTwoDimensionalDelegate oldDelegate);
+
+  // toString
+
+  // debugFillDescription
 }
 
 ///
@@ -599,7 +606,7 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
   }
 
   Widget _buildChild(ChildIndex index) {
-    return widget.delegate.buildChild(this, index.y, index.x);
+    return widget.delegate.build(this, index.y, index.x);
   }
 
   @override

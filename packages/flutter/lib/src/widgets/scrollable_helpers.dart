@@ -233,6 +233,25 @@ class ScrollableDetails {
   /// Defaults to null.
   final Clip? clipBehavior;
 
+  ///
+  ScrollableDetails copyWith({
+    AxisDirection? direction,
+    ScrollController? controller,
+    ScrollPhysics? physics,
+    String? restorationId,
+    int? semanticChildCount,
+    Clip? clipBehavior,
+  }) {
+    return ScrollableDetails(
+      direction: direction ?? this.direction,
+      controller: controller ?? this.controller,
+      physics: physics ?? this.physics,
+      restorationId: restorationId ?? this.restorationId,
+      semanticChildCount: semanticChildCount ?? this.semanticChildCount,
+      clipBehavior: clipBehavior ?? this.clipBehavior,
+    );
+  }
+
   // TODO(Piinks): toString
 }
 

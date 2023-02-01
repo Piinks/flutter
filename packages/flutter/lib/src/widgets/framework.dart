@@ -4912,6 +4912,9 @@ typedef WidgetBuilder = Widget Function(BuildContext context);
 ///  * [NullableIndexedWidgetBuilder], which is similar but may return null.
 typedef IndexedWidgetBuilder = Widget Function(BuildContext context, int index);
 
+///
+typedef TwoDimensionalIndexedWidgetBuilder = Widget Function(BuildContext context, int y, int x);
+
 /// Signature for a function that creates a widget for a given index, e.g., in a
 /// list, but may return null.
 ///

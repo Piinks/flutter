@@ -258,6 +258,7 @@ class TwoDimensionalViewportParentData extends BoxParentData {
   RenderBox? nextSibling;
   RenderBox? previousSibling;
   ChildIndex index = ChildIndex.invalid;
+  // Keep alive
 }
 
 abstract class TwoDimensionalChildManager {

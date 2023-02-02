@@ -412,7 +412,7 @@ abstract class TwoDimensionalChildDelegate implements RawTwoDimensionalDelegate 
 
   ///
   @override
-  bool shouldRebuild(covariant RawTwoDimensionalDelegate oldDelegate);
+  bool shouldRebuild(covariant TwoDimensionalChildDelegate oldDelegate);
 
   // toString
 

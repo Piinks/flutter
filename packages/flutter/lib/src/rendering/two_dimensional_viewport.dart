@@ -25,6 +25,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
        _verticalOffset = verticalOffset,
        _delegate = delegate;
 
+  // TODO(Piinks): Add getters and setters
   Axis mainAxis;
   double? cacheExtent;
   Clip clipBehavior = Clip.hardEdge;
@@ -176,29 +177,43 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
 
   @override
   void performResize() {
-    // final Size? oldSize = hasSize ? size : null;
+    final Size? oldSize = hasSize ? size : null;
     super.performResize();
     // Ignoring return value since we are doing a layout either way
     // (performLayout will be invoked next).
     horizontalOffset.applyViewportDimension(size.width);
     verticalOffset.applyViewportDimension(size.height);
     // TODO(Piinks): what did this break?
-    // if (oldSize != size) {
-    //   // Specs can depend on viewport size.
-    //   _needsExtentUpdate = true;
-    // }
+    if (oldSize != size) {
+      // Specs can depend on viewport size.
+      needsMetricsUpdate = true;
+    }
   }
 
   @override
-  void performLayout();
+  @mustCallSuper
+  void performLayout() {
+    // TODO(Piinks): Document this should be called at the end of subclass.performLayout
+    // And wrap these up in a debug method.
+    assert(_debugOrphans?.isEmpty ?? true);
+    assert(needsChildRebuild == false);
+    assert(needsDelegateRebuild == false);
+    assert(needsMetricsUpdate == false);
+  }
 
-  bool _needsChildRebuild = true;
-  bool _needsDelegateRebuild = true;
+  @protected
+  bool needsChildRebuild = true;
+
+  @protected
+  bool needsDelegateRebuild = true;
+
+  @protected
+  bool needsMetricsUpdate = true;
 
   @override
   void markNeedsLayout({bool withChildRebuild = false, bool withDelegateRebuild = false}) {
-    _needsChildRebuild = _needsChildRebuild || withChildRebuild;
-    _needsDelegateRebuild = _needsDelegateRebuild || withDelegateRebuild;
+    needsChildRebuild = needsChildRebuild || withChildRebuild;
+    needsDelegateRebuild = needsDelegateRebuild || withDelegateRebuild;
     // TODO(Piinks): set _needsDimensionUpdate if we depend on size of children (e.g. after implementing prototype-based sizing).
     super.markNeedsLayout();
   }

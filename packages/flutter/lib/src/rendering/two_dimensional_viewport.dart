@@ -17,9 +17,17 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     required ViewportOffset verticalOffset,
     required RawTwoDimensionalDelegate delegate,
     required this.childManager,
+    // TODO
+    required this.mainAxis,
+    this.cacheExtent,
+    this.clipBehavior = Clip.hardEdge,
   }) : _horizontalOffset = horizontalOffset,
        _verticalOffset = verticalOffset,
        _delegate = delegate;
+
+  Axis mainAxis;
+  double? cacheExtent;
+  Clip clipBehavior = Clip.hardEdge;
 
   ViewportOffset get horizontalOffset => _horizontalOffset;
   ViewportOffset _horizontalOffset;
@@ -89,7 +97,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     _horizontalOffset.addListener(markNeedsLayout);
     _verticalOffset.addListener(markNeedsLayout);
     _delegate.addListener(_handleDelegateNotification);
-    for (final RenderBox child in _children.values) {
+    for (final RenderBox child in children.values) {
       child.attach(owner);
     }
   }
@@ -100,27 +108,27 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     _horizontalOffset.removeListener(markNeedsLayout);
     _verticalOffset.removeListener(markNeedsLayout);
     _delegate.removeListener(_handleDelegateNotification);
-    for (final ChildIndex cellIndex in _children.keys) {
-      _children[cellIndex]!.detach();
+    for (final ChildIndex cellIndex in children.keys) {
+      children[cellIndex]!.detach();
     }
   }
 
   @override
   void redepthChildren() {
-    for (final RenderBox child in _children.values) {
+    for (final RenderBox child in children.values) {
       child.redepthChildren();
     }
   }
 
   @override
   void visitChildren(RenderObjectVisitor visitor) {
-    _children.values.forEach(visitor);
+    children.values.forEach(visitor);
   }
 
   @override
   List<DiagnosticsNode> debugDescribeChildren() {
-    return _children.keys.map<DiagnosticsNode>((ChildIndex index) {
-      return _children[index]!.toDiagnosticsNode(name: index.toString());
+    return children.keys.map<DiagnosticsNode>((ChildIndex index) {
+      return children[index]!.toDiagnosticsNode(name: index.toString());
     }).toList();
   }
 
@@ -144,7 +152,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
 
   @override
   bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
-    for (final RenderBox child in _children.values) {
+    for (final RenderBox child in children.values) {
       final TwoDimensionalViewportParentData parentData = child.parentData! as TwoDimensionalViewportParentData;
       final Rect childRect = parentData.offset & child.size;
       if (childRect.contains(position)) {
@@ -162,6 +170,8 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     return false;
   }
 
+  ///
+  @protected
   final Map<ChildIndex, RenderBox> children = <ChildIndex, RenderBox>{};
 
   @override
@@ -196,24 +206,24 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   // ---- Called from _TwoDimensionalViewportElement ----
   ///
   void insertChild(RenderBox child, ChildIndex slot) {
-    assert(_debugTrackOrphans(newOrphan: _children[slot]));
-    _children[slot] = child;
+    assert(_debugTrackOrphans(newOrphan: children[slot]));
+    children[slot] = child;
     adoptChild(child);
   }
 
   ///
   void moveChild(RenderBox child, {required ChildIndex from, required ChildIndex to}) {
-    if (_children[from] == child) {
-      _children.remove(from);
+    if (children[from] == child) {
+      children.remove(from);
     }
-    assert(_debugTrackOrphans(newOrphan: _children[to], noLongerOrphan: child));
-    _children[to] = child;
+    assert(_debugTrackOrphans(newOrphan: children[to], noLongerOrphan: child));
+    children[to] = child;
   }
 
   ///
   void removeChild(RenderBox child, ChildIndex slot) {
-    if (_children[slot] == child) {
-      _children.remove(slot);
+    if (children[slot] == child) {
+      children.remove(slot);
     }
     assert(_debugTrackOrphans(noLongerOrphan: child));
     dropChild(child);

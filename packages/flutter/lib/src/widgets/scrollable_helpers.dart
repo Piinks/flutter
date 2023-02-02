@@ -203,7 +203,7 @@ class ScrollableDetails {
     this.restorationId,
     this.semanticChildCount,
     this.clipBehavior,
-  }) : direction = reverse ? AxisDirection.right : AxisDirection.left;
+  }) : direction = reverse ? AxisDirection.left : AxisDirection.right;
 
   /// The direction in which this widget scrolls.
   ///

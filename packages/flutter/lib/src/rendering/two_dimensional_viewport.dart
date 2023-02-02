@@ -271,9 +271,8 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
 
 ///
 abstract class RawTwoDimensionalDelegate extends ChangeNotifier {
-  // This class is intended to be used as an interface, and should not be
-  // extended directly; this constructor prevents instantiation and extension.
-  RawTwoDimensionalDelegate._();
+  ///
+  RawTwoDimensionalDelegate();
 
   ///
   bool shouldRebuild(RawTwoDimensionalDelegate oldDelegate);

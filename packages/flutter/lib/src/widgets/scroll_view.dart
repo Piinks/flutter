@@ -2034,29 +2034,34 @@ abstract class TwoDimensionalScrollView extends StatelessWidget {
   ScrollableDetails get _mainAxisDetails => mainAxis == Axis.vertical
       ? verticalDetails
       : horizontalDetails;
+  ScrollableDetails get _secondaryAxisDetails => mainAxis == Axis.vertical
+      ? horizontalDetails
+      : verticalDetails;
 
   @override
   Widget build(BuildContext context) {
     final bool effectivePrimary = primary
       ?? _mainAxisDetails.controller == null && PrimaryScrollController.shouldInherit(context, mainAxis);
 
-    final ScrollController? scrollController = effectivePrimary
+    final ScrollController mainScrollController = (effectivePrimary
       ? PrimaryScrollController.maybeOf(context)
-      : _mainAxisDetails.controller;
+      : _mainAxisDetails.controller) ?? ScrollController();
+
+    final ScrollController secondaryScrollController = _secondaryAxisDetails.controller ?? ScrollController();
 
     final TwoDimensionalScrollable scrollable = TwoDimensionalScrollable(
       horizontalDetails : mainAxis == Axis.horizontal
-        ? horizontalDetails.copyWith(controller: scrollController)
-        : horizontalDetails,
+        ? horizontalDetails.copyWith(controller: mainScrollController)
+        : horizontalDetails.copyWith(controller: secondaryScrollController),
       verticalDetails: mainAxis == Axis.vertical
-          ? verticalDetails.copyWith(controller: scrollController)
-          : verticalDetails,
+          ? verticalDetails.copyWith(controller: mainScrollController)
+          : verticalDetails.copyWith(controller: secondaryScrollController),
       panAxes: panAxes,
       viewportBuilder: buildViewport,
       dragStartBehavior: dragStartBehavior,
     );
 
-    final Widget scrollableResult = effectivePrimary && scrollController != null
+    final Widget scrollableResult = effectivePrimary && mainScrollController != null
     // Further descendant ScrollViews will not inherit the same PrimaryScrollController
         ? PrimaryScrollController.none(child: scrollable)
         : scrollable;

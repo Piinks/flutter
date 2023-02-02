@@ -403,9 +403,9 @@ class ShrinkWrappingViewport extends MultiChildRenderObjectWidget {
 // 2D Viewport
 
 ///
-abstract class TwoDimensionalChildDelegate implements RawTwoDimensionalDelegate {
+abstract class TwoDimensionalChildDelegate extends RawTwoDimensionalDelegate {
   ///
-  const TwoDimensionalChildDelegate();
+  TwoDimensionalChildDelegate();
 
   ///
   Widget build(BuildContext context, int y, int x);
@@ -455,30 +455,9 @@ abstract class TwoDimensionalViewport extends RenderObjectWidget {
 
   @override
   RenderObject createRenderObject(BuildContext context);
-  // {
-    // return RenderTwoDimensionalViewport(
-    //   horizontalOffset: horizontalOffset,
-    //   verticalOffset: verticalOffset,
-    //   mainAxis: mainAxis,
-    //   cacheExtent: cacheExtent,
-    //   clipBehavior: clipBehavior,
-    //   delegate: delegate,
-    //   childManager: context as _TwoDimensionalViewportElement,
-    // );
-  // }
 
   @override
   void updateRenderObject(BuildContext context, RenderTwoDimensionalViewport renderObject);
-  // {
-  //   assert(identical(context, renderObject.childManager));
-  //   renderObject
-  //     ..horizontalOffset = horizontalOffset
-  //     ..verticalOffset = verticalOffset
-  //     ..mainAxis = mainAxis
-  //     ..cacheExtent = cacheExtent
-  //     ..clipBehavior = clipBehavior;
-  //     ..delegate = delegate;
-  // }
 }
 
 class _TwoDimensionalViewportElement extends RenderObjectElement

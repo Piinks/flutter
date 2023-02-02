@@ -9,6 +9,19 @@ import 'object.dart';
 import 'viewport.dart';
 import 'viewport_offset.dart';
 
+/// This class exists to dissociate [KeepAlive] from [RenderSliverMultiBoxAdaptor].
+///
+/// [RenderSliverWithKeepAliveMixin.setupParentData] must be implemented to use
+/// a parentData class that uses the right mixin or whatever is appropriate.
+mixin RenderSliverWithKeepAliveMixin implements RenderSliver {
+  /// Alerts the developer that the child's parentData needs to be of type
+  /// [KeepAliveParentDataMixin].
+  @override
+  void setupParentData(RenderObject child) {
+    assert(child.parentData is KeepAliveParentDataMixin);
+  }
+}
+
 ///
 abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderAbstractViewport {
   ///

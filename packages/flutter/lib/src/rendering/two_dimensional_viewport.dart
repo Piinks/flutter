@@ -162,7 +162,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     return false;
   }
 
-  final Map<ChildIndex, RenderBox> _children = <ChildIndex, RenderBox>{};
+  final Map<ChildIndex, RenderBox> children = <ChildIndex, RenderBox>{};
 
   @override
   void performResize() {

@@ -269,7 +269,6 @@ class ReorderableList extends StatefulWidget {
   ///  * [maybeOf], a similar function that will return null if no
   ///    [ReorderableList] ancestor is found.
   static ReorderableListState of(BuildContext context) {
-    assert(context != null);
     final ReorderableListState? result = context.findAncestorStateOfType<ReorderableListState>();
     assert(() {
       if (result == null) {
@@ -308,7 +307,6 @@ class ReorderableList extends StatefulWidget {
   ///  * [of], a similar function that will throw if no [ReorderableList] ancestor
   ///    is found.
   static ReorderableListState? maybeOf(BuildContext context) {
-    assert(context != null);
     return context.findAncestorStateOfType<ReorderableListState>();
   }
 
@@ -497,7 +495,6 @@ class SliverReorderableList extends StatefulWidget {
   ///  * [maybeOf], a similar function that will return null if no
   ///    [SliverReorderableList] ancestor is found.
   static SliverReorderableListState of(BuildContext context) {
-    assert(context != null);
     final SliverReorderableListState? result = context.findAncestorStateOfType<SliverReorderableListState>();
     assert(() {
       if (result == null) {
@@ -538,7 +535,6 @@ class SliverReorderableList extends StatefulWidget {
   ///  * [of], a similar function that will throw if no [SliverReorderableList]
   ///    ancestor is found.
   static SliverReorderableListState? maybeOf(BuildContext context) {
-    assert(context != null);
     return context.findAncestorStateOfType<SliverReorderableListState>();
   }
 }

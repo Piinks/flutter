@@ -101,11 +101,7 @@ class Scrollable extends StatefulWidget {
     this.restorationId,
     this.scrollBehavior,
     this.clipBehavior = Clip.hardEdge,
-  }) : assert(axisDirection != null),
-       assert(dragStartBehavior != null),
-       assert(viewportBuilder != null),
-       assert(excludeFromSemantics != null),
-       assert(semanticChildCount == null || semanticChildCount >= 0);
+  }) : assert(semanticChildCount == null || semanticChildCount >= 0);
 
   /// The direction in which this widget scrolls.
   ///
@@ -430,8 +426,7 @@ class _ScrollableScope extends InheritedWidget {
     required this.scrollable,
     required this.position,
     required super.child,
-  }) : assert(scrollable != null),
-       assert(child != null);
+  });
 
   final ScrollableState scrollable;
   final ScrollPosition position;
@@ -787,12 +782,32 @@ class ScrollableState extends State<Scrollable> with TickerProviderStateMixin, R
     );
   }
 
-  // Returns the delta that should result from applying [event] with axis and
-  // direction taken into account.
+  // Returns the delta that should result from applying [event] with axis,
+  // direction, and any modifiers specified by the ScrollBehavior taken into
+  // account.
   double _pointerSignalEventDelta(PointerScrollEvent event) {
-    double delta = widget.axis == Axis.horizontal
-      ? event.scrollDelta.dx
-      : event.scrollDelta.dy;
+    late double delta;
+    final Set<LogicalKeyboardKey> pressed = HardwareKeyboard.instance.logicalKeysPressed;
+    final bool flipAxes = pressed.any(_configuration.pointerAxisModifiers.contains) &&
+      // Axes are only flipped for physical mouse wheel input.
+      // On some platforms, like web, trackpad input is handled through pointer
+      // signals, but should not be included in this axis modifying behavior.
+      // This is because on a trackpad, all directional axes are available to
+      // the user, while mouse scroll wheels typically are restricted to one
+      // axis.
+      event.kind == PointerDeviceKind.mouse;
+
+    switch (widget.axis) {
+      case Axis.horizontal:
+        delta = flipAxes
+          ? event.scrollDelta.dy
+          : event.scrollDelta.dx;
+        break;
+      case Axis.vertical:
+        delta = flipAxes
+          ? event.scrollDelta.dx
+          : event.scrollDelta.dy;
+    }
 
     if (axisDirectionIsReversed(widget.axisDirection)) {
       delta *= -1;
@@ -1389,8 +1404,7 @@ class _ScrollSemantics extends SingleChildRenderObjectWidget {
     required this.allowImplicitScrolling,
     required this.semanticChildCount,
     super.child,
-  }) : assert(position != null),
-       assert(semanticChildCount == null || semanticChildCount >= 0);
+  }) : assert(semanticChildCount == null || semanticChildCount >= 0);
 
   final ScrollPosition position;
   final bool allowImplicitScrolling;
@@ -1423,7 +1437,6 @@ class _RenderScrollSemantics extends RenderProxyBox {
   }) : _position = position,
        _allowImplicitScrolling = allowImplicitScrolling,
        _semanticChildCount = semanticChildCount,
-       assert(position != null),
        super(child) {
     position.addListener(markNeedsSemanticsUpdate);
   }
@@ -1432,7 +1445,6 @@ class _RenderScrollSemantics extends RenderProxyBox {
   ScrollPosition get position => _position;
   ScrollPosition _position;
   set position(ScrollPosition value) {
-    assert(value != null);
     if (value == _position) {
       return;
     }

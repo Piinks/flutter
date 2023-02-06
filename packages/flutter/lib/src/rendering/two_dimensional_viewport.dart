@@ -6,20 +6,40 @@ import 'package:flutter/foundation.dart';
 
 import 'box.dart';
 import 'object.dart';
+import 'sliver_multi_box_adaptor.dart';
 import 'viewport.dart';
 import 'viewport_offset.dart';
 
-/// This class exists to dissociate [KeepAlive] from [RenderSliverMultiBoxAdaptor].
+/// This class exists to dissociate [KeepAlive] from
+/// [RenderTwoDimensionalViewport].
 ///
-/// [RenderSliverWithKeepAliveMixin.setupParentData] must be implemented to use
-/// a parentData class that uses the right mixin or whatever is appropriate.
-mixin RenderSliverWithKeepAliveMixin implements RenderSliver {
+/// [RenderTwoDimensionalChildrenWithKeepAliveMixin.setupParentData] must be
+/// implemented to use a parentData class that uses the right mixin or whatever
+/// is appropriate.
+mixin RenderTwoDimensionalChildrenWithKeepAliveMixin implements RenderBox {
   /// Alerts the developer that the child's parentData needs to be of type
   /// [KeepAliveParentDataMixin].
   @override
   void setupParentData(RenderObject child) {
     assert(child.parentData is KeepAliveParentDataMixin);
   }
+}
+
+///
+class TwoDimensionalViewportParentData extends BoxParentData with KeepAliveParentDataMixin {
+
+  RenderBox? nextSibling;
+
+  RenderBox? previousSibling;
+
+  ChildIndex index = ChildIndex.invalid;
+
+  @override
+  bool get keptAlive => _keptAlive;
+  bool _keptAlive = false;
+
+  @override
+  String toString() => 'index=$index; ${keepAlive == true ? "keepAlive; " : ""}${super.toString()}';
 }
 
 ///
@@ -36,7 +56,12 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     this.clipBehavior = Clip.hardEdge,
   }) : _horizontalOffset = horizontalOffset,
        _verticalOffset = verticalOffset,
-       _delegate = delegate;
+       _delegate = delegate {
+    assert(() {
+      _debugDanglingKeepAlives = <RenderBox>[];
+      return true;
+    }());
+  }
 
   // TODO(Piinks): Add getters and setters
   Axis mainAxis;
@@ -96,6 +121,29 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
 
   final TwoDimensionalChildManager childManager;
 
+  /// The nodes being kept alive despite not being visible.
+  final Map<ChildIndex, RenderBox> _keepAliveBucket = <ChildIndex, RenderBox>{};
+
+  late List<RenderBox> _debugDanglingKeepAlives;
+
+  /// Indicates whether integrity check is enabled.
+  ///
+  /// Setting this property to true will immediately perform an integrity check.
+  ///
+  /// The integrity check consists of:
+  ///
+  /// 1. Verify that the children index in childList is in ascending order.
+  /// 2. Verify that there is no dangling keepalive child as the result of [move].
+  bool get debugChildIntegrityEnabled => _debugChildIntegrityEnabled;
+  bool _debugChildIntegrityEnabled = true;
+  set debugChildIntegrityEnabled(bool enabled) {
+    assert(() {
+      _debugChildIntegrityEnabled = enabled;
+      return //_debugVerifyChildOrder() &&
+          (!_debugChildIntegrityEnabled || _debugDanglingKeepAlives.isEmpty);
+    }());
+  }
+
   void _handleDelegateNotification() => markNeedsLayout(withChildRebuild: true, withDelegateRebuild: true);
 
   @override
@@ -114,6 +162,9 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     for (final RenderBox child in children.values) {
       child.attach(owner);
     }
+    for (final RenderBox child in _keepAliveBucket.values) {
+      child.attach(owner);
+    }
   }
 
   @override
@@ -125,6 +176,9 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     for (final ChildIndex cellIndex in children.keys) {
       children[cellIndex]!.detach();
     }
+    for (final RenderBox child in _keepAliveBucket.values) {
+      child.detach();
+    }
   }
 
   @override
@@ -132,18 +186,38 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     for (final RenderBox child in children.values) {
       child.redepthChildren();
     }
+    _keepAliveBucket.values.forEach(redepthChild);
   }
 
   @override
   void visitChildren(RenderObjectVisitor visitor) {
     children.values.forEach(visitor);
+    _keepAliveBucket.values.forEach(visitor);
+  }
+
+  @override
+  void visitChildrenForSemantics(RenderObjectVisitor visitor) {
+    children.values.forEach(visitor);
+    // Do not visit children in [_keepAliveBucket].
   }
 
   @override
   List<DiagnosticsNode> debugDescribeChildren() {
-    return children.keys.map<DiagnosticsNode>((ChildIndex index) {
-      return children[index]!.toDiagnosticsNode(name: index.toString());
-    }).toList();
+    final List<DiagnosticsNode> debugChildren = <DiagnosticsNode>[
+      ...children.keys.map<DiagnosticsNode>((ChildIndex index) {
+        return children[index]!.toDiagnosticsNode(name: index.toString());
+      })
+    ];
+    if (_keepAliveBucket.isNotEmpty) {
+      final List<ChildIndex> indices = _keepAliveBucket.keys.toList()..sort();
+      for (final ChildIndex index in indices) {
+        debugChildren.add(_keepAliveBucket[index]!.toDiagnosticsNode(
+          name: 'child with index [${index.x}, ${index.y}] (kept alive but not laid out)',
+          style: DiagnosticsTreeStyle.offstage,
+        ));
+      }
+    }
+    return debugChildren;
   }
 
   @override
@@ -234,6 +308,9 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   // ---- Called from _TwoDimensionalViewportElement ----
   ///
   void insertChild(RenderBox child, ChildIndex slot) {
+    if (slot.x == 0 && slot.y == 0) {
+      print('insertChild $slot');
+    }
     assert(_debugTrackOrphans(newOrphan: children[slot]));
     children[slot] = child;
     adoptChild(child);
@@ -241,6 +318,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
 
   ///
   void moveChild(RenderBox child, {required ChildIndex from, required ChildIndex to}) {
+    print('moveChild');
     if (children[from] == child) {
       children.remove(from);
     }
@@ -250,6 +328,9 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
 
   ///
   void removeChild(RenderBox child, ChildIndex slot) {
+    if (slot.x == 0 && slot.y == 0) {
+      print('removeChild: $slot');
+    }
     if (children[slot] == child) {
       children.remove(slot);
     }
@@ -291,14 +372,10 @@ abstract class RawTwoDimensionalDelegate extends ChangeNotifier {
   bool shouldRebuild(RawTwoDimensionalDelegate oldDelegate);
 }
 
-class TwoDimensionalViewportParentData extends BoxParentData {
-  RenderBox? nextSibling;
-  RenderBox? previousSibling;
-  ChildIndex index = ChildIndex.invalid;
-  // Keep alive
-}
-
 abstract class TwoDimensionalChildManager {
+  // Should the children object be encapsulated here?
+  // final Map<ChildIndex, RenderBox> children = <ChildIndex, RenderBox>{};
+
   void startLayout();
   void buildChild(ChildIndex index);
   void reuseChild(ChildIndex index);
@@ -313,8 +390,12 @@ class ChildIndex implements Comparable<ChildIndex> {
 
   static const ChildIndex invalid = ChildIndex(x: -1, y: -1);
 
+  // Child represented like row/col
   final int x;
   final int y;
+
+  // TODO(Piinks): Include offset? Could allow scroll-to-index
+  // Or put in parent data?
 
   @override
   bool operator ==(Object other) {

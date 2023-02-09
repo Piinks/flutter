@@ -25,13 +25,20 @@ mixin RenderTwoDimensionalChildrenWithKeepAliveMixin implements RenderBox {
   }
 }
 
-///
+/// Parent data structure used by [RenderTwoDimensionalViewport].
 class TwoDimensionalViewportParentData extends BoxParentData with KeepAliveParentDataMixin {
-
+  /// The next sibling in the parent's child list.
   RenderBox? nextSibling;
 
+  /// The previous sibling in the parent's child list.
   RenderBox? previousSibling;
 
+  // TODO(Piinks): Add assertions for invalid indices
+  /// The logical positioning of children in two dimensions.
+  ///
+  /// While children may not be strictly laid out in [ChildIndex.row]s and
+  /// [ChildIndex.column]s, the relative positioning determines traversal of
+  /// children in row or column major format.
   ChildIndex index = ChildIndex.invalid;
 
   @override
@@ -49,12 +56,13 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     required ViewportOffset horizontalOffset,
     required ViewportOffset verticalOffset,
     required RawTwoDimensionalDelegate delegate,
-    required this.childManager,
+    required TwoDimensionalChildManager childManager,
     // TODO
     required this.mainAxis,
     this.cacheExtent,
     this.clipBehavior = Clip.hardEdge,
-  }) : _horizontalOffset = horizontalOffset,
+  }) : _childManager = childManager,
+       _horizontalOffset = horizontalOffset,
        _verticalOffset = verticalOffset,
        _delegate = delegate {
     assert(() {
@@ -119,7 +127,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     }
   }
 
-  final TwoDimensionalChildManager childManager;
+  final TwoDimensionalChildManager _childManager;
 
   /// The nodes being kept alive despite not being visible.
   final Map<ChildIndex, RenderBox> _keepAliveBucket = <ChildIndex, RenderBox>{};
@@ -159,7 +167,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     _horizontalOffset.addListener(markNeedsLayout);
     _verticalOffset.addListener(markNeedsLayout);
     _delegate.addListener(_handleDelegateNotification);
-    for (final RenderBox child in children.values) {
+    for (final RenderBox child in _children.values) {
       child.attach(owner);
     }
     for (final RenderBox child in _keepAliveBucket.values) {
@@ -173,8 +181,8 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     _horizontalOffset.removeListener(markNeedsLayout);
     _verticalOffset.removeListener(markNeedsLayout);
     _delegate.removeListener(_handleDelegateNotification);
-    for (final ChildIndex cellIndex in children.keys) {
-      children[cellIndex]!.detach();
+    for (final ChildIndex cellIndex in _children.keys) {
+      _children[cellIndex]!.detach();
     }
     for (final RenderBox child in _keepAliveBucket.values) {
       child.detach();
@@ -183,7 +191,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
 
   @override
   void redepthChildren() {
-    for (final RenderBox child in children.values) {
+    for (final RenderBox child in _children.values) {
       child.redepthChildren();
     }
     _keepAliveBucket.values.forEach(redepthChild);
@@ -191,28 +199,28 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
 
   @override
   void visitChildren(RenderObjectVisitor visitor) {
-    children.values.forEach(visitor);
+    _children.values.forEach(visitor);
     _keepAliveBucket.values.forEach(visitor);
   }
 
   @override
   void visitChildrenForSemantics(RenderObjectVisitor visitor) {
-    children.values.forEach(visitor);
+    _children.values.forEach(visitor);
     // Do not visit children in [_keepAliveBucket].
   }
 
   @override
   List<DiagnosticsNode> debugDescribeChildren() {
     final List<DiagnosticsNode> debugChildren = <DiagnosticsNode>[
-      ...children.keys.map<DiagnosticsNode>((ChildIndex index) {
-        return children[index]!.toDiagnosticsNode(name: index.toString());
+      ..._children.keys.map<DiagnosticsNode>((ChildIndex index) {
+        return _children[index]!.toDiagnosticsNode(name: index.toString());
       })
     ];
     if (_keepAliveBucket.isNotEmpty) {
       final List<ChildIndex> indices = _keepAliveBucket.keys.toList()..sort();
       for (final ChildIndex index in indices) {
         debugChildren.add(_keepAliveBucket[index]!.toDiagnosticsNode(
-          name: 'child with index [${index.x}, ${index.y}] (kept alive but not laid out)',
+          name: 'child with index [${index.row}, ${index.column}] (kept alive but not laid out)',
           style: DiagnosticsTreeStyle.offstage,
         ));
       }
@@ -240,7 +248,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
 
   @override
   bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
-    for (final RenderBox child in children.values) {
+    for (final RenderBox child in _children.values) {
       final TwoDimensionalViewportParentData parentData = child.parentData! as TwoDimensionalViewportParentData;
       final Rect childRect = parentData.offset & child.size;
       if (childRect.contains(position)) {
@@ -260,7 +268,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
 
   ///
   @protected
-  final Map<ChildIndex, RenderBox> children = <ChildIndex, RenderBox>{};
+  final Map<ChildIndex, RenderBox> _children = <ChildIndex, RenderBox>{};
 
   @override
   void performResize() {
@@ -277,17 +285,6 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     }
   }
 
-  @override
-  @mustCallSuper
-  void performLayout() {
-    // TODO(Piinks): Document this should be called at the end of subclass.performLayout
-    // And wrap these up in a debug method.
-    assert(_debugOrphans?.isEmpty ?? true);
-    assert(needsChildRebuild == false);
-    assert(needsDelegateRebuild == false);
-    assert(needsMetricsUpdate == false);
-  }
-
   @protected
   bool needsChildRebuild = true;
 
@@ -301,38 +298,54 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   void markNeedsLayout({bool withChildRebuild = false, bool withDelegateRebuild = false}) {
     needsChildRebuild = needsChildRebuild || withChildRebuild;
     needsDelegateRebuild = needsDelegateRebuild || withDelegateRebuild;
-    // TODO(Piinks): set _needsDimensionUpdate if we depend on size of children (e.g. after implementing prototype-based sizing).
     super.markNeedsLayout();
+  }
+
+  ///
+  void startLayout() {
+    _childManager.startLayout();
+  }
+
+  @override
+  void performLayout();
+
+  void endLayout() {
+    // TODO(Piinks): Collect keep alives.
+    // And wrap these up in a debug method.
+    assert(_debugOrphans?.isEmpty ?? true);
+    assert(needsChildRebuild == false);
+    assert(needsDelegateRebuild == false);
+    assert(needsMetricsUpdate == false);
+    invokeLayoutCallback<BoxConstraints>((BoxConstraints _) {
+      _childManager.endLayout();
+    });
   }
 
   // ---- Called from _TwoDimensionalViewportElement ----
   ///
   void insertChild(RenderBox child, ChildIndex slot) {
-    if (slot.x == 0 && slot.y == 0) {
-      print('insertChild $slot');
+    if (slot.row == 0 && slot.column == 0) {
     }
-    assert(_debugTrackOrphans(newOrphan: children[slot]));
-    children[slot] = child;
+    assert(_debugTrackOrphans(newOrphan: _children[slot]));
+    _children[slot] = child;
     adoptChild(child);
   }
 
   ///
   void moveChild(RenderBox child, {required ChildIndex from, required ChildIndex to}) {
-    print('moveChild');
-    if (children[from] == child) {
-      children.remove(from);
+    if (_children[from] == child) {
+      _children.remove(from);
     }
-    assert(_debugTrackOrphans(newOrphan: children[to], noLongerOrphan: child));
-    children[to] = child;
+    assert(_debugTrackOrphans(newOrphan: _children[to], noLongerOrphan: child));
+    _children[to] = child;
   }
 
   ///
   void removeChild(RenderBox child, ChildIndex slot) {
-    if (slot.x == 0 && slot.y == 0) {
-      print('removeChild: $slot');
+    if (slot.row == 0 && slot.column == 0) {
     }
-    if (children[slot] == child) {
-      children.remove(slot);
+    if (_children[slot] == child) {
+      _children.remove(slot);
     }
     assert(_debugTrackOrphans(noLongerOrphan: child));
     dropChild(child);
@@ -358,7 +371,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
 
   @override
   RevealedOffset getOffsetToReveal(RenderObject target, double alignment, {Rect? rect}) {
-    // TODO(Piinks): implement getOffsetToReveal
+    // TODO(Piinks): implement getOffsetToReveal, what does RevealedOffset look like in 2D?
     throw UnimplementedError();
   }
 }
@@ -366,9 +379,14 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
 ///
 abstract class RawTwoDimensionalDelegate extends ChangeNotifier {
   ///
-  RawTwoDimensionalDelegate();
+  RawTwoDimensionalDelegate({ this.mainAxis = Axis.vertical});
 
+  // TODO(Piinks): Move main axis implementation here
   ///
+  final Axis mainAxis;
+
+  /// Called to check whether this and the old delegate are actually 'different',
+  /// so that the caller can decide to rebuild or not.
   bool shouldRebuild(RawTwoDimensionalDelegate oldDelegate);
 }
 
@@ -382,41 +400,55 @@ abstract class TwoDimensionalChildManager {
   void endLayout();
 }
 
-///
+/// The relative positioning of children in a [TwoDimensionalViewport].
 @immutable
 class ChildIndex implements Comparable<ChildIndex> {
+  /// Creates an reference to a child in a two dimensional plane, with the [row]
+  /// and [column] being relative to other children in the viewport.
+  const ChildIndex({required this.row, required this.column});
+
+  /// Represents an unassigned child position. The given child may be in the
+  /// process of moving from one position to another.
+  static const ChildIndex invalid = ChildIndex(row: -1, column: -1);
+
+  /// The index of the child in the horizontal axis, relative to neighboring
+  /// children.
   ///
-  const ChildIndex({required this.x, required this.y});
+  /// While children's offset and positioning may not be strictly defined in
+  /// terms of rows and columns, like a table, [ChildIndex.row] and
+  /// [ChildIndex.column] can represent order of traversal in row or column
+  /// major format.
+  final int row;
 
-  static const ChildIndex invalid = ChildIndex(x: -1, y: -1);
-
-  // Child represented like row/col
-  final int x;
-  final int y;
-
-  // TODO(Piinks): Include offset? Could allow scroll-to-index
-  // Or put in parent data?
+  /// The index of the child in the vertical axis, relative to neighboring
+  /// children.
+  ///
+  /// While children's offset and positioning may not be strictly defined in
+  /// terms of rows and columns, like a table, [ChildIndex.row] and
+  /// [ChildIndex.column] can represent order of traversal in row or column
+  /// major format.
+  final int column;
 
   @override
   bool operator ==(Object other) {
     return other is ChildIndex
-        && other.x == x
-        && other.y == y;
+        && other.row == row
+        && other.column == column;
   }
 
   @override
-  int get hashCode => Object.hash(x, y);
+  int get hashCode => Object.hash(row, column);
 
   @override
   int compareTo(ChildIndex other) {
-    if (x == other.x) {
-      return y - other.y;
+    if (row == other.row) {
+      return column - other.column;
     }
-    return x - other.x;
+    return row - other.row;
   }
 
   @override
   String toString() {
-    return '(y: $y, x: $x)';
+    return '(column: $column, row: $row)';
   }
 }

@@ -399,7 +399,7 @@ class ShrinkWrappingViewport extends MultiChildRenderObjectWidget {
 ///
 abstract class TwoDimensionalChildDelegate extends RawTwoDimensionalDelegate {
   ///
-  TwoDimensionalChildDelegate();
+  TwoDimensionalChildDelegate({ super.mainAxis });
 
   ///
   Widget build(BuildContext context, int y, int x);
@@ -427,6 +427,7 @@ abstract class TwoDimensionalViewport extends RenderObjectWidget {
   });
 
   ///
+  // TODO(Piinks): Move to delegate
   final Axis mainAxis;
 
   ///
@@ -491,7 +492,6 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
 
   @override
   void forgetChild(Element child) {
-    print('forgetChild');
     assert(!_debugIsDoingLayout);
     super.forgetChild(child);
     _indexToChild.remove(child.slot);
@@ -544,7 +544,6 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
 
   @override
   void startLayout() {
-    print('startLayout');
     assert(!_debugIsDoingLayout);
     _newIndexToChild = <ChildIndex, Element>{};
     _newKeyToChild = <Key, Element>{};
@@ -552,9 +551,6 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
 
   @override
   void buildChild(ChildIndex index) {
-    if (index.x == 0 && index.y == 0) {
-      print('buildChild $index');
-    }
     assert(_debugIsDoingLayout);
     owner!.buildScope(this, () {
       final Widget newWidget = _buildChild(index);
@@ -584,14 +580,11 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
   }
 
   Widget _buildChild(ChildIndex index) {
-    return widget.delegate.build(this, index.y, index.x);
+    return widget.delegate.build(this, index.column, index.row);
   }
 
   @override
   void reuseChild(ChildIndex index) {
-    if (index.x == 0 && index.y == 0) {
-      print('reuseChild $index');
-    }
     assert(_debugIsDoingLayout);
     final Element? elementToReuse = _indexToChild.remove(index);
     assert(elementToReuse != null); // has to exist since we are reusing it.
@@ -606,7 +599,6 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
   @override
   void endLayout() {
     assert(_debugIsDoingLayout);
-    print('endLayout');
 
     // Unmount all elements that have not been reused in the layout cycle.
     for (final Element element in _indexToChild.values) {

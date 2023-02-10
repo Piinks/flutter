@@ -1924,7 +1924,8 @@ class TwoDimensionalScrollable extends StatefulWidget {
     return widget?.panAxes;
   }
 
-  // TODO(Piinks): ensureVisible for 2D
+  // TODO(Piinks): ensureVisible for 2D - this should just work through Scrollable.ensureVisible?
+  // Already used all over the framework.
 }
 
 ///
@@ -2011,9 +2012,7 @@ class _TwoDimensionalScrollableScope extends InheritedWidget {
     required this.panAxes,
     required this.twoDimensionalScrollable,
     required super.child,
-  }) : assert(panAxes != null),
-        assert(twoDimensionalScrollable != null),
-        assert(child != null);
+  });
 
   final bool panAxes;
   final TwoDimensionalScrollableState twoDimensionalScrollable;

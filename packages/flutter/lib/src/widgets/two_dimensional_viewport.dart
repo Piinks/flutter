@@ -38,7 +38,9 @@ abstract class TwoDimensionalChildDelegate extends ChangeNotifier {
   ///
   /// TODO(Piinks): Create wrapper methods instead?
   /// Subclasses typically override this function and wrap their children in
-  /// [AutomaticKeepAlive], [IndexedSemantics], and [RepaintBoundary] widgets.
+  /// [AutomaticKeepAlive] and [RepaintBoundary] widgets.
+  ///
+  // TODO(Piinks): What does parity look like here for [IndexedSemantics]?
   ///
   /// The values returned by this method are cached. To indicate that the
   /// widgets have changed, a new delegate must be provided, and the new

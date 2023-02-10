@@ -194,6 +194,7 @@ class ScrollableDetails {
     this.semanticChildCount,
     this.clipBehavior,
   }) : direction = reverse ? AxisDirection.up : AxisDirection.down;
+  // TODO(Piinks): add assertions, see ScrollView
 
   ///
   const ScrollableDetails.horizontal({
@@ -204,6 +205,7 @@ class ScrollableDetails {
     this.semanticChildCount,
     this.clipBehavior,
   }) : direction = reverse ? AxisDirection.left : AxisDirection.right;
+  // TODO(Piinks): add assertions, see ScrollView
 
   /// The direction in which this widget scrolls.
   ///

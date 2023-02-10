@@ -23,6 +23,7 @@ import 'scrollable.dart';
 import 'scrollable_helpers.dart';
 import 'sliver.dart';
 import 'sliver_prototype_extent_list.dart';
+import 'two_dimensional_viewport.dart';
 import 'viewport.dart';
 
 // Examples can assume:
@@ -1947,39 +1948,24 @@ abstract class TwoDimensionalScrollView extends StatelessWidget {
   ///
   const TwoDimensionalScrollView({
     super.key,
-    this.mainAxis = Axis.vertical,
+    // this.mainAxis = Axis.vertical,
     this.panAxes = false,
     this.primary,
     this.verticalDetails = const ScrollableDetails.vertical(),
     this.horizontalDetails = const ScrollableDetails.horizontal(),
-    // this.center,
-    // this.anchor = 0.0,
     this.cacheExtent,
     required this.delegate,
     this.dragStartBehavior = DragStartBehavior.start,
     this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
     this.clipBehavior = Clip.hardEdge,
-  }) : assert(mainAxis != null),
-       assert(dragStartBehavior != null),
-       assert(clipBehavior != null);
-       // assert(
-       //   !(controller != null && (primary ?? false)),
-       //   'Primary ScrollViews obtain their ScrollController via inheritance '
-       //   'from a PrimaryScrollController widget. You cannot both set primary to '
-       //   'true and pass an explicit controller.',
-       // ),
-       // assert(!shrinkWrap || center == null),
-       // assert(anchor != null),
-       // assert(anchor >= 0.0 && anchor <= 1.0),
-       // assert(semanticChildCount == null || semanticChildCount >= 0);
-       // TODO(Piinks): Assert primary/mainAxis stuff
+  }); // TODO(Piinks): Assert primary/mainAxis stuff
 
   ///   * column/row major order
   ///   * paint
   ///   * focus traversal
   ///   * semantics traversal
   ///   * primary scroll controller
-  final Axis mainAxis;
+  // final Axis mainAxis;
 
   ///
   final TwoDimensionalChildDelegate delegate;
@@ -2016,29 +2002,33 @@ abstract class TwoDimensionalScrollView extends StatelessWidget {
     ViewportOffset horizontalOffset,
   );
 
-  ScrollableDetails get _mainAxisDetails => mainAxis == Axis.vertical
+  ScrollableDetails get _mainAxisDetails => delegate.mainAxis == Axis.vertical
       ? verticalDetails
       : horizontalDetails;
-  ScrollableDetails get _secondaryAxisDetails => mainAxis == Axis.vertical
+  ScrollableDetails get _secondaryAxisDetails => delegate.mainAxis == Axis.vertical
       ? horizontalDetails
       : verticalDetails;
 
   @override
   Widget build(BuildContext context) {
     final bool effectivePrimary = primary
-      ?? _mainAxisDetails.controller == null && PrimaryScrollController.shouldInherit(context, mainAxis);
+      ?? _mainAxisDetails.controller == null && PrimaryScrollController.shouldInherit(
+         context,
+         delegate.mainAxis,
+      );
 
+    // TODO(Piinks): This scroll controller logic is messy. Each must have a
+    //  controller, while allowing for PSC, but make this cleaner.
     final ScrollController mainScrollController = (effectivePrimary
       ? PrimaryScrollController.maybeOf(context)
       : _mainAxisDetails.controller) ?? ScrollController();
-
     final ScrollController secondaryScrollController = _secondaryAxisDetails.controller ?? ScrollController();
 
     final TwoDimensionalScrollable scrollable = TwoDimensionalScrollable(
-      horizontalDetails : mainAxis == Axis.horizontal
+      horizontalDetails : delegate.mainAxis == Axis.horizontal
         ? horizontalDetails.copyWith(controller: mainScrollController)
         : horizontalDetails.copyWith(controller: secondaryScrollController),
-      verticalDetails: mainAxis == Axis.vertical
+      verticalDetails: delegate.mainAxis == Axis.vertical
           ? verticalDetails.copyWith(controller: mainScrollController)
           : verticalDetails.copyWith(controller: secondaryScrollController),
       panAxes: panAxes,
@@ -2046,10 +2036,10 @@ abstract class TwoDimensionalScrollView extends StatelessWidget {
       dragStartBehavior: dragStartBehavior,
     );
 
-    final Widget scrollableResult = effectivePrimary && mainScrollController != null
-    // Further descendant ScrollViews will not inherit the same PrimaryScrollController
-        ? PrimaryScrollController.none(child: scrollable)
-        : scrollable;
+    final Widget scrollableResult = effectivePrimary
+      // Further descendant ScrollViews will not inherit the same PrimaryScrollController
+      ? PrimaryScrollController.none(child: scrollable)
+      : scrollable;
 
     if (keyboardDismissBehavior == ScrollViewKeyboardDismissBehavior.onDrag) {
       return NotificationListener<ScrollUpdateNotification>(
@@ -2070,7 +2060,7 @@ abstract class TwoDimensionalScrollView extends StatelessWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(EnumProperty<Axis>('mainAxis', mainAxis));
+    properties.add(EnumProperty<Axis>('mainAxis', delegate.mainAxis));
     properties.add(FlagProperty('primary', value: primary, ifTrue: 'using primary controller', showName: true));
     properties.add(DiagnosticsProperty<ScrollableDetails>('verticalDetails', verticalDetails, showName: false));
     properties.add(DiagnosticsProperty<ScrollableDetails>('horizontalDetails', horizontalDetails, showName: false));

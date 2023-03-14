@@ -6,48 +6,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 
 import 'framework.dart';
+import 'scroll_delegate.dart';
 import 'scroll_notification.dart';
 
 export 'package:flutter/rendering.dart' show AxisDirection, GrowthDirection;
-
-/// A delegate that supplies children for scrolling in two dimensions.
-///
-/// A [TwoDimensionalScrollView] lazily constructs its box children to avoid
-/// creating more children than are visible through the
-/// [TwoDimensionalViewport]. Rather than receiving children as an
-/// explicit [List], it receives its children using a
-/// [TwoDimensionalChildDelegate].
-abstract class TwoDimensionalChildDelegate extends ChangeNotifier {
-  /// Creates a delegate that supplies children for a [TwoDimensionalScrollView].
-  TwoDimensionalChildDelegate();
-
-  /// Returns the child with the given indices.
-  ///
-  /// Should return null if asked to build a widget with a greater
-  /// index than exists. If this returns null, [estimatedChildCount]
-  /// must subsequently return a precise non-null value (which is then
-  /// used to implement [RenderSliverBoxChildManager.childCount]).
-  ///
-  /// TODO(Piinks): Create different build child methods, fill build like SliverChildBuilderDelegate
-  /// Subclasses typically override this function and wrap their children in
-  /// [AutomaticKeepAlive], [IndexedSemantics], and [RepaintBoundary] widgets.
-  ///
-  /// The values returned by this method are cached. To indicate that the
-  /// widgets have changed, a new delegate must be provided, and the new
-  /// delegate's [shouldRebuild] method must return true.
-  Widget build(BuildContext context, int column, int row);
-
-  /// Called whenever a new instance of the child delegate class is
-  /// provided to the [TwoDimensionalScrollView].
-  ///
-  /// If the new instance represents different information than the old
-  /// instance, then the method should return true, otherwise it should return
-  /// false.
-  ///
-  /// If the method returns false, then the [build] call might be optimized
-  /// away.
-  bool shouldRebuild(covariant TwoDimensionalChildDelegate oldDelegate);
-}
 
 /// A widget that is bigger on the inside.
 ///

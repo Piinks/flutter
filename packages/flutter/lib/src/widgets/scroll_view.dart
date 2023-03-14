@@ -23,6 +23,7 @@ import 'scrollable.dart';
 import 'scrollable_helpers.dart';
 import 'sliver.dart';
 import 'sliver_prototype_extent_list.dart';
+import 'two_dimensional_viewport.dart';
 import 'viewport.dart';
 
 // Examples can assume:

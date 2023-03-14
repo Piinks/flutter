@@ -95,7 +95,7 @@ abstract class TwoDimensionalViewport extends RenderObjectWidget {
   /// The main axis of the two.
   ///
   /// Can be used by subclasses to determine paint order or focus traversal.
-  final bool mainAxis;
+  final Axis mainAxis;
 
   /// {@macro flutter.rendering.RenderViewportBase.cacheExtent}
   final double? cacheExtent;
@@ -321,6 +321,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     required ViewportOffset horizontalOffset,
     required ViewportOffset verticalOffset,
     required TwoDimensionalChildDelegate delegate,
+    required Axis mainAxis,
     required TwoDimensionalChildManager childManager,
     double cacheExtent = RenderAbstractViewport.defaultCacheExtent,
     Clip clipBehavior = Clip.hardEdge,
@@ -328,6 +329,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
        _horizontalOffset = horizontalOffset,
        _verticalOffset = verticalOffset,
        _delegate = delegate,
+       _mainAxis = mainAxis,
        _cacheExtent = cacheExtent,
        _clipBehavior = clipBehavior {
     assert(() {
@@ -403,6 +405,17 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     if (_delegate.runtimeType != oldDelegate.runtimeType || _delegate.shouldRebuild(oldDelegate)) {
       _handleDelegateNotification();
     }
+  }
+
+  /// The main axis of the two.
+  Axis  get mainAxis => _mainAxis;
+  Axis _mainAxis;
+  set mainAxis(Axis value) {
+    if (_mainAxis == value) {
+      return;
+    }
+    _mainAxis = value;
+    markNeedsLayout();
   }
 
   /// {@macro flutter.rendering.RenderViewportBase.cacheExtent}

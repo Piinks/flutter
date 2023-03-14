@@ -326,6 +326,7 @@ class Scrollable extends StatefulWidget {
       context = scrollable.context;
       scrollable = context.getInheritedWidgetOfExactType<_ScrollableScope>()?.scrollable;
     }
+    return null;
   }
 
   /// The state from the closest instance of this class that encloses the given
@@ -1653,17 +1654,17 @@ class _VerticalOuterDimensionState extends ScrollableState {
     super.setCanDrag(value);
   }
 
-  @override
-  Widget _buildChrome(Widget child) {
-    final ScrollableDetails details = ScrollableDetails(
-      direction: widget.axisDirection,
-      controller: _effectiveScrollController,
-      clipBehavior: widget.clipBehavior,
-    );
-    // Skip building a scrollbar here, the dual scrollbar is added in
-    // TwoDimensionalScrollableState.
-    return _configuration.buildOverscrollIndicator(context, child, details);
-  }
+  // @override
+  // Widget _buildChrome(Widget child) {
+  //   final ScrollableDetails details = ScrollableDetails(
+  //     direction: widget.axisDirection,
+  //     controller: _effectiveScrollController,
+  //     clipBehavior: widget.clipBehavior,
+  //   );
+  //   // Skip building a scrollbar here, the dual scrollbar is added in
+  //   // TwoDimensionalScrollableState.
+  //   return _configuration.buildOverscrollIndicator(context, child, details);
+  // }
 }
 
 // Horizontal inner scrollable of 2D scrolling
@@ -1699,7 +1700,6 @@ class _HorizontalInnerDimensionState extends ScrollableState {
 
   @override
   void _handleDragDown(DragDownDetails details) {
-    print('down $details');
     switch (diagonalDragBehavior) {
       case DiagonalDragBehavior.none:
         break;
@@ -1718,7 +1718,6 @@ class _HorizontalInnerDimensionState extends ScrollableState {
 
   @override
   void _handleDragStart(DragStartDetails details) {
-    print('start: $details');
     switch (diagonalDragBehavior) {
       case DiagonalDragBehavior.none:
         break;
@@ -1859,17 +1858,17 @@ class _HorizontalInnerDimensionState extends ScrollableState {
     super.setCanDrag(value);
   }
 
-  @override
-  Widget _buildChrome(Widget child) {
-    final ScrollableDetails details = ScrollableDetails(
-      direction: widget.axisDirection,
-      controller: _effectiveScrollController,
-      clipBehavior: widget.clipBehavior,
-    );
-    // Skip building a scrollbar here, the dual scrollbar is added in
-    // TwoDimensionalScrollableState.
-    return _configuration.buildOverscrollIndicator(context, child, details);
-  }
+  // @override
+  // Widget _buildChrome(Widget child) {
+  //   final ScrollableDetails details = ScrollableDetails(
+  //     direction: widget.axisDirection,
+  //     controller: _effectiveScrollController,
+  //     clipBehavior: widget.clipBehavior,
+  //   );
+  //   // Skip building a scrollbar here, the dual scrollbar is added in
+  //   // TwoDimensionalScrollableState.
+  //   return _configuration.buildOverscrollIndicator(context, child, details);
+  // }
 }
 
 /// Specifies how the [VerticalDragGestureRecognizer] and
@@ -2004,11 +2003,11 @@ class TwoDimensionalScrollable extends StatefulWidget {
 }
 
 class _TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
-  late ScrollBehavior _configuration;
+  // late ScrollBehavior _configuration;
 
   @override
   void didChangeDependencies() {
-    _configuration = ScrollConfiguration.of(context);
+    // _configuration = ScrollConfiguration.of(context);
     super.didChangeDependencies();
   }
 
@@ -2047,12 +2046,13 @@ class _TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
     );
 
     // Build scrollbars for 2 dimensions instead of 1.
-    result = _configuration.buildDualScrollbars(
-      context,
-      result,
-      widget.verticalDetails,
-      widget.horizontalDetails,
-    );
+    // Waiting on
+    // result = _configuration.buildDualScrollbars(
+    //   context,
+    //   result,
+    //   widget.verticalDetails,
+    //   widget.horizontalDetails,
+    // );
 
     if (widget.restorationId != null) {
       result = RestorationScope(

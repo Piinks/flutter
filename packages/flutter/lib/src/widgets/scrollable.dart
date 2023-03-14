@@ -306,7 +306,8 @@ class Scrollable extends StatefulWidget {
   ///
   /// The optional [Axis] allows targeting of a specific [Scrollable] of that
   /// axis, useful when Scrollables are nested or using
-  /// [TwoDimensionalScrollable].
+  /// [TwoDimensionalScrollable]. When [axis] is provided, the nearest enclosing
+  /// [ScrollableState] in that [Axis] is returned, or null if there is none.
   ///
   /// See also:
   ///
@@ -346,7 +347,8 @@ class Scrollable extends StatefulWidget {
   ///
   /// The optional [Axis] allows targeting of a specific [Scrollable] of that
   /// axis, useful when Scrollables are nested or using
-  /// [TwoDimensionalScrollable].
+  /// [TwoDimensionalScrollable]. When [axis] is provided, the nearest enclosing
+  /// [ScrollableState] in that [Axis] is returned.
   ///
   /// See also:
   ///
@@ -382,6 +384,11 @@ class Scrollable extends StatefulWidget {
   /// The heuristic used is determined by the [physics] of this [Scrollable]
   /// via [ScrollPhysics.recommendDeferredLoading]. That method is called with
   /// the current [ScrollPosition.activity]'s [ScrollActivity.velocity].
+  ///
+  /// The optional [Axis] allows targeting of a specific [Scrollable] of that
+  /// axis, useful when Scrollables are nested or using
+  /// [TwoDimensionalScrollable]. When [axis] is provided, the nearest enclosing
+  /// [ScrollableState] in that [Axis] is returned.
   ///
   /// If there is no [Scrollable] in the widget tree above the [context], this
   /// method returns false.
@@ -1600,6 +1607,7 @@ class _RestorableScrollOffset extends RestorableValue<double?> {
 // Vertical outer scrollable of 2D scrolling
 class _VerticalOuterDimension extends Scrollable {
   const _VerticalOuterDimension({
+    super.key,
     required super.viewportBuilder,
     super.axisDirection,
     super.controller,
@@ -1670,6 +1678,7 @@ class _VerticalOuterDimensionState extends ScrollableState {
 // Horizontal inner scrollable of 2D scrolling
 class _HorizontalInnerDimension extends Scrollable {
   const _HorizontalInnerDimension({
+    super.key,
     required super.viewportBuilder,
     super.axisDirection,
     super.controller,
@@ -1688,8 +1697,7 @@ class _HorizontalInnerDimension extends Scrollable {
 class _HorizontalInnerDimensionState extends ScrollableState {
   late ScrollableState verticalScrollable;
   late DiagonalDragBehavior diagonalDragBehavior;
-  Axis? axisLocked;
-  final double axisWeight = 0.7;
+  Axis? lockedAxis;
 
   @override
   void didChangeDependencies() {
@@ -1698,18 +1706,24 @@ class _HorizontalInnerDimensionState extends ScrollableState {
     super.didChangeDependencies();
   }
 
+  void evaluateLockedAxis(Offset offset) {
+    final double axisDifferential = offset.dx - offset.dy;
+    if (axisDifferential.abs() >= kTouchSlop) {
+      // We have single axis winner.
+      lockedAxis = axisDifferential > 0.0 ? Axis.horizontal : Axis.vertical;
+    }
+  }
+
   @override
   void _handleDragDown(DragDownDetails details) {
     switch (diagonalDragBehavior) {
       case DiagonalDragBehavior.none:
         break;
       case DiagonalDragBehavior.weightedEvent:
-        //TODO
-        break;
       case DiagonalDragBehavior.weightedContinuous:
-        //TODO
-        break;
       case DiagonalDragBehavior.free:
+        // Initiate hold. If one or the other wins the gesture, cancel the
+        // opposite axis.
         verticalScrollable._handleDragDown(details);
         break;
     }
@@ -1722,9 +1736,23 @@ class _HorizontalInnerDimensionState extends ScrollableState {
       case DiagonalDragBehavior.none:
         break;
       case DiagonalDragBehavior.weightedEvent:
-        break;
       case DiagonalDragBehavior.weightedContinuous:
-        // TODO: Handle this case.
+        // See if one axis wins the drag.
+        evaluateLockedAxis(details.globalPosition);
+        switch (lockedAxis) {
+          case null:
+            // Scroll diagonally
+            verticalScrollable._handleDragStart(details);
+            break;
+          case Axis.horizontal:
+            // Scroll horizontally.
+            super._handleDragStart(details);
+            return;
+          case Axis.vertical:
+            // Scroll vertically.
+            verticalScrollable._handleDragStart(details);
+            return;
+        }
         break;
       case DiagonalDragBehavior.free:
         verticalScrollable._handleDragStart(details);
@@ -1735,26 +1763,14 @@ class _HorizontalInnerDimensionState extends ScrollableState {
 
   @override
   void _handleDragUpdate(DragUpdateDetails details) {
-    switch (diagonalDragBehavior) {
-      case DiagonalDragBehavior.none:
-        break;
-      case DiagonalDragBehavior.weightedEvent:
-        // TODO: Handle this case.
-        break;
-      case DiagonalDragBehavior.weightedContinuous:
-        // TODO: Handle this case.
-        break;
-      case DiagonalDragBehavior.free:
-        final DragUpdateDetails verticalDragDetails = DragUpdateDetails(
-          sourceTimeStamp: details.sourceTimeStamp,
-          delta: Offset(details.delta.dy, 0.0),
-          primaryDelta: details.delta.dy,
-          globalPosition: details.globalPosition,
-          localPosition: details.localPosition,
-        );
-        verticalScrollable._handleDragUpdate(verticalDragDetails);
-        break;
-    }
+    final DragUpdateDetails verticalDragDetails = DragUpdateDetails(
+      sourceTimeStamp: details.sourceTimeStamp,
+      delta: Offset(details.delta.dy, 0.0),
+      primaryDelta: details.delta.dy,
+      globalPosition: details.globalPosition,
+      localPosition: details.localPosition,
+    );
+
     final DragUpdateDetails horizontalDragDetails = DragUpdateDetails(
       sourceTimeStamp: details.sourceTimeStamp,
       delta: Offset(details.delta.dx, 0.0),
@@ -1762,32 +1778,57 @@ class _HorizontalInnerDimensionState extends ScrollableState {
       globalPosition: details.globalPosition,
       localPosition: details.localPosition,
     );
+
+    switch (diagonalDragBehavior) {
+      case DiagonalDragBehavior.none:
+        break;
+      case DiagonalDragBehavior.weightedContinuous:
+        // Re-evaluate axis during gesture.
+        evaluateLockedAxis(details.delta);
+        continue forAxis;
+      forAxis:
+      case DiagonalDragBehavior.weightedEvent:
+        switch (lockedAxis) {
+          case null:
+            // Scroll diagonally
+            verticalScrollable._handleDragUpdate(verticalDragDetails);
+            break;
+          case Axis.horizontal:
+            // Scroll horizontally.
+            super._handleDragUpdate(horizontalDragDetails);
+            return;
+          case Axis.vertical:
+            // Scroll vertically.
+            verticalScrollable._handleDragUpdate(verticalDragDetails);
+            return;
+        }
+        break;
+      case DiagonalDragBehavior.free:
+        verticalScrollable._handleDragUpdate(verticalDragDetails);
+        break;
+    }
     super._handleDragUpdate(horizontalDragDetails);
   }
 
   @override
   void _handleDragEnd(DragEndDetails details) {
-    switch (diagonalDragBehavior) {
-      case DiagonalDragBehavior.none:
-        break;
-      case DiagonalDragBehavior.weightedEvent:
-        // TODO: Handle this case.
-        break;
-      case DiagonalDragBehavior.weightedContinuous:
-        // TODO: Handle this case.
-        break;
-      case DiagonalDragBehavior.free:
-        final DragEndDetails verticalDragDetails = DragEndDetails(
-          velocity: details.velocity,
-          primaryVelocity: details.velocity.pixelsPerSecond.dy,
-        );
-        verticalScrollable._handleDragEnd(verticalDragDetails);
-        break;
-    }
+    final DragEndDetails verticalDragDetails = DragEndDetails(
+      velocity: details.velocity,
+      primaryVelocity: details.velocity.pixelsPerSecond.dy,
+    );
     final DragEndDetails horizontalDragDetails = DragEndDetails(
       velocity: details.velocity,
       primaryVelocity: details.velocity.pixelsPerSecond.dx,
     );
+    switch (diagonalDragBehavior) {
+      case DiagonalDragBehavior.none:
+        break;
+      case DiagonalDragBehavior.weightedEvent:
+      case DiagonalDragBehavior.weightedContinuous:
+      case DiagonalDragBehavior.free:
+        verticalScrollable._handleDragEnd(verticalDragDetails);
+        break;
+    }
     super._handleDragEnd(horizontalDragDetails);
   }
 
@@ -1797,11 +1838,7 @@ class _HorizontalInnerDimensionState extends ScrollableState {
       case DiagonalDragBehavior.none:
         break;
       case DiagonalDragBehavior.weightedEvent:
-        // TODO: Handle this case.
-        break;
       case DiagonalDragBehavior.weightedContinuous:
-        // TODO: Handle this case.
-        break;
       case DiagonalDragBehavior.free:
         verticalScrollable._handleDragCancel();
         break;
@@ -1886,19 +1923,14 @@ enum DiagonalDragBehavior {
   ///
   /// This means that after initially evaluating the drag gesture, the weighted
   /// evaluation stands until the gesture is released.
-  ///
-  /// See also:
-  ///
-  ///   * [TwoDimensionalScrollable.diagonalDragThreshold], which determines the
-  ///     weighted scale for evaluating this behavior.
   weightedEvent,
 
   /// This behavior will only allow diagonal scrolling on a weighted
-  /// scale during a gesture event.
+  /// scale throughout a gesture event.
   ///
   /// This means that throughout the drag gesture, the scrolling
   /// axis will be allowed to scroll diagonally if it exceeds the
-  /// [TwoDimensionalScrollable.diagonalDragThreshold].
+  /// [ktouchSlop].
   weightedContinuous,
 
   /// This behavior allows free movement in any and all directions when
@@ -1993,7 +2025,67 @@ class TwoDimensionalScrollable extends StatefulWidget {
   final DragStartBehavior dragStartBehavior;
 
   @override
-  State<TwoDimensionalScrollable> createState() => _TwoDimensionalScrollableState();
+  State<TwoDimensionalScrollable> createState() => TwoDimensionalScrollableState();
+
+  /// The state from the closest instance of this class that encloses the given
+  /// context, or null if none is found.
+  ///
+  /// Typical usage is as follows:
+  ///
+  /// ```dart
+  /// TwoDimensionalScrollableState? 2DScrollable = TwoDimensionalScrollable.maybeOf(context);
+  /// ```
+  ///
+  /// Calling this method will create a dependency on the closest [Scrollable]
+  /// in the [context], if there is one.
+  ///
+  /// See also:
+  ///
+  /// * [TwoDimensionalScrollable.of], which is similar to this method, but
+  ///   asserts if no [Scrollable] ancestor is found.
+  static TwoDimensionalScrollableState? maybeOf(BuildContext context) {
+    final _TwoDimensionalScrollableScope? widget = context.dependOnInheritedWidgetOfExactType<_TwoDimensionalScrollableScope>();
+    return widget?.twoDimensionalScrollable;
+  }
+
+  /// The state from the closest instance of this class that encloses the given
+  /// context.
+  ///
+  /// Typical usage is as follows:
+  ///
+  /// ```dart
+  /// TwoDimensionalScrollableState scrollable = TwoDimensionalScrollable.of(context);
+  /// ```
+  ///
+  /// Calling this method will create a dependency on the closest
+  /// [TwoDimensionalScrollable] in the [context].
+  ///
+  /// If no [TwoDimensionalScrollable] ancestor is found, then this method will
+  /// assert in debug mode, and throw an exception in release mode.
+  ///
+  /// See also:
+  ///
+  /// * [TwoDimensionalScrollable.maybeOf], which is similar to this method,
+  ///   but returns null if no [TwoDimensionalScrollable] ancestor is found.
+  static TwoDimensionalScrollableState of(BuildContext context) {
+    final TwoDimensionalScrollableState? scrollableState = maybeOf(context);
+    assert(() {
+      if (scrollableState == null) {
+        throw FlutterError(
+          'TwoDimensionalScrollable.of() was called with a context that does not '
+          'contain a TwoDimensionalScrollable widget.\n'
+          'No TwoDimensionalScrollable widget ancestor could be found starting '
+          'from the context that was passed to TwoDimensionalScrollable.of(). '
+          'This can happen because you are using a widget that looks for a '
+          'TwoDimensionalScrollable ancestor, but no such ancestor exists.\n'
+          'The context used was:\n'
+          '  $context',
+        );
+      }
+      return true;
+    }());
+    return scrollableState!;
+  }
 
   // Informs the scrollable widgets for gesture recognizers.
   static DiagonalDragBehavior? _diagonalDragBehavior(BuildContext context) {
@@ -2002,8 +2094,43 @@ class TwoDimensionalScrollable extends StatefulWidget {
   }
 }
 
-class _TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
+/// State object for a [TwoDimensionalScrollable] widget.
+///
+/// To manipulate on of the internal [Scrollable] widget's scroll position, use
+/// the object obtained from the [verticalScrollable] or [horizontalScrollable]
+/// property.
+///
+/// To be informed of when a [TwoDimensionalScrollable] widget is scrolling,
+/// use a [NotificationListener] to listen for [ScrollNotification]
+/// notifications, both axes will have the same depth as for two dimensional
+/// scrolling, there is only one viewport.
+class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
   // late ScrollBehavior _configuration;
+  ScrollController? _verticalFallbackController;
+  ScrollController? _horizontalFallbackController;
+  final GlobalKey<ScrollableState> _verticalOuterScrollableKey = GlobalKey<ScrollableState>();
+  final GlobalKey<ScrollableState> _horizontalInnerScrollableKey = GlobalKey<ScrollableState>();
+
+  /// The [ScrollableState] of the vertical axis.
+  ///
+  /// Accessible by calling [TwoDimensionalScrollable.of].
+  ScrollableState get verticalScrollable => _verticalOuterScrollableKey.currentState!;
+
+  /// The [ScrollableState] of the horizontal axis.
+  ///
+  /// Accessible by calling [TwoDimensionalScrollable.of].
+  ScrollableState get horizontalScrollable => _horizontalInnerScrollableKey.currentState!;
+
+  @override
+  void initState() {
+    if (widget.verticalDetails.controller == null) {
+      _verticalFallbackController = ScrollController();
+    }
+    if (widget.horizontalDetails.controller == null) {
+      _horizontalFallbackController = ScrollController();
+    }
+    super.initState();
+  }
 
   @override
   void didChangeDependencies() {
@@ -2014,8 +2141,9 @@ class _TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
   @override
   Widget build(BuildContext context) {
     Widget result = _VerticalOuterDimension(
+      key: _verticalOuterScrollableKey,
       axisDirection: widget.verticalDetails.direction,
-      controller: widget.verticalDetails.controller,
+      controller: widget.verticalDetails.controller ?? _verticalFallbackController,
       physics: widget.verticalDetails.physics,
       clipBehavior: widget.verticalDetails.clipBehavior ?? Clip.hardEdge,
       incrementCalculator: widget.incrementCalculator,
@@ -2027,8 +2155,9 @@ class _TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
       dragStartBehavior: widget.dragStartBehavior,
       viewportBuilder: (BuildContext context, ViewportOffset verticalOffset) {
         return _HorizontalInnerDimension(
+          key: _horizontalInnerScrollableKey,
           axisDirection: widget.horizontalDetails.direction,
-          controller: widget.horizontalDetails.controller,
+          controller: widget.horizontalDetails.controller ?? _horizontalFallbackController,
           physics: widget.horizontalDetails.physics,
           clipBehavior: widget.horizontalDetails.clipBehavior ?? Clip.hardEdge,
           incrementCalculator: widget.incrementCalculator,
@@ -2046,7 +2175,7 @@ class _TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
     );
 
     // Build scrollbars for 2 dimensions instead of 1.
-    // Waiting on
+    // Waiting on PR to land
     // result = _configuration.buildDualScrollbars(
     //   context,
     //   result,
@@ -2067,6 +2196,13 @@ class _TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
       child: result,
     );
   }
+
+  @override
+  void dispose() {
+    _verticalFallbackController?.dispose();
+    _horizontalFallbackController?.dispose();
+    super.dispose();
+  }
 }
 
 // Enable TwoDimensionalScrollable.of() to work as if
@@ -2081,7 +2217,7 @@ class _TwoDimensionalScrollableScope extends InheritedWidget {
   });
 
   final DiagonalDragBehavior diagonalDragBehavior;
-  final _TwoDimensionalScrollableState twoDimensionalScrollable;
+  final TwoDimensionalScrollableState twoDimensionalScrollable;
 
   @override
   bool updateShouldNotify(_TwoDimensionalScrollableScope old) {

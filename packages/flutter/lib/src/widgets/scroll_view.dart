@@ -2040,35 +2040,43 @@ abstract class TwoDimensionalScrollView extends StatelessWidget {
     ViewportOffset horizontalOffset,
   );
 
-  ScrollableDetails get _mainAxisDetails => mainAxis == Axis.vertical
-    ? verticalDetails
-    : horizontalDetails;
-  ScrollableDetails get _secondaryAxisDetails => mainAxis == Axis.vertical
-    ? horizontalDetails
-    : verticalDetails;
+  // ScrollableDetails get _mainAxisDetails => mainAxis == Axis.vertical
+  //   ? verticalDetails
+  //   : horizontalDetails;
+  // ScrollableDetails get _secondaryAxisDetails => mainAxis == Axis.vertical
+  //   ? horizontalDetails
+  //   : verticalDetails;
 
   @override
   Widget build(BuildContext context) {
+    late final ScrollableDetails mainAxisDetails;
+    switch (mainAxis) {
+      case Axis.vertical:
+        mainAxisDetails = verticalDetails;
+        break;
+      case Axis.horizontal:
+        mainAxisDetails = horizontalDetails;
+        break;
+    }
+
     final bool effectivePrimary = primary
-      ?? _mainAxisDetails.controller == null && PrimaryScrollController.shouldInherit(
+      ?? mainAxisDetails.controller == null && PrimaryScrollController.shouldInherit(
         context,
         mainAxis,
       );
 
-    // TODO(Piinks): This scroll controller logic is messy. Each must have a
-    //  controller, while allowing for PSC, but make this cleaner.
-    final ScrollController mainScrollController = (effectivePrimary
-      ? PrimaryScrollController.maybeOf(context)
-      : _mainAxisDetails.controller) ?? ScrollController();
-    final ScrollController secondaryScrollController = _secondaryAxisDetails.controller ?? ScrollController();
+    if (effectivePrimary) {
+      // Using PrimaryScrollController for mainAxis.
+      mainAxisDetails.copyWith(controller: PrimaryScrollController.of(context));
+    }
 
     final TwoDimensionalScrollable scrollable = TwoDimensionalScrollable(
       horizontalDetails : mainAxis == Axis.horizontal
-        ? horizontalDetails.copyWith(controller: mainScrollController)
-        : horizontalDetails.copyWith(controller: secondaryScrollController),
+        ? mainAxisDetails
+        : horizontalDetails,
       verticalDetails: mainAxis == Axis.vertical
-        ? verticalDetails.copyWith(controller: mainScrollController)
-        : verticalDetails.copyWith(controller: secondaryScrollController),
+        ? mainAxisDetails
+        : verticalDetails,
       diagonalDragBehavior: diagonalDragBehavior,
       viewportBuilder: buildViewport,
       dragStartBehavior: dragStartBehavior,

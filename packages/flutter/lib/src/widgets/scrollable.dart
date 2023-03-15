@@ -892,6 +892,20 @@ class ScrollableState extends State<Scrollable> with TickerProviderStateMixin, R
     return false;
   }
 
+  Widget _buildChrome(BuildContext context, Widget child) {
+    final ScrollableDetails details = ScrollableDetails(
+      direction: widget.axisDirection,
+      controller: _effectiveScrollController,
+      decorationClipBehavior: widget.clipBehavior,
+    );
+
+    return _configuration.buildScrollbar(
+      context,
+      _configuration.buildOverscrollIndicator(context, child, details),
+      details,
+    );
+  }
+
   // DESCRIPTION
 
   @override
@@ -942,17 +956,7 @@ class ScrollableState extends State<Scrollable> with TickerProviderStateMixin, R
       );
     }
 
-    final ScrollableDetails details = ScrollableDetails(
-      direction: widget.axisDirection,
-      controller: _effectiveScrollController,
-      decorationClipBehavior: widget.clipBehavior,
-    );
-
-    result = _configuration.buildScrollbar(
-      context,
-      _configuration.buildOverscrollIndicator(context, result, details),
-      details,
-    );
+    result = _buildChrome(context, result);
 
     // Selection is only enabled when there is a parent registrar.
     final SelectionRegistrar? registrar = SelectionContainer.maybeOf(context);
@@ -1662,17 +1666,17 @@ class _VerticalOuterDimensionState extends ScrollableState {
     super.setCanDrag(value);
   }
 
-  // @override
-  // Widget _buildChrome(Widget child) {
-  //   final ScrollableDetails details = ScrollableDetails(
-  //     direction: widget.axisDirection,
-  //     controller: _effectiveScrollController,
-  //     clipBehavior: widget.clipBehavior,
-  //   );
-  //   // Skip building a scrollbar here, the dual scrollbar is added in
-  //   // TwoDimensionalScrollableState.
-  //   return _configuration.buildOverscrollIndicator(context, child, details);
-  // }
+  @override
+  Widget _buildChrome(BuildContext context, Widget child) {
+    final ScrollableDetails details = ScrollableDetails(
+      direction: widget.axisDirection,
+      controller: _effectiveScrollController,
+      clipBehavior: widget.clipBehavior,
+    );
+    // Skip building a scrollbar here, the dual scrollbar is added in
+    // TwoDimensionalScrollableState.
+    return _configuration.buildOverscrollIndicator(context, child, details);
+  }
 }
 
 // Horizontal inner scrollable of 2D scrolling
@@ -1895,17 +1899,17 @@ class _HorizontalInnerDimensionState extends ScrollableState {
     super.setCanDrag(value);
   }
 
-  // @override
-  // Widget _buildChrome(Widget child) {
-  //   final ScrollableDetails details = ScrollableDetails(
-  //     direction: widget.axisDirection,
-  //     controller: _effectiveScrollController,
-  //     clipBehavior: widget.clipBehavior,
-  //   );
-  //   // Skip building a scrollbar here, the dual scrollbar is added in
-  //   // TwoDimensionalScrollableState.
-  //   return _configuration.buildOverscrollIndicator(context, child, details);
-  // }
+  @override
+  Widget _buildChrome(BuildContext context, Widget child) {
+    final ScrollableDetails details = ScrollableDetails(
+      direction: widget.axisDirection,
+      controller: _effectiveScrollController,
+      clipBehavior: widget.clipBehavior,
+    );
+    // Skip building a scrollbar here, the dual scrollbar is added in
+    // TwoDimensionalScrollableState.
+    return _configuration.buildOverscrollIndicator(context, child, details);
+  }
 }
 
 /// Specifies how the [VerticalDragGestureRecognizer] and
@@ -1922,7 +1926,7 @@ enum DiagonalDragBehavior {
   /// scale per gesture event.
   ///
   /// This means that after initially evaluating the drag gesture, the weighted
-  /// evaluation stands until the gesture is released.
+  /// evaluation (baswed on [kTouchSlop]) stands until the gesture is released.
   weightedEvent,
 
   /// This behavior will only allow diagonal scrolling on a weighted
@@ -2105,7 +2109,7 @@ class TwoDimensionalScrollable extends StatefulWidget {
 /// notifications, both axes will have the same depth as for two dimensional
 /// scrolling, there is only one viewport.
 class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
-  // late ScrollBehavior _configuration;
+  late ScrollBehavior _configuration;
   ScrollController? _verticalFallbackController;
   ScrollController? _horizontalFallbackController;
   final GlobalKey<ScrollableState> _verticalOuterScrollableKey = GlobalKey<ScrollableState>();
@@ -2134,7 +2138,7 @@ class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
 
   @override
   void didChangeDependencies() {
-    // _configuration = ScrollConfiguration.of(context);
+    _configuration = ScrollConfiguration.of(context);
     super.didChangeDependencies();
   }
 
@@ -2175,13 +2179,16 @@ class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
     );
 
     // Build scrollbars for 2 dimensions instead of 1.
-    // Waiting on PR to land
-    // result = _configuration.buildDualScrollbars(
-    //   context,
-    //   result,
-    //   widget.verticalDetails,
-    //   widget.horizontalDetails,
-    // );
+    // TODO(Piinks): The right way is to create a dual constructor, https://github.com/flutter/flutter/issues/122348
+    result = _configuration.buildScrollbar(
+      context,
+      _configuration.buildScrollbar(
+        context,
+        result,
+        widget.horizontalDetails,
+      ),
+      widget.verticalDetails,
+    );
 
     if (widget.restorationId != null) {
       result = RestorationScope(

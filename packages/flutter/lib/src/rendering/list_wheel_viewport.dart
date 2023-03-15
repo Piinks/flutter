@@ -1034,7 +1034,7 @@ class RenderListWheelViewport
   bool hitTestChildren(BoxHitTestResult result, { required Offset position }) => false;
 
   @override
-  RevealedOffset getOffsetToReveal(RenderObject target, double alignment, { Rect? rect }) {
+  RevealedOffset getOffsetToReveal(RenderObject target, double alignment, { Rect? rect, AxisDirection? revealingAxisDirection }) {
     // `target` is only fully revealed when in the selected/center position. Therefore,
     // this method always returns the offset that shows `target` in the center position,
     // which is the same offset for all `alignment` values.

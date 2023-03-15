@@ -79,7 +79,7 @@ abstract class TwoDimensionalViewport extends RenderObjectWidget {
 }
 
 class _TwoDimensionalViewportElement extends RenderObjectElement
-    with NotifiableElementMixin, ViewportElementMixin implements TwoDimensionalChildManager {
+    with NotifiableElementMixin, ViewportElementMixin implements _TwoDimensionalChildManager {
   _TwoDimensionalViewportElement(super.widget);
 
   @override
@@ -89,11 +89,11 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
   RenderTwoDimensionalViewport get renderObject => super.renderObject as RenderTwoDimensionalViewport;
 
   // Contains all children, incl those that are keyed.
-  Map<ChildLocale, Element> _indexToChild = <ChildLocale, Element>{};
+  Map<ChildVicinity, Element> _indexToChild = <ChildVicinity, Element>{};
   Map<Key, Element> _keyToChild = <Key, Element>{};
   // Used between _startLayout() & _endLayout() to compute the new values for
   // _indexToChild and _keyToChild.
-  Map<ChildLocale, Element>? _newIndexToChild;
+  Map<ChildVicinity, Element>? _newIndexToChild;
   Map<Key, Element>? _newKeyToChild;
 
   @override
@@ -118,17 +118,17 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
   }
 
   @override
-  void insertRenderObjectChild(RenderBox child, ChildLocale slot) {
+  void insertRenderObjectChild(RenderBox child, ChildVicinity slot) {
     renderObject._insertChild(child, slot);
   }
 
   @override
-  void moveRenderObjectChild(RenderBox child, ChildLocale oldSlot, ChildLocale newSlot) {
+  void moveRenderObjectChild(RenderBox child, ChildVicinity oldSlot, ChildVicinity newSlot) {
     renderObject._moveChild(child, from: oldSlot, to: newSlot);
   }
 
   @override
-  void removeRenderObjectChild(RenderBox child, ChildLocale slot) {
+  void removeRenderObjectChild(RenderBox child, ChildVicinity slot) {
     renderObject._removeChild(child, slot);
   }
 
@@ -146,8 +146,8 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
   }
 
   int _compareChildren(Element a, Element b) {
-    final ChildLocale aSlot = a.slot! as ChildLocale;
-    final ChildLocale bSlot = b.slot! as ChildLocale;
+    final ChildVicinity aSlot = a.slot! as ChildVicinity;
+    final ChildVicinity bSlot = b.slot! as ChildVicinity;
     return aSlot.compareTo(bSlot);
   }
 
@@ -156,17 +156,17 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
   bool get _debugIsDoingLayout => _newKeyToChild != null && _newIndexToChild != null;
 
   @override
-  void _startLayout() {
+  void startLayout() {
     assert(!_debugIsDoingLayout);
-    _newIndexToChild = <ChildLocale, Element>{};
+    _newIndexToChild = <ChildVicinity, Element>{};
     _newKeyToChild = <Key, Element>{};
   }
 
   @override
-  void _buildChild(ChildLocale index) {
+  void buildChild(ChildVicinity index) {
     assert(_debugIsDoingLayout);
     owner!.buildScope(this, () {
-      final Widget newWidget = widget.delegate.build(this, index.column, index.row);
+      final Widget newWidget = widget.delegate.build(this, index.yIndex, index.xIndex);
       final Element? oldElement = _retrieveOldElement(newWidget, index);
       final Element? newChild = updateChild(oldElement, newWidget, index);
       assert(newChild != null); // because newWidget is never null.
@@ -177,7 +177,7 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
     });
   }
 
-  Element? _retrieveOldElement(Widget newWidget, ChildLocale index) {
+  Element? _retrieveOldElement(Widget newWidget, ChildVicinity index) {
     if (newWidget.key != null) {
       final Element? result = _keyToChild.remove(newWidget.key);
       if (result != null) {
@@ -193,7 +193,7 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
   }
 
   @override
-  void _reuseChild(ChildLocale index) {
+  void reuseChild(ChildVicinity index) {
     assert(_debugIsDoingLayout);
     final Element? elementToReuse = _indexToChild.remove(index);
     assert(elementToReuse != null); // has to exist since we are reusing it.
@@ -206,7 +206,7 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
   }
 
   @override
-  void _endLayout() {
+  void endLayout() {
     assert(_debugIsDoingLayout);
 
     // Unmount all elements that have not been reused in the layout cycle.
@@ -257,10 +257,10 @@ class TwoDimensionalViewportParentData extends BoxParentData with KeepAliveParen
   // TODO(Piinks): Add assertions for invalid locales
   /// The logical positioning of children in two dimensions.
   ///
-  /// While children may not be strictly laid out in [ChildLocale.row]s and
-  /// [ChildLocale.column]s, the relative positioning determines traversal of
+  /// While children may not be strictly laid out in [ChildVicinity.xIndex]s and
+  /// [ChildVicinity.yIndex]s, the relative positioning determines traversal of
   /// children in row or column major format.
-  ChildLocale locale = ChildLocale.invalid;
+  ChildVicinity locale = ChildVicinity.invalid;
 
   @override
   bool get keptAlive => _keptAlive;
@@ -284,10 +284,11 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     required ViewportOffset verticalOffset,
     required TwoDimensionalChildDelegate delegate,
     required Axis mainAxis,
-    required TwoDimensionalChildManager childManager,
+    // TODO(Piinks): I dunno if this is what Goderbauer meant
+    required RenderObjectElement childManager,
     double cacheExtent = RenderAbstractViewport.defaultCacheExtent,
     Clip clipBehavior = Clip.hardEdge,
-  }) : _childManager = childManager,
+  }) : _childManager = childManager as _TwoDimensionalChildManager,
        _horizontalOffset = horizontalOffset,
        _verticalOffset = verticalOffset,
        _delegate = delegate,
@@ -402,10 +403,10 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     markNeedsLayout();
   }
 
-  final TwoDimensionalChildManager _childManager;
+  final _TwoDimensionalChildManager _childManager;
 
   /// The nodes being kept alive despite not being visible.
-  final Map<ChildLocale, RenderBox> _keepAliveBucket = <ChildLocale, RenderBox>{};
+  final Map<ChildVicinity, RenderBox> _keepAliveBucket = <ChildVicinity, RenderBox>{};
   late List<RenderBox> _debugDanglingKeepAlives;
 
   /// Indicates whether integrity check is enabled.
@@ -457,7 +458,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     _horizontalOffset.removeListener(markNeedsLayout);
     _verticalOffset.removeListener(markNeedsLayout);
     _delegate.removeListener(_handleDelegateNotification);
-    for (final ChildLocale cellIndex in _children.keys) {
+    for (final ChildVicinity cellIndex in _children.keys) {
       _children[cellIndex]!.detach();
     }
     for (final RenderBox child in _keepAliveBucket.values) {
@@ -488,15 +489,15 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   @override
   List<DiagnosticsNode> debugDescribeChildren() {
     final List<DiagnosticsNode> debugChildren = <DiagnosticsNode>[
-      ..._children.keys.map<DiagnosticsNode>((ChildLocale index) {
+      ..._children.keys.map<DiagnosticsNode>((ChildVicinity index) {
         return _children[index]!.toDiagnosticsNode(name: index.toString());
       })
     ];
     if (_keepAliveBucket.isNotEmpty) {
-      final List<ChildLocale> indices = _keepAliveBucket.keys.toList()..sort();
-      for (final ChildLocale index in indices) {
+      final List<ChildVicinity> indices = _keepAliveBucket.keys.toList()..sort();
+      for (final ChildVicinity index in indices) {
         debugChildren.add(_keepAliveBucket[index]!.toDiagnosticsNode(
-          name: 'child with index [${index.row}, ${index.column}] (kept alive but not laid out)',
+          name: 'child with index [${index.xIndex}, ${index.yIndex}] (kept alive but not laid out)',
           style: DiagnosticsTreeStyle.offstage,
         ));
       }
@@ -547,7 +548,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   //  more easily incorporate row/col major order?
   // TODO(Piinks): Incorporate mainAxis
   @protected
-  final Map<ChildLocale, RenderBox> _children = <ChildLocale, RenderBox>{};
+  final Map<ChildVicinity, RenderBox> _children = <ChildVicinity, RenderBox>{};
 
   @override
   void performResize() {
@@ -588,45 +589,17 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     super.markNeedsLayout();
   }
 
-  /// Informs the [TwoDimensionalChildManager]
-  void startLayout() {
-    _childManager._startLayout();
-  }
+  /// Primary work horse of [performLayout].
+  ///
+  /// Subclasses must implement this method,
+  void layoutChildren();
 
   @override
-  void performLayout();
+  void performLayout() {
+    _childManager.startLayout();
 
-  /// Returns the child for a given [ChildLocale], creating it is it has not
-  /// been already, or will reuse it if it already exists.
-  RenderBox createOrObtainChildFor(ChildLocale locale) {
-    if (_needsChildRebuild || !_children.containsKey(locale)) {
-      invokeLayoutCallback<BoxConstraints>((BoxConstraints _) {
-        _childManager._buildChild(locale);
-      });
-    } else {
-      _childManager._reuseChild(locale);
-    }
+    layoutChildren();
 
-    assert(_children.containsKey(locale));
-    return _children[locale]!;
-  }
-
-  /// Returns a the child for the given [ChildLocale] if it has been created.
-  RenderBox? getChildFor(ChildLocale locale) {
-    if (_children.containsKey(locale)) {
-      return _children[locale]!;
-    }
-    return null;
-  }
-
-  /// Called when the children are finished being laid out.
-  ///
-  /// This method will collect any kept alive children, assert all rebuild needs
-  /// have been satisfied, and calls on the [TwoDimensionalChildManager] to
-  /// collect garbage.
-  ///
-  /// Must be called by subclasses, typically at the end of [performLayout].
-  void endLayout() {
     // TODO(Piinks): Do over, collect keep alives.
     // And wrap all these up in a debug method.
     _needsChildRebuild = false;
@@ -634,21 +607,44 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     assert(needsDelegateRebuild == false);
     assert(didResize == false);
     invokeLayoutCallback<BoxConstraints>((BoxConstraints _) {
-      _childManager._endLayout();
+      _childManager.endLayout();
     });
+  }
+
+  /// Returns the child for a given [ChildVicinity], creating it is it has not
+  /// been already, or will reuse it if it already exists.
+  RenderBox createOrObtainChildFor(ChildVicinity locale) {
+    if (_needsChildRebuild || !_children.containsKey(locale)) {
+      invokeLayoutCallback<BoxConstraints>((BoxConstraints _) {
+        _childManager.buildChild(locale);
+      });
+    } else {
+      _childManager.reuseChild(locale);
+    }
+
+    assert(_children.containsKey(locale));
+    return _children[locale]!;
+  }
+
+  /// Returns a the child for the given [ChildVicinity] if it has been created.
+  RenderBox? getChildFor(ChildVicinity locale) {
+    if (_children.containsKey(locale)) {
+      return _children[locale]!;
+    }
+    return null;
   }
 
   // ---- Called from _TwoDimensionalViewportElement ----
 
-  void _insertChild(RenderBox child, ChildLocale slot) {
-    if (slot.row == 0 && slot.column == 0) {
+  void _insertChild(RenderBox child, ChildVicinity slot) {
+    if (slot.xIndex == 0 && slot.yIndex == 0) {
     }
     assert(_debugTrackOrphans(newOrphan: _children[slot]));
     _children[slot] = child;
     adoptChild(child);
   }
 
-  void _moveChild(RenderBox child, {required ChildLocale from, required ChildLocale to}) {
+  void _moveChild(RenderBox child, {required ChildVicinity from, required ChildVicinity to}) {
     if (_children[from] == child) {
       _children.remove(from);
     }
@@ -656,8 +652,8 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     _children[to] = child;
   }
 
-  void _removeChild(RenderBox child, ChildLocale slot) {
-    if (slot.row == 0 && slot.column == 0) {
+  void _removeChild(RenderBox child, ChildVicinity slot) {
+    if (slot.xIndex == 0 && slot.yIndex == 0) {
     }
     if (_children[slot] == child) {
       _children.remove(slot);
@@ -685,10 +681,117 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   }
 
   @override
-  RevealedOffset getOffsetToReveal(RenderObject target, double alignment, {Rect? rect}) {
-    // TODO(Piinks): implement getOffsetToReveal, what does RevealedOffset look like in 2D?
-    // Part of Scrollable.ensureVisible, TBD
-    throw UnimplementedError();
+  RevealedOffset getOffsetToReveal(RenderObject target, double alignment, {Rect? rect, AxisDirection? revealingAxisDirection}) {
+    // We need to know what axis to reveal in 2D
+    assert(revealingAxisDirection != null);
+    late final ViewportOffset offset;
+    switch (axisDirectionToAxis(revealingAxisDirection!)) {
+      case Axis.vertical:
+        offset = _verticalOffset;
+        break;
+      case Axis.horizontal:
+        offset = _horizontalOffset;
+    }
+
+    double leadingScrollOffset = 0.0;
+    // Starting at `target` and walking towards the root:
+    //  - `child` will be the last object before we reach this viewport, and
+    //  - `pivot` will be the last RenderBox before we reach this viewport.
+    RenderObject child = target;
+    RenderBox? pivot;
+    while (child.parent != this) {
+      final RenderObject parent = child.parent! as RenderObject;
+      assert(child is RenderBox);
+      pivot = child as RenderBox;
+      leadingScrollOffset = 0.0;
+      child = parent;
+    }
+
+    // `rect` in the new intermediate coordinate system.
+    final Rect rectLocal;
+    // Our new reference frame render object's main axis extent.
+    final double pivotExtent;
+
+    // `leadingScrollOffset` is currently the scrollOffset of our new reference
+    // frame (`pivot` or `target`), within `child`.
+    if (pivot != null) {
+      assert(pivot.parent != null);
+      assert(pivot.parent != this);
+      assert(pivot != this);
+      switch (axisDirectionToAxis(revealingAxisDirection)) {
+        case Axis.horizontal:
+          pivotExtent = pivot.size.width;
+          break;
+        case Axis.vertical:
+          pivotExtent = pivot.size.height;
+          break;
+      }
+      rect ??= target.paintBounds;
+      rectLocal = MatrixUtils.transformRect(target.getTransformTo(pivot), rect);
+    } else {
+      assert(rect != null);
+      return RevealedOffset(offset: offset.pixels, rect: rect!);
+    }
+
+    assert(child.parent == this);
+
+    final double targetMainAxisExtent;
+    // The scroll offset of `rect` within `child`.
+    switch (revealingAxisDirection) {
+      case AxisDirection.up:
+        leadingScrollOffset += pivotExtent - rectLocal.bottom;
+        targetMainAxisExtent = rectLocal.height;
+        break;
+      case AxisDirection.right:
+        leadingScrollOffset += rectLocal.left;
+        targetMainAxisExtent = rectLocal.width;
+        break;
+      case AxisDirection.down:
+        leadingScrollOffset += rectLocal.top;
+        targetMainAxisExtent = rectLocal.height;
+        break;
+      case AxisDirection.left:
+        leadingScrollOffset += pivotExtent - rectLocal.right;
+        targetMainAxisExtent = rectLocal.width;
+        break;
+    }
+
+    // The scroll offset in the viewport to `rect`.
+    // leadingScrollOffset = child.parentData;
+
+    // This step assumes the viewport's layout is up-to-date, i.e., if
+    // offset.pixels is changed after the last performLayout, the new scroll
+    // position will not be accounted for.
+    final Matrix4 transform = target.getTransformTo(this);
+    Rect targetRect = MatrixUtils.transformRect(transform, rect);
+
+    final double mainAxisExtent;
+    switch (axisDirectionToAxis(revealingAxisDirection)) {
+      case Axis.horizontal:
+        mainAxisExtent = size.width;
+        break;
+      case Axis.vertical:
+        mainAxisExtent = size.height;
+        break;
+    }
+    final double targetOffset = leadingScrollOffset - (mainAxisExtent - targetMainAxisExtent) * alignment;
+    final double offsetDifference = offset.pixels - targetOffset;
+
+    switch (revealingAxisDirection) {
+      case AxisDirection.down:
+        targetRect = targetRect.translate(0.0, offsetDifference);
+        break;
+      case AxisDirection.right:
+        targetRect = targetRect.translate(offsetDifference, 0.0);
+        break;
+      case AxisDirection.up:
+        targetRect = targetRect.translate(0.0, -offsetDifference);
+        break;
+      case AxisDirection.left:
+        targetRect = targetRect.translate(-offsetDifference, 0.0);
+        break;
+    }
+    return RevealedOffset(offset: targetOffset, rect: targetRect);
   }
 }
 
@@ -697,62 +800,62 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
 /// [RenderTwoDimensionalViewport] objects reify their children lazily to avoid
 /// spending resources on children that are not visible in the viewport. This
 /// delegate lets these objects create, reuse and remove children.
-abstract class TwoDimensionalChildManager {
-  void _startLayout();
-  void _buildChild(ChildLocale index);
-  void _reuseChild(ChildLocale index);
-  void _endLayout();
+abstract class _TwoDimensionalChildManager {
+  void startLayout();
+  void buildChild(ChildVicinity index);
+  void reuseChild(ChildVicinity index);
+  void endLayout();
 }
 
 /// The relative positioning of children in a [TwoDimensionalViewport].
 @immutable
-class ChildLocale implements Comparable<ChildLocale> {
-  /// Creates an reference to a child in a two dimensional plane, with the [row]
-  /// and [column] being relative to other children in the viewport.
-  const ChildLocale({required this.row, required this.column});
+class ChildVicinity implements Comparable<ChildVicinity> {
+  /// Creates an reference to a child in a two dimensional plane, with the [xIndex]
+  /// and [yIndex] being relative to other children in the viewport.
+  const ChildVicinity({required this.xIndex, required this.yIndex});
 
   /// Represents an unassigned child position. The given child may be in the
   /// process of moving from one position to another.
-  static const ChildLocale invalid = ChildLocale(row: -1, column: -1);
+  static const ChildVicinity invalid = ChildVicinity(xIndex: -1, yIndex: -1);
 
   /// The index of the child in the horizontal axis, relative to neighboring
   /// children.
   ///
   /// While children's offset and positioning may not be strictly defined in
-  /// terms of rows and columns, like a table, [ChildLocale.row] and
-  /// [ChildLocale.column] can represent order of traversal in row or column
+  /// terms of rows and columns, like a table, [ChildVicinity.xIndex] and
+  /// [ChildVicinity.yIndex] can represent order of traversal in row or column
   /// major format.
-  final int row;
+  final int xIndex;
 
   /// The index of the child in the vertical axis, relative to neighboring
   /// children.
   ///
   /// While children's offset and positioning may not be strictly defined in
-  /// terms of rows and columns, like a table, [ChildLocale.row] and
-  /// [ChildLocale.column] can represent order of traversal in row or column
+  /// terms of rows and columns, like a table, [ChildVicinity.xIndex] and
+  /// [ChildVicinity.yIndex] can represent order of traversal in row or column
   /// major format.
-  final int column;
+  final int yIndex;
 
   @override
   bool operator ==(Object other) {
-    return other is ChildLocale
-        && other.row == row
-        && other.column == column;
+    return other is ChildVicinity
+        && other.xIndex == xIndex
+        && other.yIndex == yIndex;
   }
 
   @override
-  int get hashCode => Object.hash(row, column);
+  int get hashCode => Object.hash(xIndex, yIndex);
 
   @override
-  int compareTo(ChildLocale other) {
-    if (row == other.row) {
-      return column - other.column;
+  int compareTo(ChildVicinity other) {
+    if (xIndex == other.xIndex) {
+      return yIndex - other.yIndex;
     }
-    return row - other.row;
+    return xIndex - other.xIndex;
   }
 
   @override
   String toString() {
-    return '(column: $column, row: $row)';
+    return '(column: $yIndex, row: $xIndex)';
   }
 }

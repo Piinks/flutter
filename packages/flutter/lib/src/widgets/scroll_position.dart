@@ -696,7 +696,21 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
     RenderObject? targetRenderObject,
   }) {
     assert(object.attached);
-    final RenderAbstractViewport viewport = RenderAbstractViewport.of(object);
+
+    late final RenderAbstractViewport viewport;
+    late final bool useTargetRenderObject;
+    try {
+      viewport = RenderAbstractViewport.of(object);
+      useTargetRenderObject = false;
+    } catch (_) {
+      if (targetRenderObject != null) {
+        viewport = RenderAbstractViewport.of(targetRenderObject);
+        useTargetRenderObject = true;
+      } else {
+        useTargetRenderObject = false;
+        rethrow;
+      }
+    }
 
     Rect? targetRect;
     if (targetRenderObject != null && targetRenderObject != object) {
@@ -707,23 +721,52 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
     }
 
     double target;
+    print(alignmentPolicy);
     switch (alignmentPolicy) {
       case ScrollPositionAlignmentPolicy.explicit:
-        target = clampDouble(viewport.getOffsetToReveal(object, alignment, rect: targetRect).offset, minScrollExtent, maxScrollExtent);
+        target = clampDouble(
+          viewport.getOffsetToReveal(
+            useTargetRenderObject ? targetRenderObject! : object,
+            alignment,
+            rect: targetRect,
+            revealingAxisDirection: axisDirection,
+          ).offset,
+          minScrollExtent,
+          maxScrollExtent,
+        );
         break;
       case ScrollPositionAlignmentPolicy.keepVisibleAtEnd:
-        target = clampDouble(viewport.getOffsetToReveal(object, 1.0, rect: targetRect).offset, minScrollExtent, maxScrollExtent);
+        target = clampDouble(
+          viewport.getOffsetToReveal(
+            useTargetRenderObject ? targetRenderObject! : object,
+            1.0,
+            rect: targetRect,
+            revealingAxisDirection: axisDirection,
+          ).offset,
+          minScrollExtent,
+          maxScrollExtent,
+        );
         if (target < pixels) {
           target = pixels;
         }
         break;
       case ScrollPositionAlignmentPolicy.keepVisibleAtStart:
-        target = clampDouble(viewport.getOffsetToReveal(object, 0.0, rect: targetRect).offset, minScrollExtent, maxScrollExtent);
+        target = clampDouble(
+          viewport.getOffsetToReveal(
+            useTargetRenderObject ? targetRenderObject! : object,
+            0.0,
+            rect: targetRect,
+            revealingAxisDirection: axisDirection,
+          ).offset,
+          minScrollExtent,
+          maxScrollExtent,
+        );
         if (target > pixels) {
           target = pixels;
         }
         break;
     }
+    print('target: $target');
 
     if (target == pixels) {
       return Future<void>.value();

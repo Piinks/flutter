@@ -893,31 +893,6 @@ abstract class TwoDimensionalChildDelegate extends ChangeNotifier {
   /// {@macro flutter.widgets.SliverChildBuilderDelegate.addRepaintBoundaries}
   final bool addRepaintBoundaries;
 
-  /// Returns an estimate of the number of children this delegate will build.
-  ///
-  /// Used to estimate the maximum scroll offset if [estimateMaxScrollOffset]
-  /// returns null.
-  ///
-  /// Return null if there are an unbounded number of children or if it would
-  /// be too difficult to estimate the number of children.
-  int? get estimatedChildCount => null;
-
-  /// Returns an estimate of the max scroll extent for all the children in the
-  /// given axis.
-  ///
-  /// Subclasses should override this function if they have additional
-  /// information about their max scroll extent.
-  ///
-  /// The default implementation returns null, which causes the caller to
-  /// extrapolate the max scroll offset from the given parameters.
-  double? estimateMaxScrollOffset(
-      Axis axis,
-      int firstIndex,
-      int lastIndex,
-      double leadingScrollOffset,
-      double trailingScrollOffset,
-      ) => null;
-
   /// Find indices of a child element with associated key.
   ///
   /// This will be called during `performRebuild` to check if a child has moved
@@ -963,28 +938,6 @@ abstract class TwoDimensionalChildDelegate extends ChangeNotifier {
   /// If the method returns false, then the [build] call might be optimized
   /// away.
   bool shouldRebuild(covariant TwoDimensionalChildDelegate oldDelegate) => true;
-
-  @override
-  String toString() {
-    final List<String> description = <String>[];
-    debugFillDescription(description);
-    return '${describeIdentity(this)}(${description.join(", ")})';
-  }
-
-  /// Add additional information to the given description for use by [toString].
-  @protected
-  @mustCallSuper
-  void debugFillDescription(List<String> description) {
-    try {
-      final int? children = estimatedChildCount;
-      if (children != null) {
-        description.add('estimated child count: $children');
-      }
-    } catch (e) {
-      // The exception is forwarded to widget inspector.
-      description.add('estimated child count: EXCEPTION (${e.runtimeType})');
-    }
-  }
 }
 
 // Return a Widget for the given Exception

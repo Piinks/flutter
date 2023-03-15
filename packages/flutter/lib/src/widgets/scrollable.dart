@@ -422,7 +422,6 @@ class Scrollable extends StatefulWidget {
     // Otherwise, let the outer renderObject be as visible as possible maybe
     // because the `targetRenderObject` is invisible.
     // Also see https://github.com/flutter/flutter/issues/65100
-    // TODO(Piinks): Test this. It *should* work in 2D
     RenderObject? targetRenderObject;
     ScrollableState? scrollable = Scrollable.maybeOf(context);
     while (scrollable != null) {
@@ -2185,9 +2184,14 @@ class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
       _configuration.buildScrollbar(
         context,
         result,
-        widget.horizontalDetails,
+        widget.horizontalDetails.copyWith(
+          controller: widget.horizontalDetails.controller ?? _horizontalFallbackController,
+          // Fixes horizontal override in MaterialScrollBehavior for now.
+          // I know.
+          direction: widget.verticalDetails.direction,
+        ),
       ),
-      widget.verticalDetails,
+      widget.verticalDetails.copyWith(controller: widget.verticalDetails.controller ?? _verticalFallbackController),
     );
 
     if (widget.restorationId != null) {

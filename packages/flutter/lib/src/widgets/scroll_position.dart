@@ -719,9 +719,9 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
         object.paintBounds.intersect(targetRenderObject.paintBounds),
       );
     }
+    print('alignmentPolicy: $alignmentPolicy');
 
     double target;
-    print(alignmentPolicy);
     switch (alignmentPolicy) {
       case ScrollPositionAlignmentPolicy.explicit:
         target = clampDouble(
@@ -766,7 +766,6 @@ abstract class ScrollPosition extends ViewportOffset with ScrollMetrics {
         }
         break;
     }
-    print('target: $target');
 
     if (target == pixels) {
       return Future<void>.value();

@@ -693,7 +693,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
         offset = _horizontalOffset;
     }
 
-    double leadingScrollOffset = 0.0;
+    double leadingScrollOffset = offset.pixels;
     // Starting at `target` and walking towards the root:
     //  - `child` will be the last object before we reach this viewport, and
     //  - `pivot` will be the last RenderBox before we reach this viewport.
@@ -703,7 +703,6 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
       final RenderObject parent = child.parent! as RenderObject;
       assert(child is RenderBox);
       pivot = child as RenderBox;
-      leadingScrollOffset = 0.0;
       child = parent;
     }
 
@@ -712,8 +711,6 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     // Our new reference frame render object's main axis extent.
     final double pivotExtent;
 
-    // `leadingScrollOffset` is currently the scrollOffset of our new reference
-    // frame (`pivot` or `target`), within `child`.
     if (pivot != null) {
       assert(pivot.parent != null);
       assert(pivot.parent != this);
@@ -732,11 +729,16 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
       assert(rect != null);
       return RevealedOffset(offset: offset.pixels, rect: rect!);
     }
+    if (revealingAxisDirection == AxisDirection.up) {
+      print(rect);
+      print(rectLocal);
+    }
 
     assert(child.parent == this);
 
     final double targetMainAxisExtent;
     // The scroll offset of `rect` within `child`.
+    // TODO(Piinks): come back and fix for up and left when reverse layout is fixed
     switch (revealingAxisDirection) {
       case AxisDirection.up:
         leadingScrollOffset += pivotExtent - rectLocal.bottom;
@@ -744,10 +746,16 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
         break;
       case AxisDirection.right:
         leadingScrollOffset += rectLocal.left;
+        if (alignment == 0) {
+          leadingScrollOffset -= rectLocal.width;
+        }
         targetMainAxisExtent = rectLocal.width;
         break;
       case AxisDirection.down:
         leadingScrollOffset += rectLocal.top;
+        if (alignment == 0) {
+          leadingScrollOffset -= rectLocal.width;
+        }
         targetMainAxisExtent = rectLocal.height;
         break;
       case AxisDirection.left:
@@ -775,23 +783,16 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
         break;
     }
     final double targetOffset = leadingScrollOffset - (mainAxisExtent - targetMainAxisExtent) * alignment;
-    final double offsetDifference = offset.pixels - targetOffset;
 
-    switch (revealingAxisDirection) {
-      case AxisDirection.down:
-        targetRect = targetRect.translate(0.0, offsetDifference);
-        break;
-      case AxisDirection.right:
-        targetRect = targetRect.translate(offsetDifference, 0.0);
-        break;
-      case AxisDirection.up:
-        targetRect = targetRect.translate(0.0, -offsetDifference);
-        break;
-      case AxisDirection.left:
-        targetRect = targetRect.translate(-offsetDifference, 0.0);
-        break;
+    final RevealedOffset rOffset = RevealedOffset(offset: targetOffset, rect: targetRect);
+    if (revealingAxisDirection == AxisDirection.up) {
+      print(
+          '$leadingScrollOffset - ($mainAxisExtent - $targetMainAxisExtent) * $alignment');
+      print('targetOffset: $targetOffset');
+
+      print(rOffset);
     }
-    return RevealedOffset(offset: targetOffset, rect: targetRect);
+    return rOffset;
   }
 }
 

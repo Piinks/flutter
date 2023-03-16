@@ -425,14 +425,41 @@ class Scrollable extends StatefulWidget {
     RenderObject? targetRenderObject;
     ScrollableState? scrollable = Scrollable.maybeOf(context);
     while (scrollable != null) {
-      futures.add(scrollable.position.ensureVisible(
-        context.findRenderObject()!,
-        alignment: alignment,
-        duration: duration,
-        curve: curve,
-        alignmentPolicy: alignmentPolicy,
-        targetRenderObject: targetRenderObject,
-      ));
+      if (scrollable is _HorizontalInnerDimensionState) {
+        targetRenderObject = targetRenderObject ?? context.findRenderObject();
+        context = scrollable.context;
+
+        // Horizontal Axis
+        futures.add(scrollable.position.ensureVisible(
+          context.findRenderObject()!,
+          alignment: alignment,
+          duration: duration,
+          curve: curve,
+          alignmentPolicy: alignmentPolicy,
+          targetRenderObject: targetRenderObject,
+        ));
+
+        scrollable = Scrollable.of(context);
+        assert(scrollable is _VerticalOuterDimensionState);
+        // Vertical Axis
+        futures.add(scrollable.position.ensureVisible(
+          context.findRenderObject()!,
+          alignment: alignment,
+          duration: duration,
+          curve: curve,
+          alignmentPolicy: alignmentPolicy,
+          targetRenderObject: targetRenderObject,
+        ));
+      } else {
+        futures.add(scrollable.position.ensureVisible(
+          context.findRenderObject()!,
+          alignment: alignment,
+          duration: duration,
+          curve: curve,
+          alignmentPolicy: alignmentPolicy,
+          targetRenderObject: targetRenderObject,
+        ));
+      }
 
       targetRenderObject = targetRenderObject ?? context.findRenderObject();
       context = scrollable.context;

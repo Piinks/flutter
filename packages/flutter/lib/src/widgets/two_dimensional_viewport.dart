@@ -272,13 +272,11 @@ class TwoDimensionalViewportParentData extends BoxParentData with KeepAliveParen
   /// The previous sibling in the parent's child list.
   RenderBox? previousSibling;
 
-  ///
-
-  // TODO(Piinks): Add assertions for invalid locales
+  // TODO(Piinks): Add assertions for invalid indices
   /// The logical positioning of children in two dimensions.
   ///
-  /// While children may not be strictly laid out in [ChildVicinity.xIndex]s and
-  /// [ChildVicinity.yIndex]s, the relative positioning determines traversal of
+  /// While children may not be strictly laid out in rows and columns, the
+  /// relative positioning determines traversal of
   /// children in row or column major format.
   ChildVicinity vicinity = ChildVicinity.invalid;
 
@@ -552,7 +550,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
       final List<ChildVicinity> indices = _keepAliveBucket.keys.toList()..sort();
       for (final ChildVicinity index in indices) {
         debugChildren.add(_keepAliveBucket[index]!.toDiagnosticsNode(
-          name: 'child with index [${index.xIndex}, ${index.yIndex}] (kept alive but not laid out)',
+          name: 'child with vicinity [${index.xIndex}, ${index.yIndex}] (kept alive but not laid out)',
           style: DiagnosticsTreeStyle.offstage,
         ));
       }
@@ -902,6 +900,6 @@ class ChildVicinity implements Comparable<ChildVicinity> {
 
   @override
   String toString() {
-    return '(column: $yIndex, row: $xIndex)';
+    return '(yIndex: $yIndex, xIndex: $xIndex)';
   }
 }

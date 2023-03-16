@@ -25,7 +25,9 @@ abstract class TwoDimensionalViewport extends RenderObjectWidget {
   const TwoDimensionalViewport({
     super.key,
     required this.verticalOffset,
+    required this.verticalAxisDirection,
     required this.horizontalOffset,
+    required this.horizontalAxisDirection,
     required this.delegate,
     required this.mainAxis,
     this.cacheExtent,
@@ -43,6 +45,14 @@ abstract class TwoDimensionalViewport extends RenderObjectWidget {
   /// Typically a [ScrollPosition].
   final ViewportOffset verticalOffset;
 
+  /// The direction in which the [verticalOffset]'s [ViewportOffset.pixels]
+  /// increases.
+  ///
+  /// For example, if the [axisDirection] is [AxisDirection.down], a scroll
+  /// offset of zero is at the top of the viewport and increases towards the
+  /// bottom of the viewport.
+  final AxisDirection verticalAxisDirection;
+
   /// Which part of the content inside the viewport should be visible in the
   /// horizontal axis.
   ///
@@ -53,6 +63,14 @@ abstract class TwoDimensionalViewport extends RenderObjectWidget {
   ///
   /// Typically a [ScrollPosition].
   final ViewportOffset horizontalOffset;
+
+  /// The direction in which the [horizontalOffset]'s [ViewportOffset.pixels]
+  /// increases.
+  ///
+  /// For example, if the [axisDirection] is [AxisDirection.right], a scroll
+  /// offset of zero is at the left of the viewport and increases towards the
+  /// right of the viewport.
+  final AxisDirection horizontalAxisDirection;
 
   /// The main axis of the two.
   ///
@@ -254,20 +272,22 @@ class TwoDimensionalViewportParentData extends BoxParentData with KeepAliveParen
   /// The previous sibling in the parent's child list.
   RenderBox? previousSibling;
 
+  ///
+
   // TODO(Piinks): Add assertions for invalid locales
   /// The logical positioning of children in two dimensions.
   ///
   /// While children may not be strictly laid out in [ChildVicinity.xIndex]s and
   /// [ChildVicinity.yIndex]s, the relative positioning determines traversal of
   /// children in row or column major format.
-  ChildVicinity locale = ChildVicinity.invalid;
+  ChildVicinity vicinity = ChildVicinity.invalid;
 
   @override
   bool get keptAlive => _keptAlive;
   bool _keptAlive = false;
 
   @override
-  String toString() => 'locale=$locale; ${keepAlive == true ? "keepAlive; " : ""}${super.toString()}';
+  String toString() => 'locale=$vicinity; ${keepAlive == true ? "keepAlive; " : ""}${super.toString()}';
 }
 
 /// A base class for viewing render objects that scroll in two dimensions.
@@ -281,19 +301,23 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   /// Initializes fields for subclasses.
   RenderTwoDimensionalViewport({
     required ViewportOffset horizontalOffset,
+    required AxisDirection horizontalAxisDirection,
     required ViewportOffset verticalOffset,
+    required AxisDirection verticalAxisDirection,
     required TwoDimensionalChildDelegate delegate,
     required Axis mainAxis,
-    // TODO(Piinks): I dunno if this is what Goderbauer meant
+    // TODO(Piinks): I dunno if this is what Goderbauer meant :)
     required RenderObjectElement childManager,
-    double cacheExtent = RenderAbstractViewport.defaultCacheExtent,
+    double? cacheExtent,
     Clip clipBehavior = Clip.hardEdge,
   }) : _childManager = childManager as _TwoDimensionalChildManager,
        _horizontalOffset = horizontalOffset,
+       _horizontalAxisDirection = horizontalAxisDirection,
        _verticalOffset = verticalOffset,
+        _verticalAxisDirection = verticalAxisDirection,
        _delegate = delegate,
        _mainAxis = mainAxis,
-       _cacheExtent = cacheExtent,
+       _cacheExtent = cacheExtent ?? RenderAbstractViewport.defaultCacheExtent,
        _clipBehavior = clipBehavior {
     assert(() {
       _debugDanglingKeepAlives = <RenderBox>[];
@@ -325,6 +349,22 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     }
     markNeedsLayout();
   }
+
+  /// The direction in which the [horizontalOffset] increases.
+  ///
+  /// For example, if the [axisDirection] is [AxisDirection.right], a scroll
+  /// offset of zero is at the right of the viewport and increases towards the
+  /// left of the viewport.
+  AxisDirection get horizontalAxisDirection => _horizontalAxisDirection;
+  AxisDirection _horizontalAxisDirection;
+  set horizontalAxisDirection(AxisDirection value) {
+    if (_horizontalAxisDirection == value) {
+      return;
+    }
+    _horizontalAxisDirection = value;
+    markNeedsLayout();
+  }
+
   /// Which part of the content inside the viewport should be visible in the
   /// vertical axis.
   ///
@@ -347,6 +387,21 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     if (attached) {
       _verticalOffset.addListener(markNeedsLayout);
     }
+    markNeedsLayout();
+  }
+
+  /// The direction in which the [verticalOffset] increases.
+  ///
+  /// For example, if the [axisDirection] is [AxisDirection.down], a scroll
+  /// offset of zero is at the top the viewport and increases towards the
+  /// bottom of the viewport.
+  AxisDirection get verticalAxisDirection => _verticalAxisDirection;
+  AxisDirection _verticalAxisDirection;
+  set verticalAxisDirection(AxisDirection value) {
+    if (_verticalAxisDirection == value) {
+      return;
+    }
+    _verticalAxisDirection = value;
     markNeedsLayout();
   }
 
@@ -382,9 +437,9 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   }
 
   /// {@macro flutter.rendering.RenderViewportBase.cacheExtent}
-  double  get cacheExtent => _cacheExtent;
-  double _cacheExtent;
-  set cacheExtent(double value) {
+  double?  get cacheExtent => _cacheExtent;
+  double? _cacheExtent;
+  set cacheExtent(double? value) {
     if (_cacheExtent == value) {
       return;
     }
@@ -682,6 +737,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
 
   @override
   RevealedOffset getOffsetToReveal(RenderObject target, double alignment, {Rect? rect, AxisDirection? revealingAxisDirection}) {
+    // TODO(Piinks): This needs polish
     // We need to know what axis to reveal in 2D
     assert(revealingAxisDirection != null);
     late final ViewportOffset offset;
@@ -729,19 +785,16 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
       assert(rect != null);
       return RevealedOffset(offset: offset.pixels, rect: rect!);
     }
-    if (revealingAxisDirection == AxisDirection.up) {
-      print(rect);
-      print(rectLocal);
-    }
 
     assert(child.parent == this);
 
     final double targetMainAxisExtent;
-    // The scroll offset of `rect` within `child`.
-    // TODO(Piinks): come back and fix for up and left when reverse layout is fixed
     switch (revealingAxisDirection) {
       case AxisDirection.up:
         leadingScrollOffset += pivotExtent - rectLocal.bottom;
+        if (alignment == 0) {
+          leadingScrollOffset += rectLocal.height;
+        }
         targetMainAxisExtent = rectLocal.height;
         break;
       case AxisDirection.right:
@@ -760,18 +813,18 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
         break;
       case AxisDirection.left:
         leadingScrollOffset += pivotExtent - rectLocal.right;
+        if (alignment == 0) {
+          leadingScrollOffset += rectLocal.width;
+        }
         targetMainAxisExtent = rectLocal.width;
         break;
     }
-
-    // The scroll offset in the viewport to `rect`.
-    // leadingScrollOffset = child.parentData;
 
     // This step assumes the viewport's layout is up-to-date, i.e., if
     // offset.pixels is changed after the last performLayout, the new scroll
     // position will not be accounted for.
     final Matrix4 transform = target.getTransformTo(this);
-    Rect targetRect = MatrixUtils.transformRect(transform, rect);
+    final Rect targetRect = MatrixUtils.transformRect(transform, rect);
 
     final double mainAxisExtent;
     switch (axisDirectionToAxis(revealingAxisDirection)) {
@@ -784,15 +837,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     }
     final double targetOffset = leadingScrollOffset - (mainAxisExtent - targetMainAxisExtent) * alignment;
 
-    final RevealedOffset rOffset = RevealedOffset(offset: targetOffset, rect: targetRect);
-    if (revealingAxisDirection == AxisDirection.up) {
-      print(
-          '$leadingScrollOffset - ($mainAxisExtent - $targetMainAxisExtent) * $alignment');
-      print('targetOffset: $targetOffset');
-
-      print(rOffset);
-    }
-    return rOffset;
+    return RevealedOffset(offset: targetOffset, rect: targetRect);
   }
 }
 

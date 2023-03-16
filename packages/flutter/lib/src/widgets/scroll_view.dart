@@ -1980,7 +1980,7 @@ abstract class TwoDimensionalScrollView extends StatelessWidget {
     this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
     this.clipBehavior = Clip.hardEdge,
   }); // TODO(Piinks): Assert against primary/mainAxis conflicts, set up default
-  // primary like ScrollView
+  // primary like ScrollView, assert vertical & horizontal do not conflict
 
   /// A delegate that provides the children for the [TwoDimensionalScrollView].
   final TwoDimensionalChildDelegate delegate;

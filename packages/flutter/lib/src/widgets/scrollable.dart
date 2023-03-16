@@ -1728,6 +1728,7 @@ class _HorizontalInnerDimensionState extends ScrollableState {
   late ScrollableState verticalScrollable;
   late DiagonalDragBehavior diagonalDragBehavior;
   Axis? lockedAxis;
+  Offset? lastDragOffset;
 
   @override
   void didChangeDependencies() {
@@ -1737,10 +1738,14 @@ class _HorizontalInnerDimensionState extends ScrollableState {
   }
 
   void evaluateLockedAxis(Offset offset) {
-    final double axisDifferential = offset.dx - offset.dy;
+    assert(lastDragOffset != null);
+    final Offset offsetDelta = lastDragOffset! - offset;
+    final double axisDifferential = offsetDelta.dx.abs() - offsetDelta.dy.abs();
     if (axisDifferential.abs() >= kTouchSlop) {
       // We have single axis winner.
       lockedAxis = axisDifferential > 0.0 ? Axis.horizontal : Axis.vertical;
+    } else {
+      lockedAxis = null;
     }
   }
 
@@ -1762,24 +1767,25 @@ class _HorizontalInnerDimensionState extends ScrollableState {
 
   @override
   void _handleDragStart(DragStartDetails details) {
+    lastDragOffset = details.globalPosition;
     switch (diagonalDragBehavior) {
       case DiagonalDragBehavior.none:
         break;
       case DiagonalDragBehavior.weightedEvent:
       case DiagonalDragBehavior.weightedContinuous:
-        // See if one axis wins the drag.
-        evaluateLockedAxis(details.globalPosition);
+        // // See if one axis wins the drag.
+        // evaluateLockedAxis(details.globalPosition);
         switch (lockedAxis) {
           case null:
-            // Scroll diagonally
+            // Prepare to scroll diagonally
             verticalScrollable._handleDragStart(details);
             break;
           case Axis.horizontal:
-            // Scroll horizontally.
+            // Prepare to scroll horizontally.
             super._handleDragStart(details);
             return;
           case Axis.vertical:
-            // Scroll vertically.
+            // Prepare to scroll vertically.
             verticalScrollable._handleDragStart(details);
             return;
         }
@@ -1795,7 +1801,7 @@ class _HorizontalInnerDimensionState extends ScrollableState {
   void _handleDragUpdate(DragUpdateDetails details) {
     final DragUpdateDetails verticalDragDetails = DragUpdateDetails(
       sourceTimeStamp: details.sourceTimeStamp,
-      delta: Offset(details.delta.dy, 0.0),
+      delta: Offset(0.0, details.delta.dy),
       primaryDelta: details.delta.dy,
       globalPosition: details.globalPosition,
       localPosition: details.localPosition,
@@ -1808,40 +1814,51 @@ class _HorizontalInnerDimensionState extends ScrollableState {
       globalPosition: details.globalPosition,
       localPosition: details.localPosition,
     );
-
     switch (diagonalDragBehavior) {
       case DiagonalDragBehavior.none:
-        break;
+        // Default gesture handling from super class.
+        super._handleDragUpdate(horizontalDragDetails);
+        return;
+      case DiagonalDragBehavior.free:
+        // Scroll both axes
+        verticalScrollable._handleDragUpdate(verticalDragDetails);
+        super._handleDragUpdate(horizontalDragDetails);
+        return;
       case DiagonalDragBehavior.weightedContinuous:
-        // Re-evaluate axis during gesture.
+        // Re-evaluate locked axis for every update.
         evaluateLockedAxis(details.delta);
-        continue forAxis;
-      forAxis:
+        lastDragOffset = details.delta;
+        break;
       case DiagonalDragBehavior.weightedEvent:
-        switch (lockedAxis) {
-          case null:
-            // Scroll diagonally
-            verticalScrollable._handleDragUpdate(verticalDragDetails);
-            break;
-          case Axis.horizontal:
-            // Scroll horizontally.
-            super._handleDragUpdate(horizontalDragDetails);
-            return;
-          case Axis.vertical:
-            // Scroll vertically.
-            verticalScrollable._handleDragUpdate(verticalDragDetails);
-            return;
+        // Lock axis only once per gesture.
+        if (lockedAxis == null && lastDragOffset != null) {
+          // A winner has not been declared yet.
+          // See if one axis has won the drag.
+          evaluateLockedAxis(details.globalPosition);
         }
         break;
-      case DiagonalDragBehavior.free:
-        verticalScrollable._handleDragUpdate(verticalDragDetails);
-        break;
     }
-    super._handleDragUpdate(horizontalDragDetails);
+    switch (lockedAxis) {
+      case null:
+        // Scroll diagonally
+        verticalScrollable._handleDragUpdate(verticalDragDetails);
+        super._handleDragUpdate(horizontalDragDetails);
+        break;
+      case Axis.horizontal:
+        // Scroll horizontally
+        super._handleDragUpdate(horizontalDragDetails);
+        return;
+      case Axis.vertical:
+        // Scroll vertically
+        verticalScrollable._handleDragUpdate(verticalDragDetails);
+        return;
+    }
   }
 
   @override
   void _handleDragEnd(DragEndDetails details) {
+    lastDragOffset = null;
+    lockedAxis = null;
     final DragEndDetails verticalDragDetails = DragEndDetails(
       velocity: details.velocity,
       primaryVelocity: details.velocity.pixelsPerSecond.dy,
@@ -1864,6 +1881,8 @@ class _HorizontalInnerDimensionState extends ScrollableState {
 
   @override
   void _handleDragCancel() {
+    lastDragOffset = null;
+    lockedAxis = null;
     switch (diagonalDragBehavior) {
       case DiagonalDragBehavior.none:
         break;

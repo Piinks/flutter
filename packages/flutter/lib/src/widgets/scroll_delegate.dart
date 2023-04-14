@@ -9,6 +9,7 @@ import 'automatic_keep_alive.dart';
 import 'basic.dart';
 import 'framework.dart';
 import 'selection_container.dart';
+import 'two_dimensional_viewport.dart';
 
 export 'package:flutter/rendering.dart' show
   SliverGridDelegate,
@@ -880,7 +881,7 @@ abstract class TwoDimensionalChildDelegate extends ChangeNotifier {
   /// The values returned by this method are cached. To indicate that the
   /// widgets have changed, a new delegate must be provided, and the new
   /// delegate's [shouldRebuild] method must return true.
-  Widget build(BuildContext context, ChildVicinity vicinity);
+  Widget? build(BuildContext context, ChildVicinity vicinity);
 
   /// Called whenever a new instance of the child delegate class is
   /// provided.
@@ -891,7 +892,7 @@ abstract class TwoDimensionalChildDelegate extends ChangeNotifier {
   ///
   /// If the method returns false, then the [build] call might be optimized
   /// away.
-  bool shouldRebuild(covariant SliverChildDelegate oldDelegate);
+  bool shouldRebuild(covariant TwoDimensionalChildDelegate oldDelegate);
 }
 
 /// A delegate that supplies children for a [TwoDimensionalScrollView] using a
@@ -927,7 +928,7 @@ abstract class TwoDimensionalChildBuilderDelegate extends TwoDimensionalChildDel
   ///
   /// The delegate wraps the children returned by this builder in
   /// [RepaintBoundary] widgets.
-  final ChildVicinityWidgetBuilder builder;
+  final TwoDimensionalIndexedWidgetBuilder builder;
 
   /// The maximum number of children in the x axis.
   ///
@@ -977,8 +978,22 @@ abstract class TwoDimensionalChildBuilderDelegate extends TwoDimensionalChildDel
   final bool addRepaintBoundaries;
 
   @override
-  Widget build(BuildContext context, ChildVicinity vicinity) {
-    Widget child = builder(context, vicinity);
+  Widget? build(BuildContext context, ChildVicinity vicinity) {
+    if (vicinity.xIndex < 0 || (maxXIndex != null && vicinity.xIndex >= maxXIndex!)) {
+      return null;
+    }
+    if (vicinity.yIndex < 0 || (maxYIndex != null && vicinity.yIndex >= maxYIndex!)) {
+      return null;
+    }
+    Widget? child;
+    try {
+      child = builder(context, vicinity);
+    } catch (exception, stackTrace) {
+      child = _createErrorWidget(exception, stackTrace);
+    }
+    if (child == null) {
+      return null;
+    }
     if (addRepaintBoundaries) {
       child = RepaintBoundary(child: child);
     }

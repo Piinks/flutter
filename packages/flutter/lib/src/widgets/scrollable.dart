@@ -39,6 +39,10 @@ export 'package:flutter/physics.dart' show Tolerance;
 /// scrollable content is displayed.
 typedef ViewportBuilder = Widget Function(BuildContext context, ViewportOffset position);
 
+/// Signature used by [TwoDimensionalScrollable] to build the viewport through
+/// which the scrollable content is displayed.
+typedef TwoDimensionalViewportBuilder = Widget Function(BuildContext context, ViewportOffset verticalPosition, ViewportOffset horizontalPosition);
+
 /// A widget that scrolls.
 ///
 /// [Scrollable] implements the interaction model for a scrollable widget,

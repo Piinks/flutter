@@ -505,6 +505,15 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     }
   }
 
+  /// Convenience method for retrieving and casting the [ParentData] of the
+  /// viewport's children.
+  ///
+  /// Children must have a [ParentData] of type
+  /// [TwoDimensionalViewportParentData], or a subclass thereof.
+  TwoDimensionalViewportParentData parentDataOf(RenderBox child) {
+    return child.parentData! as TwoDimensionalViewportParentData;
+  }
+
   @override
   void attach(PipelineOwner owner) {
     super.attach(owner);
@@ -544,10 +553,8 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     // Only children that are visible should be visited, and they must be in
     // paint order.
     childrenInPaintOrder
-      .where((RenderBox child) {
-        final TwoDimensionalViewportParentData childParentData = child.parentData! as TwoDimensionalViewportParentData;
-        return childParentData.isVisible;
-      }).forEach(visitor);
+      .where((RenderBox child) => parentDataOf(child).isVisible)
+      .forEach(visitor);
   }
 
   @override
@@ -570,14 +577,14 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   @override
   bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
     for (final RenderBox child in _children.values) {
-      final TwoDimensionalViewportParentData parentData = child.parentData! as TwoDimensionalViewportParentData;
-      final Rect childRect = parentData.offset & child.size;
+      final TwoDimensionalViewportParentData childParentData = parentDataOf(child);
+      final Rect childRect = childParentData.offset & child.size;
       if (childRect.contains(position)) {
         result.addWithPaintOffset(
-          offset: parentData.offset,
+          offset: childParentData.offset,
           position: position,
           hitTest: (BoxHitTestResult result, Offset transformed) {
-            assert(transformed == position - parentData.offset);
+            assert(transformed == position - childParentData.offset);
             return child.hitTest(result, position: transformed);
           },
         );
@@ -753,7 +760,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   /// Called after [layoutChildSequence] to update the layout offset for the
   /// given child.
   void updateChildPaintOffset(RenderBox child) {
-    final TwoDimensionalViewportParentData childParentData = child.parentData! as TwoDimensionalViewportParentData;
+    final TwoDimensionalViewportParentData childParentData = parentDataOf(child);
     // If the child is partially visible, or not visible at all, there is
     // visual overflow.
     _hasVisualOverflow = childParentData.offset != childParentData.paintExtent
@@ -812,10 +819,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   ///  * [computeAbsolutePaintOffsetFor], which computes the paint offset from an
   ///    explicit layout offset instead of using the values computed for the
   ///    child during layout.
-  Offset paintOffsetOf(RenderBox child) {
-    final TwoDimensionalViewportParentData childParentData = child.parentData! as TwoDimensionalViewportParentData;
-    return childParentData.paintOffset;
-  }
+  Offset paintOffsetOf(RenderBox child) => parentDataOf(child).paintOffset;
 
   @override
   void paint(PaintingContext context, Offset offset) {
@@ -839,8 +843,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
 
   void _paintChildren(PaintingContext context, Offset offset) {
     for (final RenderBox child in childrenInPaintOrder) {
-      final TwoDimensionalViewportParentData childParentData = child.parentData! as TwoDimensionalViewportParentData;
-      if (childParentData.isVisible) {
+      if (parentDataOf(child).isVisible) {
         context.paintChild(child, offset + paintOffsetOf(child));
       }
     }

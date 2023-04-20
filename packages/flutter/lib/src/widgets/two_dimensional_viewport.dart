@@ -636,6 +636,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     layoutChildSequence();
 
     updateChildPaintOffset();
+    _setChildrenPaintOrder();
     _needsChildRebuild = false;
     _didResize = false;
     assert(_debugOrphans?.isEmpty ?? true);
@@ -750,7 +751,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   ///  * [computeAbsolutePaintOffsetFor], which computes the paint offset from an
   ///    explicit layout offset instead of using the values computed for the
   ///    child during layout.
-  Offset paintOffsetOf(RenderSliver child) {
+  Offset paintOffsetOf(RenderBox child) {
     final TwoDimensionalViewportParentData childParentData = child.parentData! as TwoDimensionalViewportParentData;
     return childParentData.paintOffset;
   }
@@ -776,16 +777,30 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   }
 
   void _paintChildren(PaintingContext context, Offset offset) {
-    for (final RenderSliver child in childrenInPaintOrder) {
-      if (child.geometry!.visible) {
+    for (final RenderBox child in childrenInPaintOrder) {
+      final TwoDimensionalViewportParentData childParentData = child.parentData! as TwoDimensionalViewportParentData;
+      if (childParentData.isVisible) {
         context.paintChild(child, offset + paintOffsetOf(child));
       }
     }
   }
 
-  Iterable<RenderBox> get childrenInPaintOrder => _childrenInPaintOrder;
-  Iterable<RenderBox> _childrenInPaintOrder = <RenderBox>[];
-  set childrenInPaintOrder {
+  /// All of the children in the order that they will be painted.
+  ///
+  /// The [mainAxis] correlates with each [ChildVicinity] to paint in a row or
+  /// column major order.
+  ///
+  /// By default, the [mainAxis] is [Axis.vertical], which would result in a
+  /// row major paint order, visiting children in the horizontal indices before
+  /// advancing to the next vertical index.
+  List<RenderBox> get childrenInPaintOrder => _childrenInPaintOrder;
+  final List<RenderBox> _childrenInPaintOrder = <RenderBox>[];
+  void _setChildrenPaintOrder() {
+    assert(_leadingXIndex != null);
+    assert(_trailingXIndex != null);
+    assert(_leadingYIndex != null);
+    assert(_trailingYIndex != null);
+    _childrenInPaintOrder.clear();
     switch (mainAxis) {
       case Axis.vertical:
         // Row major traversal.
@@ -794,23 +809,29 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
         // typical default for matrices, which is why the inverse follows
         // through in the horizontal case below.
         // Minor
-        for (final int minorIndex = _leadingYIndex; minorIndex++; minorIndex <= _trailingYIndex) {
+        for (int minorIndex = _leadingYIndex!; minorIndex <= _trailingYIndex!; minorIndex++) {
           // Major
-          for (final int majorIndex = _leadingXIndex; majorIndex++; majorIndex <= _trailingXIndex) {
+          for (int majorIndex = _leadingXIndex!; majorIndex <= _trailingXIndex!; majorIndex++) {
             final ChildVicinity vicinity = ChildVicinity(xIndex: majorIndex, yIndex: minorIndex);
-            if (_children.contains(vicinity)){
-              _childrenInPaintOrder.add(_children[vicinity]);
+            // It is possible and valid for an index to be skipped.
+            // For example, a table can have merged cells, spanning multiple
+            // indices, but only represented by one RenderBox.
+            if (_children.containsKey(vicinity)){
+              _childrenInPaintOrder.add(_children[vicinity]!);
             }
           }
         }
       case Axis.horizontal:
         // Minor
-        for (final int minorIndex = _leadingXIndex; minorIndex++; minorIndex <= _trailingXIndex) {
+        for (int minorIndex = _leadingXIndex!; minorIndex <= _trailingXIndex!; minorIndex++) {
           // Major
-          for (final int majorIndex = _leadingYIndex; majorIndex++; majorIndex <= _trailingYIndex) {
+          for (int majorIndex = _leadingYIndex!; majorIndex <= _trailingYIndex!; majorIndex++) {
             final ChildVicinity vicinity = ChildVicinity(xIndex: minorIndex, yIndex: majorIndex);
-            if (_children.contains(vicinity)){
-              _childrenInPaintOrder.add(_children[vicinity]);
+            // It is possible and valid for an index to be skipped.
+            // For example, a table can have merged cells, spanning multiple
+            // indices, but only represented by one RenderBox.
+            if (_children.containsKey(vicinity)){
+              _childrenInPaintOrder.add(_children[vicinity]!);
             }
           }
         }

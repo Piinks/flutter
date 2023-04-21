@@ -305,6 +305,9 @@ class TwoDimensionalViewportParentData extends BoxParentData {
 ///
 /// Subclasses should not override [performLayout], as it handles housekeeping
 /// on either side of the call to [layoutChildSequence].
+// TODO(Piinks): Two follow up changes
+//  - Keep alive
+//  - ensureVisible
 abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderAbstractViewport {
   /// Initializes fields for subclasses.
   RenderTwoDimensionalViewport({
@@ -608,6 +611,12 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     }
   }
 
+  @override
+  RevealedOffset getOffsetToReveal(RenderObject target, double alignment, { Rect? rect }) {
+    // TODO(Piinks): Add this back in follow up change (ensureVisible).
+    return const RevealedOffset(offset: 0.0, rect: Rect.zero);
+  }
+
   /// Should be used by subclasses to invalidate any cached metrics for the
   /// viewport.
   ///
@@ -638,16 +647,14 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   /// viewport. The [BoxParentData.offset] must be set during this method in
   /// order for the children to be positioned during paint.
   ///
-  /// The primary methods used for laying out, painting & positioning children
-  /// are:
+  /// The primary methods used for creating and obtaining children is
+  /// [buildOrObtainChildFor], which takes a [ChildVicinity] that is used by the
+  /// [TwoDimensionalChildDelegate]. If a child is not provided by the delegate
+  /// for the provided vicinity, the method will return null, otherwise, it will
+  /// return the [RenderBox] of the child.
   ///
-  ///   * [buildOrObtainChildFor], which takes a [ChildVicinity] that is used
-  ///     by the [TwoDimensionalChildDelegate]. If a child is not provided by
-  ///     the delegate for the provided vicinity, the method will return null,
-  ///     otherwise, it will return the [RenderBox] of the child.
-  ///   * [computeAbsolutePaintOffsetFor], which takes a child and applies the
-  ///     [AxisDirection] to the [BoxParentData.offset] in order to position the
-  ///     child.
+  /// After [layoutChildSequence] is completed, any remaining children that were
+  /// not obtained will be disposed.
   void layoutChildSequence();
 
   @override

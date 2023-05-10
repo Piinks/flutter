@@ -1637,9 +1637,10 @@ class _TabBarState extends State<TabBar> {
       );
     }
 
-    final AlignmentGeometry effectiveAlignment = effectiveTabAlignment == TabAlignment.center
-      ? Alignment.center
-      : AlignmentDirectional.centerStart;
+    final AlignmentGeometry effectiveAlignment = switch (effectiveTabAlignment) {
+      TabAlignment.center => Alignment.center,
+      TabAlignment.start || TabAlignment.startOffset || TabAlignment.fill => AlignmentDirectional.centerStart,
+    };
     final TextDirection textDirection = Directionality.of(context);
     tabBar = Stack(
       alignment: effectiveAlignment,

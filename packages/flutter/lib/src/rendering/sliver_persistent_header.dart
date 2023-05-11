@@ -413,7 +413,11 @@ abstract class RenderSliverPinnedPersistentHeader extends RenderSliverPersistent
   void performLayout() {
     final SliverConstraints constraints = this.constraints;
     final double maxExtent = this.maxExtent;
-    final bool overlapsContent = constraints.overlap > 0.0;
+    print(constraints.overlap);
+    final bool overlapsContent =
+        // constraints.overlap // preceding extent of overlapping widget
+        constraints.scrollOffset - constraints.overlap > 0;
+
     layoutChild(constraints.scrollOffset, maxExtent, overlapsContent: overlapsContent);
     final double effectiveRemainingPaintExtent = math.max(0, constraints.remainingPaintExtent - constraints.overlap);
     final double layoutExtent = clampDouble(maxExtent - constraints.scrollOffset, 0.0, effectiveRemainingPaintExtent);

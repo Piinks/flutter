@@ -512,13 +512,16 @@ abstract class RenderViewportBase<ParentDataClass extends ContainerParentDataMix
   }) {
     assert(scrollOffset.isFinite);
     assert(scrollOffset >= 0.0);
+    print('layoutChildSequence: overlap $overlap');
     final double initialLayoutOffset = layoutOffset;
     final ScrollDirection adjustedUserScrollDirection =
         applyGrowthDirectionToScrollDirection(offset.userScrollDirection, growthDirection);
     double maxPaintOffset = layoutOffset + overlap;
     double precedingScrollExtent = 0.0;
-
+    int number = 0;
     while (child != null) {
+      print('$number: maxPaintOffset $maxPaintOffset, layoutOffset $layoutOffset');
+      number++;
       final double sliverScrollOffset = scrollOffset <= 0.0 ? 0.0 : scrollOffset;
       // If the scrollOffset is too small we adjust the paddedOrigin because it
       // doesn't make sense to ask a sliver for content before its scroll
@@ -1508,6 +1511,7 @@ class RenderViewport extends RenderViewportBase<SliverPhysicalContainerParentDat
     }
 
     // positive scroll offsets
+    print('positive');
     return layoutChildSequence(
       child: center,
       scrollOffset: math.max(0.0, -centerOffset),

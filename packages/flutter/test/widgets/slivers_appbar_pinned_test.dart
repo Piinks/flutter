@@ -18,8 +18,16 @@ void verifyPaintPosition(GlobalKey key, Offset ideal, bool visible) {
 
 void verifyActualBoxPosition(WidgetTester tester, Finder finder, int index, Rect ideal) {
   final RenderBox box = tester.renderObjectList<RenderBox>(finder).elementAt(index);
-  final Rect rect = Rect.fromPoints(box.localToGlobal(Offset.zero), box.localToGlobal(box.size.bottomRight(Offset.zero)));
+  final Rect rect = Rect.fromPoints(
+    box.localToGlobal(Offset.zero),
+    box.localToGlobal(box.size.bottomRight(Offset.zero)),
+  );
   expect(rect, equals(ideal));
+}
+
+void verifyHeaderColor(WidgetTester tester, Finder finder, int index, Color ideal) {
+  final ColoredBox box = tester.widgetList<ColoredBox>(finder).elementAt(index);
+  expect(box.color, ideal);
 }
 
 void main() {
@@ -32,8 +40,16 @@ void main() {
         child: CustomScrollView(
           slivers: <Widget>[
             BigSliver(key: key1 = GlobalKey(), height: bigHeight),
-            SliverPersistentHeader(key: key2 = GlobalKey(), delegate: TestDelegate(), pinned: true),
-            SliverPersistentHeader(key: key3 = GlobalKey(), delegate: TestDelegate(), pinned: true),
+            SliverPersistentHeader(
+              key: key2 = GlobalKey(),
+              delegate: TestDelegate(),
+              pinned: true,
+            ),
+            SliverPersistentHeader(
+              key: key3 = GlobalKey(),
+              delegate: TestDelegate(),
+              pinned: true,
+            ),
             BigSliver(key: key4 = GlobalKey(), height: bigHeight),
             BigSliver(key: key5 = GlobalKey(), height: bigHeight),
           ],
@@ -67,7 +83,11 @@ void main() {
         textDirection: TextDirection.ltr,
         child: CustomScrollView(
           slivers: <Widget>[
-            SliverPersistentHeader(key: key = GlobalKey(), delegate: delegateThatCanThrow, pinned: true),
+            SliverPersistentHeader(
+              key: key = GlobalKey(),
+              delegate: delegateThatCanThrow,
+              pinned: true,
+            ),
           ],
         ),
       ),
@@ -130,8 +150,16 @@ void main() {
         child: CustomScrollView(
           slivers: <Widget>[
             BigSliver(key: key1 = GlobalKey(), height: bigHeight),
-            SliverPersistentHeader(key: key2 = GlobalKey(), delegate: TestDelegate(), pinned: true),
-            SliverPersistentHeader(key: key3 = GlobalKey(), delegate: TestDelegate(), pinned: true),
+            SliverPersistentHeader(
+              key: key2 = GlobalKey(),
+              delegate: TestDelegate(),
+              pinned: true,
+            ),
+            SliverPersistentHeader(
+              key: key3 = GlobalKey(),
+              delegate: TestDelegate(),
+              pinned: true,
+            ),
             BigSliver(key: key4 = GlobalKey(), height: bigHeight),
             BigSliver(key: key5 = GlobalKey(), height: bigHeight),
           ],
@@ -171,39 +199,39 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 400));
     verifyPaintPosition(key1, Offset.zero, false);
     verifyPaintPosition(key2, Offset.zero, true);
-    verifyPaintPosition(key3, const Offset(0.0, 100.0), true);//
-    verifyActualBoxPosition(tester, find.byType(Container), 1, const Rect.fromLTWH(0.0, 100.0, 800.0, 200.0));
-    verifyPaintPosition(key4, const Offset(0.0, 250.0), true);
+    verifyPaintPosition(key3, const Offset(0.0, 100.0), true);
+    verifyActualBoxPosition(tester, find.byType(Container), 1, const Rect.fromLTWH(0.0, 100.0, 800.0, 150.0));
+    verifyPaintPosition(key4, const Offset(0.0, 200.0), true);
     verifyPaintPosition(key5, const Offset(0.0, 800.0), false);
     position.animateTo(750.0, curve: Curves.linear, duration: const Duration(minutes: 1));
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
     verifyPaintPosition(key1, Offset.zero, false);
     verifyPaintPosition(key2, Offset.zero, true);
     verifyPaintPosition(key3, const Offset(0.0, 100.0), true);
-    verifyActualBoxPosition(tester, find.byType(Container), 1, const Rect.fromLTWH(0.0, 100.0, 800.0, 200.0));
-    verifyPaintPosition(key4, const Offset(0.0, 200.0), true);
+    verifyActualBoxPosition(tester, find.byType(Container), 1, const Rect.fromLTWH(0.0, 100.0, 800.0, 100.0));
+    verifyPaintPosition(key4, const Offset(0.0, 100.0), true);
     verifyPaintPosition(key5, const Offset(0.0, 750.0), false);
     position.animateTo(800.0, curve: Curves.linear, duration: const Duration(minutes: 1));
     await tester.pumpAndSettle(const Duration(milliseconds: 60));
     verifyPaintPosition(key1, Offset.zero, false);
     verifyPaintPosition(key2, Offset.zero, true);
     verifyPaintPosition(key3, const Offset(0.0, 100.0), true);
-    verifyPaintPosition(key4, const Offset(0.0, 150.0), true);
+    verifyPaintPosition(key4, const Offset(0.0, 50.0), true);
     verifyPaintPosition(key5, const Offset(0.0, 700.0), false);
     position.animateTo(850.0, curve: Curves.linear, duration: const Duration(minutes: 1));
     await tester.pumpAndSettle(const Duration(milliseconds: 70));
     verifyPaintPosition(key1, Offset.zero, false);
     verifyPaintPosition(key2, Offset.zero, true);
     verifyPaintPosition(key3, const Offset(0.0, 100.0), true);
-    verifyPaintPosition(key4, const Offset(0.0, 100.0), true);
-    verifyPaintPosition(key5, const Offset(0.0, 650.0), false);
+    verifyPaintPosition(key4, Offset.zero, true);
+    verifyPaintPosition(key5, const Offset(0.0, 550.0), true);
     position.animateTo(900.0, curve: Curves.linear, duration: const Duration(minutes: 1));
     await tester.pumpAndSettle(const Duration(milliseconds: 80));
     verifyPaintPosition(key1, Offset.zero, false);
     verifyPaintPosition(key2, Offset.zero, true);
     verifyPaintPosition(key3, const Offset(0.0, 100.0), true);
-    verifyPaintPosition(key4, const Offset(0.0, 50.0), true);
-    verifyPaintPosition(key5, const Offset(0.0, 600.0), false);
+    verifyPaintPosition(key4, Offset.zero, true);
+    verifyPaintPosition(key5, const Offset(0.0, 550.0), true);
     position.animateTo(950.0, curve: Curves.linear, duration: const Duration(minutes: 1));
     await tester.pumpAndSettle(const Duration(milliseconds: 90));
     verifyPaintPosition(key1, Offset.zero, false);
@@ -223,8 +251,16 @@ void main() {
         child: CustomScrollView(
           slivers: <Widget>[
             BigSliver(key: key1 = GlobalKey(), height: bigHeight),
-            SliverPersistentHeader(key: key2 = GlobalKey(), delegate: TestDelegate(), pinned: true),
-            SliverPersistentHeader(key: key3 = GlobalKey(), delegate: TestDelegate(), pinned: true),
+            SliverPersistentHeader(
+              key: key2 = GlobalKey(),
+              delegate: TestDelegate(),
+              pinned: true,
+            ),
+            SliverPersistentHeader(
+              key: key3 = GlobalKey(),
+              delegate: TestDelegate(),
+              pinned: true,
+            ),
             BigSliver(key: key4 = GlobalKey(), height: bigHeight),
             BigSliver(key: key5 = GlobalKey(), height: bigHeight),
           ],
@@ -293,6 +329,122 @@ void main() {
     expect(tester.getTopLeft(find.byType(Container)), Offset.zero);
     expect(tester.getTopLeft(find.text('X')), const Offset(0.0, 50.0));
   });
+
+  testWidgets('Value of SliverPersistentHeader.build overlapsContent is correct', (WidgetTester tester) async {
+    GlobalKey key1, key2, key3;
+    final ScrollController controller = ScrollController();
+    Widget getBufferList(int itemCount) {
+      return SliverList.builder(
+        itemCount: itemCount,
+        itemBuilder: (BuildContext context, int index) => SizedBox(height: 20, child: Text('Item $index'))
+      );
+    }
+    await tester.pumpWidget(Directionality(
+      textDirection: TextDirection.ltr,
+      child: CustomScrollView(
+        controller: controller,
+        slivers: <Widget>[
+          SliverPersistentHeader(
+            key: key1 = GlobalKey(),
+            pinned: true,
+            delegate: TestDelegate()
+          ),
+          getBufferList(15),
+          SliverPersistentHeader(
+              key: key2 = GlobalKey(),
+              pinned: true,
+              delegate: TestDelegate()
+          ),
+          SliverPersistentHeader(
+              key: key3 = GlobalKey(),
+              pinned: true,
+              delegate: TestDelegate()
+          ),
+          getBufferList(150),
+        ],
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Nothing currently overlapping.
+    expect(controller.position.pixels, 0.0);
+    verifyPaintPosition(key1, Offset.zero, true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 0, const Color(0xFFFFFFFF));
+    verifyPaintPosition(key2, const Offset(0.0, 500.0), true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 1, const Color(0xFFFFFFFF));
+    verifyPaintPosition(key3, const Offset(0.0, 700.0), false);
+    controller.jumpTo(50.0);
+    await tester.pumpAndSettle();
+    // The first header is not fully collapsed, so still no overlap.
+    expect(controller.position.pixels, 50.0);
+    verifyPaintPosition(key1, Offset.zero, true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 0, const Color(0xFFFFFFFF));
+    verifyPaintPosition(key2, const Offset(0.0, 450.0), true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 1, const Color(0xFFFFFFFF));
+    verifyPaintPosition(key3, const Offset(0.0, 650.0), false);
+    controller.jumpTo(100.0);
+    await tester.pumpAndSettle();
+    // Right at the edge of causing the first header to overlap.
+    expect(controller.position.pixels, 100.0);
+    verifyPaintPosition(key1, Offset.zero, true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 0, const Color(0xFFFFFFFF));
+    verifyPaintPosition(key2, const Offset(0.0, 400.0), true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 1, const Color(0xFFFFFFFF));
+    verifyPaintPosition(key3, const Offset(0.0, 600.0), false);
+    controller.jumpTo(101.0);
+    await tester.pumpAndSettle();
+    // The first is now overlapping.
+    expect(controller.position.pixels, 101.0);
+    verifyPaintPosition(key1, Offset.zero, true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 0, const Color(0xA0B71C1C));
+    verifyPaintPosition(key2, const Offset(0.0, 399.0), true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 1, const Color(0xFFFFFFFF));
+    verifyPaintPosition(key3, const Offset(0.0, 599.0), true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 2, const Color(0xFFFFFFFF));
+    controller.jumpTo(400.0);
+    await tester.pumpAndSettle();
+    // The first header and buffer list have now scrolled their full extent. The
+    // second header is now aligned with the bottom of the first one.
+    expect(controller.position.pixels, 400.0);
+    verifyPaintPosition(key1, Offset.zero, true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 0, const Color(0xA0B71C1C));
+    verifyPaintPosition(key2, const Offset(0.0, 100.0), true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 1, const Color(0xFFFFFFFF));
+    verifyPaintPosition(key3, const Offset(0.0, 300.0), true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 2, const Color(0xFFFFFFFF));
+    controller.jumpTo(500.0);
+    await tester.pumpAndSettle();
+    // Second header should not be overlapping yet, as it has only finished collapsing.
+    expect(controller.position.pixels, 500.0);
+    verifyPaintPosition(key1, Offset.zero, true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 0, const Color(0xA0B71C1C));
+    verifyPaintPosition(key2, const Offset(0.0, 100.0), true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 1, const Color(0xFFFFFFFF));
+    verifyPaintPosition(key3, const Offset(0.0, 200.0), true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 2, const Color(0xFFFFFFFF));
+    controller.jumpTo(501.0);
+    await tester.pumpAndSettle();
+    // Second header is now overlapping
+    expect(controller.position.pixels, 501.0);
+    verifyPaintPosition(key1, Offset.zero, true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 0, const Color(0xA0B71C1C));
+    verifyPaintPosition(key2, const Offset(0.0, 100.0), true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 1, const Color(0xA0B71C1C));
+    verifyPaintPosition(key3, const Offset(0.0, 200.0), true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 2, const Color(0xFFFFFFFF));
+    controller.jumpTo(600.0);
+    await tester.pumpAndSettle();
+    // Third header should not be overlapping yet, as it has only finished collapsing.
+    expect(controller.position.pixels, 600.0);
+    verifyPaintPosition(key1, Offset.zero, true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 0, const Color(0xA0B71C1C));
+    verifyPaintPosition(key2, const Offset(0.0, 100.0), true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 1, const Color(0xFFFFFFFF));
+    verifyPaintPosition(key3, const Offset(0.0, 200.0), true);
+    verifyHeaderColor(tester, find.byType(ColoredBox), 2, const Color(0xFFFFFFFF));
+    controller.jumpTo(501.0);
+
+  });
 }
 
 class TestDelegate extends SliverPersistentHeaderDelegate {
@@ -304,7 +456,10 @@ class TestDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(constraints: BoxConstraints(minHeight: minExtent, maxHeight: maxExtent));
+    return Container(
+      color: overlapsContent ? const Color(0xA0B71C1C) : const Color(0xFFFFFFFF),
+      constraints: BoxConstraints(minHeight: minExtent, maxHeight: maxExtent),
+    );
   }
 
   @override

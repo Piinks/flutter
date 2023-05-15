@@ -429,7 +429,7 @@ abstract class RenderSliverPinnedPersistentHeader extends RenderSliverPersistent
     final bool overlapsContent = effectiveOffset > 0.0
       // If the maxExtent is > minExtent, the sliver is not overlapping until
       // fully collapsed to the minExtent.
-      && maxExtent - math.min(effectiveOffset, maxExtent) <= minExtent;
+      && maxExtent - math.min(effectiveOffset, maxExtent) < minExtent;
 
     layoutChild(effectiveOffset, maxExtent, overlapsContent: overlapsContent);
 

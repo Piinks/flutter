@@ -168,3 +168,147 @@ bool _assertOutOfExtent(double extent) {
   }
   return true;
 }
+
+/// A sliver that places multiple sliver children in a linear array along the
+/// main axis.
+///
+/// Typically, the slivers will be laid out one at a time. Slivers that have been
+/// scrolled past partially or entirely will be provided a nonzero scrollOffset that
+/// informs them at which point along the main axis should the sliver children
+/// start painting themselves.
+///
+/// For other slivers, we lay them out with a [SliverConstraints.remainingPaintExtent]
+/// that represents how much space in the viewport the sliver has.
+///
+/// Finally, this sliver will also ensure that all slivers are painted within
+/// the total layout extent of the sliver by painting slivers that are "out of
+/// bounds" with a negative [SliverPhysicalParentData.paintOffset].
+class RenderSliverMainAxisGroup extends RenderSliver with ContainerRenderObjectMixin<RenderSliver, SliverPhysicalContainerParentData> {
+  @override
+  void setupParentData(RenderObject child) {
+    if (child.parentData is! SliverPhysicalContainerParentData) {
+      child.parentData = SliverPhysicalContainerParentData();
+    }
+  }
+
+  @override
+  double childMainAxisPosition(RenderSliver child) {
+    switch (constraints.axisDirection) {
+      case AxisDirection.up:
+      case AxisDirection.down:
+        return (child.parentData! as SliverPhysicalParentData).paintOffset.dy;
+      case AxisDirection.left:
+      case AxisDirection.right:
+        return (child.parentData! as SliverPhysicalParentData).paintOffset.dx;
+    }
+  }
+
+  @override
+  double childCrossAxisPosition(RenderSliver child) => 0.0;
+
+  @override
+  void performLayout() {
+    double offset = 0;
+    double maxPaintExtent = 0;
+
+    RenderSliver? child = firstChild;
+
+
+    while (child != null) {
+      final double beforeOffsetPaintExtent = calculatePaintOffset(
+        constraints,
+        from: 0.0,
+        to: offset,
+      );
+      child.layout(
+        constraints.copyWith(
+          scrollOffset: math.max(0.0, constraints.scrollOffset - offset),
+          cacheOrigin: math.min(0.0, constraints.cacheOrigin + offset),
+          overlap: math.max(0.0, constraints.overlap - beforeOffsetPaintExtent),
+          remainingPaintExtent: constraints.remainingPaintExtent - beforeOffsetPaintExtent,
+          remainingCacheExtent: constraints.remainingCacheExtent - calculateCacheOffset(constraints, from: 0.0, to: offset),
+          precedingScrollExtent: offset + constraints.precedingScrollExtent,
+        ), parentUsesSize: true
+      );
+      final SliverGeometry childLayoutGeometry = child.geometry!;
+      final SliverPhysicalParentData childParentData = child.parentData! as SliverPhysicalParentData;
+      switch (constraints.axis) {
+        case Axis.vertical:
+          childParentData.paintOffset = Offset(0.0, beforeOffsetPaintExtent);
+        case Axis.horizontal:
+          childParentData.paintOffset = Offset(beforeOffsetPaintExtent, 0.0);
+      }
+      offset += childLayoutGeometry.scrollExtent;
+      maxPaintExtent += child.geometry!.maxPaintExtent;
+      child = childAfter(child);
+    }
+
+    final double totalScrollExtent = offset;
+    offset = 0.0;
+    child = firstChild;
+    // Second pass to correct out of bound paintOffsets.
+    while (child != null) {
+      final double beforeOffsetPaintExtent = calculatePaintOffset(
+        constraints,
+        from: 0.0,
+        to: offset,
+      );
+      final SliverGeometry childLayoutGeometry = child.geometry!;
+      final SliverPhysicalParentData childParentData = child.parentData! as SliverPhysicalParentData;
+      final double remainingExtent = totalScrollExtent - constraints.scrollOffset;
+      if (childLayoutGeometry.paintExtent > remainingExtent) {
+        final double paintCorrection = childLayoutGeometry.paintExtent - remainingExtent;
+        switch (constraints.axis) {
+          case Axis.vertical:
+            childParentData.paintOffset = Offset(0.0, beforeOffsetPaintExtent - paintCorrection);
+          case Axis.horizontal:
+            childParentData.paintOffset = Offset(beforeOffsetPaintExtent - paintCorrection, 0.0);
+        }
+      }
+      offset += child.geometry!.scrollExtent;
+      child = childAfter(child);
+    }
+    geometry = SliverGeometry(
+      scrollExtent: totalScrollExtent,
+      paintExtent: calculatePaintOffset(constraints, from: 0, to: totalScrollExtent),
+      maxPaintExtent: maxPaintExtent,
+    );
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    RenderSliver? child = lastChild;
+
+    while (child != null) {
+      final SliverPhysicalParentData childParentData = child.parentData! as SliverPhysicalParentData;
+      context.paintChild(child, offset + childParentData.paintOffset);
+      child = childBefore(child);
+    }
+  }
+
+  @override
+  void applyPaintTransform(RenderSliver child, Matrix4 transform) {
+    final SliverPhysicalParentData childParentData = child.parentData! as SliverPhysicalParentData;
+    childParentData.applyPaintTransform(transform);
+  }
+
+  @override
+  bool hitTestChildren(SliverHitTestResult result, {required double mainAxisPosition, required double crossAxisPosition}) {
+    RenderSliver? child = firstChild;
+    while (child != null) {
+      final bool isHit = result.addWithAxisOffset(
+        mainAxisPosition: mainAxisPosition,
+        crossAxisPosition: crossAxisPosition,
+        paintOffset: null,
+        mainAxisOffset: childMainAxisPosition(child),
+        crossAxisOffset: childCrossAxisPosition(child),
+        hitTest: child.hitTest,
+      );
+      if (isHit) {
+        return true;
+      }
+      child = childAfter(child);
+    }
+    return false;
+  }
+}

@@ -367,10 +367,13 @@ abstract class RenderSliverScrollingPersistentHeader extends RenderSliverPersist
 
   @override
   void performLayout() {
+
     final SliverConstraints constraints = this.constraints;
     final double maxExtent = this.maxExtent;
     layoutChild(constraints.scrollOffset, maxExtent);
     final double paintExtent = maxExtent - constraints.scrollOffset;
+
+
     geometry = SliverGeometry(
       scrollExtent: maxExtent,
       paintOrigin: math.min(constraints.overlap, 0.0),

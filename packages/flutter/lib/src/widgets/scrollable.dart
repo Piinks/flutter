@@ -444,15 +444,40 @@ class Scrollable extends StatefulWidget {
     // Also see https://github.com/flutter/flutter/issues/65100
     RenderObject? targetRenderObject;
     ScrollableState? scrollable = Scrollable.maybeOf(context);
+
     while (scrollable != null) {
-      futures.add(scrollable.position.ensureVisible(
-        context.findRenderObject()!,
-        alignment: alignment,
-        duration: duration,
-        curve: curve,
-        alignmentPolicy: alignmentPolicy,
-        targetRenderObject: targetRenderObject,
-      ));
+      if (scrollable is _HorizontalInnerDimensionState) {
+        // Handle ensure visible for 2D viewport.
+        // The default loop below assumes nested viewports with one scrollable for
+        // each one, while a 2D viewport contains 2 scrollables and only one
+        // viewport.
+        print('horizontal');
+        futures.add(scrollable.position.ensureVisible(
+          context.findRenderObject()!,
+          alignment: alignment,
+          duration: duration,
+          curve: curve,
+          alignmentPolicy: alignmentPolicy,
+        ));
+        print('vertical');
+        scrollable.verticalScrollable.position.ensureVisible(
+          context.findRenderObject()!,
+          alignment: alignment,
+          duration: duration,
+          curve: curve,
+          alignmentPolicy: alignmentPolicy,
+        );
+        scrollable = scrollable.verticalScrollable;
+      } else {
+        futures.add(scrollable.position.ensureVisible(
+          context.findRenderObject()!,
+          alignment: alignment,
+          duration: duration,
+          curve: curve,
+          alignmentPolicy: alignmentPolicy,
+          targetRenderObject: targetRenderObject,
+        ));
+      }
 
       targetRenderObject = targetRenderObject ?? context.findRenderObject();
       context = scrollable.context;

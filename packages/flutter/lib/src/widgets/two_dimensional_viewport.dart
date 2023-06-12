@@ -928,7 +928,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
       assert(pivot.parent != this);
       assert(pivot != this);
       assert(pivot.parent is RenderBox);
-      pivotExtent = switch (axisDirectionToAxis(axisDirection!)) {
+      pivotExtent = switch (axisDirectionToAxis(axisDirection)) {
         Axis.horizontal => pivot.size.width,
         Axis.vertical => pivot.size.height,
       };
@@ -1256,7 +1256,6 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     childParentData.paintOffset = computeAbsolutePaintOffsetFor(
       child,
       layoutOffset: childParentData.layoutOffset!,
-      paintExtent: childParentData._paintExtent!,
     );
     // If the child is partially visible, or not visible at all, there is
     // visual overflow.
@@ -1350,14 +1349,13 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   Offset computeAbsolutePaintOffsetFor(
     RenderBox child, {
     required Offset layoutOffset,
-    required Size paintExtent,
   }) {
     assert(hasSize); // this is only usable once we have a size
     final double xOffset;
     final double yOffset;
     switch (verticalAxisDirection) {
       case AxisDirection.up:
-        yOffset = viewportDimension.height - (layoutOffset.dy + paintExtent.height);
+        yOffset = viewportDimension.height - (layoutOffset.dy + child.size.height);
       case AxisDirection.down:
         yOffset = layoutOffset.dy;
       case AxisDirection.right:
@@ -1368,7 +1366,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
       case AxisDirection.right:
         xOffset = layoutOffset.dx;
       case AxisDirection.left:
-        xOffset = viewportDimension.width - (layoutOffset.dx + paintExtent.width);
+        xOffset = viewportDimension.width - (layoutOffset.dx + child.size.width);
       case AxisDirection.up:
       case AxisDirection.down:
         throw Exception('This should not happen');

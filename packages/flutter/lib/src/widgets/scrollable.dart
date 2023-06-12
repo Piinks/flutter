@@ -451,7 +451,6 @@ class Scrollable extends StatefulWidget {
         // The default loop below assumes nested viewports with one scrollable for
         // each one, while a 2D viewport contains 2 scrollables and only one
         // viewport.
-        print('horizontal');
         futures.add(scrollable.position.ensureVisible(
           context.findRenderObject()!,
           alignment: alignment,
@@ -459,7 +458,6 @@ class Scrollable extends StatefulWidget {
           curve: curve,
           alignmentPolicy: alignmentPolicy,
         ));
-        print('vertical');
         scrollable.verticalScrollable.position.ensureVisible(
           context.findRenderObject()!,
           alignment: alignment,

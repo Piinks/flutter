@@ -938,7 +938,6 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
       assert(rect != null);
       return RevealedOffset(offset: offset, rect: rect!);
     }
-    print('rectLocal: $rectLocal');
 
     assert(child.parent == this);
     final RenderBox box = child as RenderBox;
@@ -960,8 +959,6 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
         leadingScrollOffset += pivotExtent - rectLocal.right;
         targetMainAxisExtent = rectLocal.width;
     }
-    print('leadingScrollOffset so far: $leadingScrollOffset');
-    print('targetMainAxisExtent: $targetMainAxisExtent');
 
     // So far leadingScrollOffset is the scroll offset of `rect` in the `child`
     // sliver's sliver coordinate system. The sign of this value indicates
@@ -975,7 +972,6 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
       Axis.vertical => parentDataOf(box).paintOffset!.dy,
       Axis.horizontal => parentDataOf(box).paintOffset!.dx,
     };
-    print('Then leadingScrollOffset is: $leadingScrollOffset');
 
     // This step assumes the viewport's layout is up-to-date, i.e., if
     // the position is changed after the last performLayout, the new scroll
@@ -990,17 +986,12 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
       case Axis.vertical:
         mainAxisExtent = viewportDimension.height;
     }
-    print('mainAxisExtent $mainAxisExtent');
-    print('alignment: $alignment');
 
     final double targetOffset = leadingScrollOffset - (mainAxisExtent - targetMainAxisExtent) * alignment;
     final double offsetDifference = switch(axisDirectionToAxis(axisDirection)){
       Axis.vertical => verticalOffset.pixels - targetOffset,
       Axis.horizontal => horizontalOffset.pixels - targetOffset,
     };
-    print('targetOffset $targetOffset');
-    print('offsetDifference $offsetDifference');
-    print('targetRect before: $targetRect');
     switch (axisDirection) {
       case AxisDirection.down:
         targetRect = targetRect.translate(0.0, offsetDifference);
@@ -1011,7 +1002,6 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
       case AxisDirection.left:
         targetRect = targetRect.translate(-offsetDifference, 0.0);
     }
-    print('targetRect after: $targetRect');
 
     return RevealedOffset(offset: targetOffset, rect: targetRect);
   }

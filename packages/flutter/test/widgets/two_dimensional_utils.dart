@@ -17,6 +17,7 @@ final TwoDimensionalChildBuilderDelegate builderDelegate = TwoDimensionalChildBu
   maxYIndex: 5,
   builder: (BuildContext context, ChildVicinity vicinity) {
     return Container(
+      key: ValueKey<ChildVicinity>(vicinity),
       color: vicinity.xIndex.isEven && vicinity.yIndex.isEven
         ? Colors.amber[100]
         : (vicinity.xIndex.isOdd && vicinity.yIndex.isOdd
@@ -222,6 +223,7 @@ class RenderSimpleBuilderTableViewport extends RenderTwoDimensionalViewport {
       double yLayoutOffset = (leadingRow * 200) - verticalOffset.pixels;
       for (int row = leadingRow; row <= trailingRow; row++) {
         final ChildVicinity vicinity = ChildVicinity(xIndex: column, yIndex: row);
+        print(vicinity);
         final RenderBox child = buildOrObtainChildFor(vicinity)!;
         if (!forgetToLayoutChild) {
           child.layout(constraints.tighten(width: 200.0, height: 200.0));

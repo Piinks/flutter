@@ -941,7 +941,9 @@ abstract class RenderViewportBase<ParentDataClass extends ContainerParentDataMix
         targetRect = targetRect.translate(-offsetDifference, 0.0);
     }
 
-    return RevealedOffset(offset: targetOffset, rect: targetRect);
+    final revealedOffset = RevealedOffset(offset: targetOffset, rect: targetRect);
+    print(revealedOffset.offset);
+    return revealedOffset;
   }
 
   /// The offset at which the given `child` should be painted.

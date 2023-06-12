@@ -968,9 +968,12 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     // of the viewport (i.e. its pinned to the leading edge).
 
     // The scroll offset in the viewport to `rect`.
-    leadingScrollOffset += switch(axisDirectionToAxis(axisDirection)) {
-      Axis.vertical => parentDataOf(box).paintOffset!.dy,
-      Axis.horizontal => parentDataOf(box).paintOffset!.dx,
+    final TwoDimensionalViewportParentData childParentData = parentDataOf(box);
+    leadingScrollOffset += switch(axisDirection) {
+      AxisDirection.down => childParentData.paintOffset!.dy,
+      AxisDirection.up => viewportDimension.height - childParentData.paintOffset!.dy - box.size.height,
+      AxisDirection.right => childParentData.paintOffset!.dx,
+      AxisDirection.left => viewportDimension.width - childParentData.paintOffset!.dx - box.size.width,
     };
 
     // This step assumes the viewport's layout is up-to-date, i.e., if
@@ -979,13 +982,10 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     final Matrix4 transform = target.getTransformTo(this);
     Rect targetRect = MatrixUtils.transformRect(transform, rect);
 
-    final double mainAxisExtent;
-    switch (axisDirectionToAxis(axisDirection)) {
-      case Axis.horizontal:
-        mainAxisExtent = viewportDimension.width;
-      case Axis.vertical:
-        mainAxisExtent = viewportDimension.height;
-    }
+    final double mainAxisExtent = switch (axisDirectionToAxis(axisDirection)) {
+      Axis.horizontal => viewportDimension.width,
+      Axis.vertical => viewportDimension.height,
+    };
 
     final double targetOffset = leadingScrollOffset - (mainAxisExtent - targetMainAxisExtent) * alignment;
     final double offsetDifference = switch(axisDirectionToAxis(axisDirection)){
@@ -1003,7 +1003,9 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
         targetRect = targetRect.translate(-offsetDifference, 0.0);
     }
 
-    return RevealedOffset(offset: targetOffset, rect: targetRect);
+    final RevealedOffset revealedOffset = RevealedOffset(offset: targetOffset, rect: targetRect);
+    print('${axisDirectionToAxis(axisDirection)}, revealedOffset: ${revealedOffset.offset}');
+    return revealedOffset;
   }
 
   /// Should be used by subclasses to invalidate any cached metrics for the

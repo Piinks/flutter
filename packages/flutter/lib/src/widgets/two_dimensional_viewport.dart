@@ -231,6 +231,7 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
   // Contains all children, including those that are keyed.
   Map<ChildVicinity, Element> _vicinityToChild = <ChildVicinity, Element>{};
   Map<Key, Element> _keyToChild = <Key, Element>{};
+  Map<ChildVicinity, Element> _keyedChildrenAwaitingNewSlot = <ChildVicinity, Element>{};
   // Used between _startLayout() & _endLayout() to compute the new values for
   // _vicinityToChild and _keyToChild.
   Map<ChildVicinity, Element>? _newVicinityToChild;
@@ -298,13 +299,37 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
     assert(!_debugIsDoingLayout);
     _newVicinityToChild = <ChildVicinity, Element>{};
     _newKeyToChild = <Key, Element>{};
+    // Check if any keyed children have new vicinities.
+    // If so, we hold on to them so they are not overwritten in the next layout
+    // pass.
+    for (final Key key in _keyToChild.keys.toList()) {
+      final ChildVicinity? newVicinity = (widget as TwoDimensionalViewport).delegate.findVicinityByKey(key);
+      if (newVicinity != null) {
+        // Check against the vicinity already attributed to this child.
+        final TwoDimensionalViewportParentData childParentData = _keyToChild[key]!.renderObject!.parentData! as TwoDimensionalViewportParentData;
+        final ChildVicinity oldVicinity = childParentData.vicinity;
+        if (oldVicinity != newVicinity) {
+          // Set aside for new slot and remove from children list to prevent it
+          // being deactivated.
+          childParentData.vicinity = newVicinity;
+          final Element element = _vicinityToChild.remove(oldVicinity)!;
+          element.renderObject!.parentData = childParentData;
+          _keyToChild.remove(key);
+          _keyedChildrenAwaitingNewSlot[newVicinity] = element;
+          // If it is actually reused in the course of layout, _buildChild will
+          // reuse it there.
+        }
+      }
+      print(_keyedChildrenAwaitingNewSlot);
+    }
   }
 
   @override
   void _buildChild(ChildVicinity vicinity) {
     assert(_debugIsDoingLayout);
     owner!.buildScope(this, () {
-      final Widget? newWidget = (widget as TwoDimensionalViewport).delegate.build(this, vicinity);
+      final Widget? newWidget = _keyedChildrenAwaitingNewSlot.remove(vicinity)?.widget
+        ?? (widget as TwoDimensionalViewport).delegate.build(this, vicinity);
       if (newWidget == null) {
         return;
       }
@@ -355,10 +380,12 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
 
   @override
   void _endLayout() {
+    print('endLayout');
     assert(_debugIsDoingLayout);
 
     // Unmount all elements that have not been reused in the layout cycle.
     for (final Element element in _vicinityToChild.values) {
+      print(1);
       if (element.widget.key == null) {
         // If it has a key, we handle it below.
         updateChild(element, null, null);
@@ -367,6 +394,13 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
       }
     }
     for (final Element element in _keyToChild.values) {
+      print(2);
+      assert(element.widget.key != null);
+      updateChild(element, null, null);
+    }
+    for (final Element element in _keyedChildrenAwaitingNewSlot.values) {
+      print(3);
+      // These new slots were not used during layout.
       assert(element.widget.key != null);
       updateChild(element, null, null);
     }
@@ -780,7 +814,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   /// [TwoDimensionalViewportParentData], or a subclass thereof.
   @protected
   TwoDimensionalViewportParentData parentDataOf(RenderBox child) {
-    assert(_children.containsValue(child));
+    // assert(_children.containsValue(child));
     return child.parentData! as TwoDimensionalViewportParentData;
   }
 
@@ -995,6 +1029,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
     _needsDelegateRebuild = false;
     _cacheKeepAlives();
     invokeLayoutCallback<BoxConstraints>((BoxConstraints _) {
+      print('in layout callback');
       _childManager._endLayout();
       assert(_debugOrphans?.isEmpty ?? true);
       assert(_debugDanglingKeepAlives.isEmpty);
@@ -1355,6 +1390,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   // ---- Called from _TwoDimensionalViewportElement ----
 
   void _insertChild(RenderBox child, ChildVicinity slot) {
+    print('Insert: $slot');
     assert(_debugTrackOrphans(newOrphan: _children[slot]));
     assert(!_keepAliveBucket.containsValue(child));
     _children[slot] = child;
@@ -1362,6 +1398,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   }
 
   void _moveChild(RenderBox child, {required ChildVicinity from, required ChildVicinity to}) {
+    print('move: from $from to $to');
     final TwoDimensionalViewportParentData childParentData = parentDataOf(child);
     if (!childParentData.keptAlive) {
       if (_children[from] == child) {
@@ -1394,6 +1431,7 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   }
 
   void _removeChild(RenderBox child, ChildVicinity slot) {
+    print('remove: $slot');
     final TwoDimensionalViewportParentData childParentData = parentDataOf(child);
     if (!childParentData.keptAlive) {
       if (_children[slot] == child) {
@@ -1417,6 +1455,9 @@ abstract class RenderTwoDimensionalViewport extends RenderBox implements RenderA
   // When a child is inserted into a slot currently occupied by another child,
   // it becomes an orphan until it is either moved to another slot or removed.
   bool _debugTrackOrphans({RenderBox? newOrphan, RenderBox? noLongerOrphan}) {
+    print('_debugTrackOrphans');
+    print(noLongerOrphan);
+    print(_debugOrphans);
     assert(() {
       _debugOrphans ??= <RenderBox>[];
       if (newOrphan != null) {

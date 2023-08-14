@@ -897,6 +897,18 @@ abstract class TwoDimensionalChildDelegate extends ChangeNotifier {
   /// calling [notifyListeners] will allow the same delegate to be used.
   Widget? build(BuildContext context, ChildVicinity vicinity);
 
+  /// Find the [ChildVicinity] of child element with associated key.
+  ///
+  /// This will be called during `performRebuild` in [Element] of the
+  /// [TwoDimensionalViewport] to check if a child has moved to a different
+  /// position. It should return the vicinity of the child element with
+  /// associated key, null if not found.
+  ///
+  /// If not provided, a child widget may not map to its existing [RenderObject]
+  /// when the order of children returned from the children builder changes.
+  /// This may result in state-loss.
+  ChildVicinity? findVicinityByKey(Key key) => null;
+
   /// Called whenever a new instance of the child delegate class is
   /// provided.
   ///
@@ -908,6 +920,14 @@ abstract class TwoDimensionalChildDelegate extends ChangeNotifier {
   /// away.
   bool shouldRebuild(covariant TwoDimensionalChildDelegate oldDelegate);
 }
+
+/// Called to find the new [ChildVicinity] of a child based on its `key` in case
+/// of reordering.
+///
+/// If the child with the `key` is no longer present, null is returned.
+///
+/// Used by [TwoDimensionalChildBuilderDelegate.findChildVicinityCallback].
+typedef ChildVicinityGetter = ChildVicinity? Function(Key key);
 
 /// A delegate that supplies children for a [TwoDimensionalScrollView] using a
 /// builder callback.
@@ -933,6 +953,7 @@ class TwoDimensionalChildBuilderDelegate extends TwoDimensionalChildDelegate {
     int? maxYIndex,
     this.addRepaintBoundaries = true,
     this.addAutomaticKeepAlives = true,
+    this.findChildVicinityCallback,
   }) : assert(maxYIndex == null || maxYIndex >= 0),
        assert(maxXIndex == null || maxXIndex >= 0),
        _maxYIndex = maxYIndex,
@@ -1031,6 +1052,33 @@ class TwoDimensionalChildBuilderDelegate extends TwoDimensionalChildDelegate {
   /// {@macro flutter.widgets.SliverChildBuilderDelegate.addAutomaticKeepAlives}
   final bool addAutomaticKeepAlives;
 
+  /// Called to find the new [ChildVicinity] of a child based on its key in case
+  /// of reordering.
+  ///
+  /// If not provided, a child widget may not map to its existing [RenderObject]
+  /// when the order of children returned from the children builder changes.
+  /// This may result in state-loss.
+  ///
+  /// This callback should take an input [Key], and it should return the
+  /// vicinity of the child element with that associated key, or null if not
+  /// found.
+  final ChildVicinityGetter? findChildVicinityCallback;
+
+  @override
+  ChildVicinity? findVicinityByKey(Key key) {
+    if (findChildVicinityCallback == null) {
+      return null;
+    }
+    final Key childKey;
+    if (key is _SaltedValueKey) {
+      final _SaltedValueKey saltedValueKey = key;
+      childKey = saltedValueKey.value;
+    } else {
+      childKey = key;
+    }
+    return findChildVicinityCallback!(childKey);
+  }
+
   @override
   Widget? build(BuildContext context, ChildVicinity vicinity) {
     // If we have exceeded explicit upper bounds, return null.
@@ -1050,13 +1098,14 @@ class TwoDimensionalChildBuilderDelegate extends TwoDimensionalChildDelegate {
     if (child == null) {
       return null;
     }
+    final Key? key = child.key != null ? _SaltedValueKey(child.key!) : null;
     if (addRepaintBoundaries) {
       child = RepaintBoundary(child: child);
     }
     if (addAutomaticKeepAlives) {
       child = AutomaticKeepAlive(child: _SelectionKeepAlive(child: child));
     }
-    return child;
+    return KeyedSubtree(key: key, child: child);
   }
 
   @override
@@ -1103,7 +1152,23 @@ class TwoDimensionalChildListDelegate extends TwoDimensionalChildDelegate {
     this.addRepaintBoundaries = true,
     this.addAutomaticKeepAlives = true,
     required this.children,
-  });
+  }) : _keyToVicinity = <Key?, ChildVicinity>{
+    null : const ChildVicinity(xIndex: 0, yIndex: 0),
+  };
+
+  /// Creates a constant version of the delegate that supplies children using
+  /// the given list.
+  ///
+  /// If the order of the children will change, consider using the regular
+  /// [TwoDimensionalChildListDelegate] constructor.
+  ///
+  /// The [children], [addAutomaticKeepAlives], and [addRepaintBoundaries],
+  /// arguments must not be null.
+  TwoDimensionalChildListDelegate.fixed({
+    this.addAutomaticKeepAlives = true,
+    this.addRepaintBoundaries = true,
+    required this.children,
+  }) : _keyToVicinity = null;
 
   /// The widgets to display.
   ///
@@ -1124,6 +1189,60 @@ class TwoDimensionalChildListDelegate extends TwoDimensionalChildDelegate {
   /// {@macro flutter.widgets.SliverChildBuilderDelegate.addAutomaticKeepAlives}
   final bool addAutomaticKeepAlives;
 
+  /// A map to cache key to index lookup for children.
+  ///
+  /// _keyToIndex[null] is used as current index during the lazy loading process
+  /// in [_findChildIndex]. _keyToIndex should never be used for looking up null key.
+  final Map<Key?, ChildVicinity>? _keyToVicinity;
+
+  bool get _isConstantInstance => _keyToVicinity == null;
+
+  ChildVicinity? _findChildVicinity(Key key) {
+    if (_isConstantInstance) {
+      return null;
+    }
+    // Lazily fill the [_keyToIndex].
+    if (!_keyToVicinity!.containsKey(key)) {
+      final ChildVicinity vicinity = _keyToVicinity![null]!;
+      int yIndex = vicinity.yIndex;
+      while (yIndex < children.length) {
+        int xIndex = vicinity.xIndex;
+        while (xIndex < children[yIndex].length) {
+          final Widget child = children[yIndex][xIndex];
+          if (child.key != null) {
+            _keyToVicinity![child.key] = vicinity;
+          }
+          if (child.key == key) {
+            // Record current index for next function call.
+            _keyToVicinity![null] = ChildVicinity(
+              xIndex: xIndex + 1,
+              yIndex: yIndex,
+            );
+            return vicinity;
+          }
+          xIndex += 1;
+        }
+        yIndex += 1;
+      }
+      _keyToVicinity![null] = vicinity;
+    } else {
+      return _keyToVicinity![key];
+    }
+    return null;
+  }
+
+  @override
+  ChildVicinity? findVicinityByKey(Key key) {
+    final Key childKey;
+    if (key is _SaltedValueKey) {
+      final _SaltedValueKey saltedValueKey = key;
+      childKey = saltedValueKey.value;
+    } else {
+      childKey = key;
+    }
+    return _findChildVicinity(childKey);
+  }
+
   @override
   Widget? build(BuildContext context, ChildVicinity vicinity) {
     // If we have exceeded explicit upper bounds, return null.
@@ -1135,13 +1254,14 @@ class TwoDimensionalChildListDelegate extends TwoDimensionalChildDelegate {
     }
 
     Widget child = children[vicinity.yIndex][vicinity.xIndex];
+    final Key? key = child.key != null? _SaltedValueKey(child.key!) : null;
     if (addRepaintBoundaries) {
       child = RepaintBoundary(child: child);
     }
     if (addAutomaticKeepAlives) {
       child = AutomaticKeepAlive(child: _SelectionKeepAlive(child: child));
     }
-    return child;
+    return KeyedSubtree(key: key, child: child);
   }
 
   @override

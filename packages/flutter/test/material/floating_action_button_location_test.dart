@@ -328,7 +328,7 @@ void main() {
       ),
     );
     expect(tester.getCenter(find.byType(FloatingActionButton)).dx, tester.getCenter(find.byType(CircleAvatar)).dx);
-    expect(tester.getCenter(find.byType(FloatingActionButton)).dy, kToolbarHeight);
+    expect(tester.getCenter(find.byType(FloatingActionButton)).dy, kM2ToolbarHeight);
   });
 
   testWidgets('Start-top floating action button location LTR', (WidgetTester tester) async {

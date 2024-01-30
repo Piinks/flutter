@@ -208,7 +208,7 @@ void main() {
     tester.binding.pipelineOwner.semanticsOwner!.performAction(id0, SemanticsAction.showOnScreen);
     await tester.pump();
     await tester.pump(const Duration(seconds: 5));
-    expect(tester.getTopLeft(find.byWidget(children[0])).dy, kToolbarHeight);
+    expect(tester.getTopLeft(find.byWidget(children[0])).dy, kM2ToolbarHeight);
 
     semantics.dispose();
   });

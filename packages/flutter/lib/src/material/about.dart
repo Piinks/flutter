@@ -1357,7 +1357,7 @@ class _MasterDetailScaffoldState extends State<_MasterDetailScaffold>
             title: widget.title,
             actions: widget.actionBuilder!(context, _ActionLevel.top),
             bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(kToolbarHeight),
+              preferredSize: const Size.fromHeight(kM2ToolbarHeight),
               child: Row(
                 children: <Widget>[
                   ConstrainedBox(
@@ -1453,7 +1453,7 @@ class _DetailView extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final double screenHeight = MediaQuery.sizeOf(context).height;
-    final double minHeight = (screenHeight - kToolbarHeight) / screenHeight;
+    final double minHeight = (screenHeight - kM2ToolbarHeight) / screenHeight;
 
     return DraggableScrollableSheet(
       initialChildSize: minHeight,

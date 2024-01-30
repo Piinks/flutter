@@ -33,7 +33,7 @@ import 'theme.dart';
 
 typedef _FlexibleConfigBuilder = _ScrollUnderFlexibleConfig Function(BuildContext);
 
-const double _kLeadingWidth = kToolbarHeight; // So the leading button is square.
+const double _kLeadingWidth = kM2ToolbarHeight; // So the leading button is square.
 const double _kMaxTitleTextScaleFactor = 1.34; // TODO(perc): Add link to Material spec when available, https://github.com/flutter/flutter/issues/58769.
 
 enum _SliverAppVariant { small, medium, large }
@@ -66,7 +66,7 @@ class _ToolbarContainerLayout extends SingleChildLayoutDelegate {
 
 class _PreferredAppBarSize extends Size {
   _PreferredAppBarSize(this.toolbarHeight, this.bottomHeight)
-    : super.fromHeight((toolbarHeight ?? kToolbarHeight) + (bottomHeight ?? 0));
+    : super.fromHeight((toolbarHeight ?? kM2ToolbarHeight) + (bottomHeight ?? 0));
 
   final double? toolbarHeight;
   final double? bottomHeight;
@@ -220,7 +220,7 @@ class AppBar extends StatefulWidget implements PreferredSizeWidget {
   /// the app bar's [AppBar.bottom] widget.
   static double preferredHeightFor(BuildContext context, Size preferredSize) {
     if (preferredSize is _PreferredAppBarSize && preferredSize.toolbarHeight == null) {
-      return (AppBarTheme.of(context).toolbarHeight ?? kToolbarHeight) + (preferredSize.bottomHeight ?? 0);
+      return (AppBarTheme.of(context).toolbarHeight ?? kM2ToolbarHeight) + (preferredSize.bottomHeight ?? 0);
     }
     return preferredSize.height;
   }
@@ -634,11 +634,11 @@ class AppBar extends StatefulWidget implements PreferredSizeWidget {
   @override
   final Size preferredSize;
 
-  /// {@template flutter.material.appbar.toolbarHeight}
   /// Defines the height of the toolbar component of an [AppBar].
   ///
-  /// By default, the value of [toolbarHeight] is [kToolbarHeight].
-  /// {@endtemplate}
+  /// By default, the value of [toolbarHeight] is based on
+  /// [ThemeData.useMaterial3]. When true, [kM3ToolbarHeight] will be used, and
+  /// [kM2ToolbarHeight] will be used when false.
   final double? toolbarHeight;
 
   /// {@template flutter.material.appbar.leadingWidth}
@@ -832,7 +832,7 @@ class _AppBarState extends State<AppBar> {
     final bool hasEndDrawer = scaffold?.hasEndDrawer ?? false;
     final bool useCloseButton = parentRoute is PageRoute<dynamic> && parentRoute.fullscreenDialog;
 
-    final double toolbarHeight = widget.toolbarHeight ?? appBarTheme.toolbarHeight ?? kToolbarHeight;
+    final double toolbarHeight = widget.toolbarHeight ?? appBarTheme.toolbarHeight ?? defaults.toolbarHeight!;
 
     final Color backgroundColor = _resolveColor(
       states,
@@ -1220,7 +1220,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   double get minExtent => collapsedHeight;
 
   @override
-  double get maxExtent => math.max(topPadding + (expandedHeight ?? (toolbarHeight ?? kToolbarHeight) + _bottomHeight), minExtent);
+  double get maxExtent => math.max(topPadding + (expandedHeight ?? (toolbarHeight ?? kM2ToolbarHeight) + _bottomHeight), minExtent);
 
   @override
   final TickerProvider vsync;
@@ -1237,13 +1237,13 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     final double visibleMainHeight = maxExtent - shrinkOffset - topPadding;
-    final double extraToolbarHeight = math.max(minExtent - _bottomHeight - topPadding - (toolbarHeight ?? kToolbarHeight), 0.0);
+    final double extraToolbarHeight = math.max(minExtent - _bottomHeight - topPadding - (toolbarHeight ?? kM2ToolbarHeight), 0.0);
     final double visibleToolbarHeight = visibleMainHeight - _bottomHeight - extraToolbarHeight;
 
     final bool isScrolledUnder = overlapsContent || forceElevated || (pinned && shrinkOffset > maxExtent - minExtent);
     final bool isPinnedWithOpacityFade = pinned && floating && bottom != null && extraToolbarHeight == 0.0;
     final double toolbarOpacity = !pinned || isPinnedWithOpacityFade
-      ? clampDouble(visibleToolbarHeight / (toolbarHeight ?? kToolbarHeight), 0.0, 1.0)
+      ? clampDouble(visibleToolbarHeight / (toolbarHeight ?? kM2ToolbarHeight), 0.0, 1.0)
       : 1.0;
     final Widget? effectiveTitle = switch (variant) {
       _SliverAppVariant.small                             => title,
@@ -1466,7 +1466,7 @@ class SliverAppBar extends StatefulWidget {
     this.stretchTriggerOffset = 100.0,
     this.onStretchTrigger,
     this.shape,
-    this.toolbarHeight = kToolbarHeight,
+    this.toolbarHeight,
     this.leadingWidth,
     this.toolbarTextStyle,
     this.titleTextStyle,
@@ -1475,10 +1475,6 @@ class SliverAppBar extends StatefulWidget {
     this.clipBehavior,
   }) : assert(floating || !snap, 'The "snap" argument only makes sense for floating app bars.'),
        assert(stretchTriggerOffset > 0.0),
-       assert(
-        collapsedHeight == null || collapsedHeight >= toolbarHeight,
-        'The "collapsedHeight" argument has to be larger than or equal to [toolbarHeight].',
-       ),
        _variant = _SliverAppVariant.small;
 
   /// Creates a Material Design medium top app bar that can be placed
@@ -1543,10 +1539,6 @@ class SliverAppBar extends StatefulWidget {
     this.clipBehavior,
  }) : assert(floating || !snap, 'The "snap" argument only makes sense for floating app bars.'),
        assert(stretchTriggerOffset > 0.0),
-       assert(
-        collapsedHeight == null || collapsedHeight >= toolbarHeight,
-        'The "collapsedHeight" argument has to be larger than or equal to [toolbarHeight].',
-       ),
        _variant = _SliverAppVariant.medium;
 
   /// Creates a Material Design large top app bar that can be placed
@@ -1611,10 +1603,6 @@ class SliverAppBar extends StatefulWidget {
     this.clipBehavior,
   }) : assert(floating || !snap, 'The "snap" argument only makes sense for floating app bars.'),
        assert(stretchTriggerOffset > 0.0),
-       assert(
-        collapsedHeight == null || collapsedHeight >= toolbarHeight,
-        'The "collapsedHeight" argument has to be larger than or equal to [toolbarHeight].',
-       ),
        _variant = _SliverAppVariant.large;
 
   /// {@macro flutter.material.appbar.leading}
@@ -1839,34 +1827,35 @@ class SliverAppBar extends StatefulWidget {
   /// offset specified by [stretchTriggerOffset].
   final AsyncCallback? onStretchTrigger;
 
-  /// {@macro flutter.material.appbar.toolbarHeight}
+  /// Defines the height of the toolbar component of an [SliverAppBar].
   ///
-  /// This property is used to configure an [AppBar].
-  final double toolbarHeight;
+  /// When using the default constructor, and this property is null, the value
+  /// of [toolbarHeight] is based on [ThemeData.useMaterial3]. When true,
+  /// [kM3ToolbarHeight] will be used, and [kM2ToolbarHeight] will be used when
+  /// false.
+  ///
+  /// When using [SliverAppBar.medium] or [SliverAppBar.large],
+  /// [kM3ToolbarHeight] is used by default unless another value is provided.
+  /// This is because these constructors were designed to match the Material 3
+  /// design specification.
+  ///
+  /// Must be greater than or equal to [collapsedHeight], if [collapsedHeight]
+  /// is provided.
+  final double? toolbarHeight;
 
   /// {@macro flutter.material.appbar.leadingWidth}
-  ///
-  /// This property is used to configure an [AppBar].
   final double? leadingWidth;
 
   /// {@macro flutter.material.appbar.toolbarTextStyle}
-  ///
-  /// This property is used to configure an [AppBar].
   final TextStyle? toolbarTextStyle;
 
   /// {@macro flutter.material.appbar.titleTextStyle}
-  ///
-  /// This property is used to configure an [AppBar].
   final TextStyle? titleTextStyle;
 
   /// {@macro flutter.material.appbar.systemOverlayStyle}
-  ///
-  /// This property is used to configure an [AppBar].
   final SystemUiOverlayStyle? systemOverlayStyle;
 
   /// {@macro flutter.material.appbar.forceMaterialTransparency}
-  ///
-  /// This property is used to configure an [AppBar].
   final bool forceMaterialTransparency;
 
   /// {@macro flutter.material.Material.clipBehavior}
@@ -1932,11 +1921,21 @@ class _SliverAppBarState extends State<SliverAppBar> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     assert(!widget.primary || debugCheckHasMediaQuery(context));
+    final ThemeData theme = Theme.of(context);
+    final AppBarTheme appBarTheme = AppBarTheme.of(context);
+    final AppBarTheme defaults = theme.useMaterial3 ? _AppBarDefaultsM3(context) : _AppBarDefaultsM2(context);
     final double bottomHeight = widget.bottom?.preferredSize.height ?? 0.0;
     final double topPadding = widget.primary ? MediaQuery.paddingOf(context).top : 0.0;
+    final double toolbarHeight = widget.toolbarHeight ?? appBarTheme.toolbarHeight ?? defaults.toolbarHeight!;
+    assert(
+      widget.collapsedHeight == null || widget.collapsedHeight! >= toolbarHeight,
+      'The provided collapsedHeight (${widget.collapsedHeight}) must be '
+      'greater than or equal to the resolved toolbarHeight ($toolbarHeight).',
+    );
     final double collapsedHeight = (widget.pinned && widget.floating && widget.bottom != null)
       ? (widget.collapsedHeight ?? 0.0) + bottomHeight + topPadding
-      : (widget.collapsedHeight ?? widget.toolbarHeight) + bottomHeight + topPadding;
+      : (widget.collapsedHeight ?? toolbarHeight) + bottomHeight + topPadding;
+
     final double? effectiveExpandedHeight;
     final double effectiveCollapsedHeight;
     final Widget? effectiveFlexibleSpace;
@@ -2007,7 +2006,7 @@ class _SliverAppBarState extends State<SliverAppBar> with TickerProviderStateMix
           snapConfiguration: _snapConfiguration,
           stretchConfiguration: _stretchConfiguration,
           showOnScreenConfiguration: _showOnScreenConfiguration,
-          toolbarHeight: widget.toolbarHeight,
+          toolbarHeight: toolbarHeight,
           leadingWidth: widget.leadingWidth,
           toolbarTextStyle: widget.toolbarTextStyle,
           titleTextStyle: widget.titleTextStyle,
@@ -2280,7 +2279,7 @@ class _AppBarDefaultsM2 extends AppBarTheme {
       elevation: 4.0,
       shadowColor: const Color(0xFF000000),
       titleSpacing: NavigationToolbar.kMiddleSpacing,
-      toolbarHeight: kToolbarHeight,
+      toolbarHeight: kM2ToolbarHeight,
     );
 
   final BuildContext context;

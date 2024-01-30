@@ -241,7 +241,7 @@ class _FlexibleSpaceBarState extends State<FlexibleSpaceBar> {
 
         // background
         if (widget.background != null) {
-          final double fadeStart = math.max(0.0, 1.0 - kToolbarHeight / deltaExtent);
+          final double fadeStart = math.max(0.0, 1.0 - kM2ToolbarHeight / deltaExtent);
           const double fadeEnd = 1.0;
           assert(fadeStart <= fadeEnd);
           // If the min and max extent are the same, the app bar cannot collapse

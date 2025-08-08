@@ -50,6 +50,12 @@ For each selected notable PR, gather the following information using the `gh` CL
     gh pr diff <PR_NUMBER>
     ```
 
+4.  **Check for Visual Media:** Check the PR body for images or video clips that can be embedded in the report.
+
+    ```shell
+    gh pr view <PR_NUMBER> --json body -q ".body"
+    ```
+
 ## Phase 3: First-Time Contributor Analysis (CRITICAL)
 
 This is a multi-step process to accurately identify contributors whose *first ever* commit landed this week.
@@ -88,6 +94,7 @@ Assemble the gathered information into a new file named `notable_changes_YYYY-MM
         *   `*   Authored by [Full Name](https://github.com/login) and reviewed by [Reviewer 1](...), [Reviewer 2](...).`
     *   Add 1-2 relevant emojis sparingly and naturally to add personality.
     *   **Consolidate related changes.** If multiple PRs address the same issue (e.g., parts of a larger migration), group them into a single bullet point. List all relevant PR numbers and credit all authors and reviewers involved.
+    *   **Embed Visual Media.** If a PR includes a helpful image or video, embed it in the report. Use standard Markdown for images and `<video>` tags for videos.
 4.  **Add First-Time Contributor Section:**
     *   Create a final section titled "First-time Contributors".
     *   Add a welcoming message.

@@ -91,7 +91,7 @@ Assemble the gathered information into a new file named `notable_changes_YYYY-MM
 4.  **Add First-Time Contributor Section:**
     *   Create a final section titled "First-time Contributors".
     *   Add a welcoming message.
-    *   List each verified first-time contributor with a link to their GitHub profile: `- [Full Name](https://github.com/login)`
+    *   List each verified first-time contributor with a link to their GitHub profile. For each new contributor, add a brief mention of their first contribution, linking to the relevant PR: `- [Full Name](https://github.com/login), for [#PR_NUMBER](LINK_TO_PR), which [description of change].`
 
 ## Phase 5: Housekeeping and Finalization
 

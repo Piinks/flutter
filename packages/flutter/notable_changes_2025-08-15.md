@@ -24,6 +24,7 @@ A total of 105 changes were merged to the framework this week. This release is t
 
 - **[#169293](https://github.com/flutter/flutter/pull/169293) Implements the Android native stretch effect as a fragment shader (Impeller-only).**
   Implements the native Android stretch overscroll effect using a fragment shader for a more authentic feel on Impeller.
+  <video src="https://github.com/user-attachments/assets/73b6ef18-06b2-42ea-9793-c391ec2ce282"></video>
   * Authored by [Dev TtangKong](https://github.com/MTtankkeo) and reviewed by [chunhtai](https://github.com/chunhtai), [Justin McCandless](https://github.com/justinmc), and [Tong Mu](https://github.com/dkwingsmt).
 
 - **[#173480](https://github.com/flutter/flutter/pull/173480) [VPAT][A11y] Announce Autocomplete search results status**
@@ -44,6 +45,7 @@ A total of 105 changes were merged to the framework this week. This release is t
 
 - **[#168547](https://github.com/flutter/flutter/pull/168547) feat: Cupertino sheet implement upward stretch on full sheet**
   Implements an upward stretch effect on `CupertinoSheet` when it's fully expanded, providing a more native feel.
+  <video src="https://github.com/user-attachments/assets/ee98ab82-bc84-40b5-839f-82ae6de59e36"></video>
   * Authored by [masal9pse](https://github.com/masal9pse) and reviewed by [Mitchell Goodwin](https://github.com/MitchellGoodwin) and [Tong Mu](https://github.com/dkwingsmt).
 
 - **[#167032](https://github.com/flutter/flutter/pull/167032) Fix visual overlap of transparent routes barrier when using FadeForwardsPageTransitionsBuilder**

@@ -63,7 +63,77 @@ This is a multi-step process to accurately identify contributors whose *first ev
 1.  **Get All Unique Authors This Week:** Get a list of all unique author names and emails from the last 7 days.
 
     ```shell
+    For each selected notable PR, gather the following information using the `gh` CLI tool.
+
+1.  **Get Author and Approved Reviewers:** Use the following precise command to get the PR author and a list of reviewers who explicitly approved the change.
+
+    ```shell
+    gh pr view <PR_NUMBER> --json author,reviews -q '{author: .author.login, reviewers: [.reviews[] | select(.state=="APPROVED") | .author.login]}'
+    ```
+
+2.  **Get Author's Full Name:** For each author and reviewer login, get their full name for the report.
+
+    ```shell
+    gh api users/<LOGIN> --jq .name
+    ```
+
+    *Note: If a user does not have a public name, use their login instead.*
+
+3.  **Get PR Diff:** Get the code diff, which will be used to write an accurate, one-sentence summary of the change.
+
+    ```shell
+    gh pr diff <PR_NUMBER>
+    ```
+
+4.  **Check for Visual Media:** Check the PR body for images or video clips that can be embedded in the report.
+
+    ```shell
+    gh pr view <PR_NUMBER> --json body -q ".body"
+    ```
+
+## Phase 3: First-Time Contributor Analysis (CRITICAL)
+
+This is a multi-step process to accurately identify contributors whose *first ever* commit landed this week.
+
+1.  **Get All Unique Authors This Week:** Get a list of all unique author names and emails from the last 7 days.
+
+    ```shell
     git log --since="7 days ago" --pretty=format:"%an <%ae>" | sort -u
+    ```
+
+2.  **Check `known_authors.md`:** Before checking the full git history, check if the author is already listed in the `known_authors.md` file. If they are, they are not a first-time contributor.
+3.  **Find First Commit Date:** For any author *not* in `known_authors.md`, find the date of their very first commit in the repository's history.
+
+    ```shell
+    git log --author="<Full Name <email@example.com>>" --reverse --pretty=format:"%ci" | head -n 1
+    ```
+
+4.  **Verify First-Time Status:** Compare the commit date to the start of the 7-day window. If the date is within the last 7 days, the author is a **first-time contributor**.
+
+## Phase 4: Drafting the Report
+
+Assemble the gathered information into a new file named `notable_changes_YYYY-MM-DD.md`, where `YYYY-MM-DD` is the date the report is generated.
+
+1.  **Add the Date Heading:**
+    *   Calculate the date range for the report (today and the 6 previous days).
+    *   Add a heading at the very top of the file in the format: `### MMMM DD, YYYY to MMMM DD, YYYY`.
+2.  **Create the Summary:**
+    *   Get the total number of commits: `git log --since="7 days ago" --oneline | wc -l`
+    *   Get the current Flutter version: `flutter doctor -v` (use a reasonable upcoming version number, e.g., 3.34.0).
+    *   Write a brief, engaging summary at the top of the file. Mention the total number of changes, the likely version tag, and the number of new contributors.
+3.  **Format Notable Changes:**
+    *   Create a section for each category (e.g., Framework, Material).
+    *   For each change, use the format: `**[#PR_NUMBER](LINK_TO_PR) A CONCISE, ENGAGING TITLE**`
+    *   Write a brief, human-readable, one-sentence summary of the change based on the code diff. The tone should be celebratory but accurate.
+    *   List the author and reviewers in a sub-bullet:
+        *   `*   Authored by [Full Name](https://github.com/login) and reviewed by [Reviewer 1](...), [Reviewer 2](...).`
+    *   Add 1-2 relevant emojis sparingly and naturally to add personality.
+    *   **Consolidate related changes.** If multiple PRs address the same issue (e.g., parts of a larger migration), group them into a single bullet point. List all relevant PR numbers and credit all authors and reviewers involved.
+    *   **Embed Visual Media.** If a PR includes a helpful image or video, embed it in the report. Use standard Markdown for images and `<video>` tags for videos.
+4.  **Add First-Time Contributor Section:**
+    *   Create a final section titled "First-time Contributors".
+    *   Add a welcoming message.
+    *   List each verified first-time contributor with a link to their GitHub profile. For each new contributor, add a brief mention of their first contribution, linking to the relevant PR: `- [Full Name](https://github.com/login), for [#PR_NUMBER](LINK_TO_PR), which [description of change].`
     ```
 
 2.  **Check `known_authors.md`:** Before checking the full git history, check if the author is already listed in the `known_authors.md` file. If they are, they are not a first-time contributor.

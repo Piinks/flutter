@@ -2917,6 +2917,7 @@ class _MenuLayout extends SingleChildLayoutDelegate {
     required this.avoidBounds,
     required this.orientation,
     required this.parentOrientation,
+    required this.mediaQueryData,
   });
 
   // Rectangle of underlying button, relative to the overlay's dimensions.
@@ -2948,6 +2949,8 @@ class _MenuLayout extends SingleChildLayoutDelegate {
   // The orientation of this menu's parent.
   final Axis parentOrientation;
 
+  final MediaQueryData mediaQueryData;
+
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
     // The menu can be at most the size of the overlay minus _kMenuViewPadding
@@ -2962,7 +2965,9 @@ class _MenuLayout extends SingleChildLayoutDelegate {
     // size: The size of the overlay.
     // childSize: The size of the menu, when fully open, as determined by
     // getConstraintsForChild.
-    final Rect overlayRect = Offset.zero & size;
+    final Rect overlayRect = mediaQueryData.padding.deflateRect(
+      mediaQueryData.viewInsets.deflateRect(Offset.zero & size),
+    );
     double x;
     double y;
     if (menuPosition == null) {
@@ -3385,18 +3390,17 @@ class _Submenu extends StatelessWidget {
         constraints: BoxConstraints.loose(menuPosition.overlaySize),
         child: Builder(
           builder: (BuildContext context) {
-            final MediaQueryData mediaQuery = MediaQuery.of(context);
             return CustomSingleChildLayout(
               delegate: _MenuLayout(
                 anchorRect: anchorRect,
                 textDirection: textDirection,
-                avoidBounds: DisplayFeatureSubScreen.avoidBounds(mediaQuery).toSet(),
                 menuPadding: resolvedPadding,
                 alignment: alignment,
                 alignmentOffset: alignmentOffset,
                 menuPosition: menuPosition.position,
                 orientation: anchor._orientation,
                 parentOrientation: anchor._parent?._orientation ?? Axis.horizontal,
+                mediaQueryData: MediaQuery.of(context),
               ),
               child: menuPanel,
             );

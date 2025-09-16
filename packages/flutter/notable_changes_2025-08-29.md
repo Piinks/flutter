@@ -1,7 +1,6 @@
 ### August 15, 2025 to August 29, 2025
 
-A total of 231 changes were merged to the framework, engine, and packages last week.
-The following are some of the notable changes that may be interesting to you.
+A total of 231 changes were merged over the last 2 weeks!
 
 ### Framework
 

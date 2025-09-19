@@ -82,3 +82,8 @@
 - [Srujan Gaddam](https://github.com/srujzs)
 - [Sven Gasterstädt](https://github.com/SvenGasterstaedt)
 - [Tess Strickland](https://github.com/sstrickl)
+- [Daniil](https://github.com/danwirele)
+- [manu-sncf](https://github.com/manu-sncf)
+- [Oreofe Solarin](https://github.com/oreofesolarin)
+- [Rodrigo Gomes Dias](https://github.com/rodrigogmdias)
+- [Rushikesh Bhavsar](https://github.com/Rushikeshbhavsar20)

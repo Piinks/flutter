@@ -56,29 +56,27 @@ For each selected notable PR, gather the following information using the `gh` CL
     gh pr view <PR_NUMBER> --json body -q ".body"
     ```
 
-## Phase 3: First-Time Contributor Analysis (CRITICAL)
+## Phase 3: First-Time Contributor Verification (CRITICAL)
 
-This is a multi-step process to accurately identify contributors whose *first ever* commit landed this week.
+This is a multi-step, critical process to accurately identify contributors whose *first ever* commit to this repository landed this week. Errors in this section are highly visible. Proceed with extreme caution.
 
-1.  **Get All Unique Authors This Week:** Get a list of all unique author names and emails from the last 7 days.
-
+1.  **Get All Unique Authors This Week:** Get a list of all unique author names and emails from the specified date range.
     ```shell
-    git log --since="7 days ago" --pretty=format:"%an <%ae>" | sort -u
+    git log --since="<START_DATE>" --until="<END_DATE>" --pretty=format:"%an <%ae>" | sort -u
     ```
-
-2.  **Check `known_authors.md`:** Before checking the full git history, check if the author is already listed in the `known_authors.md` file. If they are, they are not a first-time contributor.
-3.  **Find First Commit Date:** For any author *not* in `known_authors.md`, find the date of their very first commit in the repository's history.
-
+2.  **Check `known_authors.md`:** Before checking the full git history, check if the author is already listed in the `known_authors.md` file. If they are, they are **not** a first-time contributor.
+3.  **Find First Commit Date:** For any author *not* in `known_authors.md`, find the date of their very first commit in the repository's history. **This is the most critical step to avoid errors.**
     ```shell
     git log --author="<Full Name <email@example.com>>" --reverse --pretty=format:"%ci" | head -n 1
     ```
-
-4.  **Verify First-Time Status:** Compare the commit date to the start of the 7-day window. If the date is within the last 7 days, the author is a **first-time contributor**.
-5.  **Verify PR Authorship:** For each first-time contributor, verify that they are the author of the PR associated with their first commit.
-
+4.  **Verify First-Time Status:** Compare the commit date to the start of the reporting window. If the date is within the window, the author is a **first-time contributor**. If it is before the window, they are an existing contributor who was missing from `known_authors.md`.
+5.  **Get PR for First Contribution:** For each verified first-time contributor, find the commit hash and PR number of their first contribution to write the summary.
     ```shell
-    gh pr view <PR_NUMBER> --json author -q '.author.login'
+    # Get the commit hash and subject line for their first commit
+    git log --author="<Full Name <email@example.com>>" --reverse --pretty=format:"%H - %s" | head -n 1
     ```
+    Extract the PR number from the subject line (e.g., the number in `(#12345)`). This ensures you are crediting the correct work.
+
 
 ## Phase 4: Drafting the Report
 
@@ -94,12 +92,14 @@ Assemble the gathered information into a new file named `notable_changes_YYYY-MM
 3.  **Format Notable Changes:**
     *   Create a section for each category (e.g., Framework, Material).
     *   For each change, use the format: `**[#PR_NUMBER](LINK_TO_PR) A CONCISE, ENGAGING TITLE**`
-    *   Write a brief, human-readable, one-sentence summary of the change based on the code diff. The tone should be celebratory but accurate.
+    *   **Write an impactful summary.** Do not just repeat the PR title. Based on the PR description and code diff, write a brief, human-readable sentence that explains the *benefit* or *impact* of the change. The tone should be celebratory but accurate.
+        *   **Good Example:** "Windows developers will see smoother UIs and fewer deadlocks thanks to a new high-resolution timer implementation in the Win32 runloop. 🚀"
+        *   **Bad Example:** "This PR updates the runloop to use a new timer." (This is bland and just repeats the "what".)
     *   List the author and reviewers in a sub-bullet:
         *   `*   Authored by [Full Name](https://github.com/login) and reviewed by [Reviewer 1](...), [Reviewer 2](...).`
     *   Add 1-2 relevant emojis sparingly and naturally to add personality.
     *   **Consolidate related changes.** If multiple PRs address the same issue (e.g., parts of a larger migration), group them into a single bullet point. List all relevant PR numbers and credit all authors and reviewers involved.
-    *   **Embed Visual Media.** If a PR includes a helpful image or video, embed it in the report. Use standard Markdown for images and `<video>` tags for videos.
+    *   **Find and Embed Visual Media.** If a PR includes a helpful image or video, embed it directly in the report under the relevant change. Use standard Markdown for images (`![alt text](URL)`) and `<video>` tags for videos (`<video src="URL" controls></video>`). **CRITICAL: Double-check that the asset URL comes from the correct PR to avoid misattribution.**
 4.  **Add First-Time Contributor Section:**
     *   Create a final section titled "First-time Contributors".
     *   Add a welcoming message.
@@ -107,16 +107,22 @@ Assemble the gathered information into a new file named `notable_changes_YYYY-MM
 
 ## Phase 5: Housekeeping and Finalization
 
-1.  **Update `known_authors.md`:**
-    *   For every unique author who contributed this week (both new and existing), add them to the `known_authors.md` file if they are not already listed.
+1.  **Update `known_authors.md` (MANDATORY):**
+    *   For **every unique author** who contributed this week (both new and existing), add their full name and GitHub login to the `known_authors.md` file if they are not already listed. **This is not just for first-time contributors.**
     *   Use the format: `- [Full Name](https://github.com/login)`
-2.  **Final Audit:**
-    *   Read through the entire `notable_changes_YYYY-MM-DD.md` file one last time.
-    *   **Diligently check for accuracy and typos.** Ensure numbers, names, and descriptions are correct. Avoid placeholder text or embarrassing typos.
-    *   Ensure the tone is appropriate and engaging.
-3.  **Final Validation:**
-    *   Re-verify all authors, reviewers, and first-time contributors against the git history and GitHub. This is a critical step to prevent inaccuracies.
-4.  **Commit (With Permission):**
-    *   Stage both the new `notable_changes_YYYY-MM-DD.md` and `known_authors.md`.
+    *   Retrieve the correct login using `gh pr view <PR_NUMBER> --json author -q '.author.login'`. Do not guess.
+
+2.  **Final Audit and Validation (CRITICAL):**
+    *   Read through the entire generated `notable_changes_YYYY-MM-DD.md` file one last time.
+    *   **Do not trust cached or previously gathered information.** Re-verify a sample of the data against the primary sources (`git` and `gh`) to ensure absolute accuracy.
+    *   **Checklist for Final Validation:**
+        1.  **PR-Author-Reviewer Accuracy:** For at least 3-4 notable changes, re-run `gh pr view <PR_NUMBER> --json author,reviews` to confirm the author and reviewers are correct.
+        2.  **First-Time Contributor Accuracy:** If you identified any first-time contributors, re-run `git log --author="..." --reverse` for them to prove their first commit is within the report window. Verify the PR number associated with that commit.
+        3.  **Name and Handle Accuracy:** For a sample of authors/reviewers, re-run `gh api users/<LOGIN>` to ensure names are correct.
+        4.  **Media Asset Correctness:** For every embedded image or video, confirm the URL belongs to the PR it is listed under. **Do not skip this step.**
+        5.  **Typos and Formatting:** Read the entire document for clarity, tone, and simple typos.
+
+3.  **Commit (With Permission):**
+    *   Stage both the new `notable_changes_YYYY-MM-DD.md` and the updated `known_authors.md`.
     *   **CRITICAL:** Ask the user for explicit permission before creating a commit.
     *   If permission is granted, use a descriptive commit message like: `docs: Create weekly notable changes report for YYYY-MM-DD`.

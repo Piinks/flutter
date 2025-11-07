@@ -56,24 +56,35 @@ For each selected notable PR, gather the following information using the `gh` CL
     gh pr view <PR_NUMBER> --json body -q ".body"
     ```
 
-## Phase 3: First-Time Contributor Verification (CRITICAL)
+## Phase 3: First-Time Contributor Verification (EXTREMELY CRITICAL)
 
-This is a multi-step, critical process to accurately identify contributors whose *first ever* commit to this repository landed this week. Errors in this section are highly visible. Proceed with extreme caution.
+This is a multi-step, critical process to accurately identify contributors whose *first ever* commit to this repository landed this week. Errors in this section are highly visible and reflect poorly on the team. **Proceed with extreme caution and do not trust automated checks alone.**
 
 1.  **Get All Unique Authors This Week:** Get a list of all unique author names and emails from the specified date range.
     ```shell
     git log --since="<START_DATE>" --until="<END_DATE>" --pretty=format:"%an <%ae>" | sort -u
     ```
 2.  **Check `known_authors.md`:** Before checking the full git history, check if the author is already listed in the `known_authors.md` file. If they are, they are **not** a first-time contributor.
-3.  **Find First Commit Date:** For any author *not* in `known_authors.md`, find the date of their very first commit in the repository's history. **This is the most critical step to avoid errors.**
+3.  **Automated Check for First Commit Date:** For any author *not* in `known_authors.md`, perform an automated check to find the date of their very first commit. **This is a preliminary check and is not guaranteed to be accurate.** An author may have multiple emails or names associated with their git commits, so it is most reliable to use their GitHub login.
+    First, get the author's GitHub login from one of their PRs.
     ```shell
-    git log --author="<Full Name <email@example.com>>" --reverse --pretty=format:"%ci" | head -n 1
+    gh pr view <PR_NUMBER> --json author -q '.author.login'
     ```
-4.  **Verify First-Time Status:** Compare the commit date to the start of the reporting window. If the date is within the window, the author is a **first-time contributor**. If it is before the window, they are an existing contributor who was missing from `known_authors.md`.
-5.  **Get PR for First Contribution:** For each verified first-time contributor, find the commit hash and PR number of their first contribution to write the summary.
+    Then, use the login to find the first commit.
+    ```shell
+    git log --author="<LOGIN>" --reverse --pretty=format:"%ci" | head -n 1
+    ```
+4.  **Secondary Automated Check (More Reliable):** As a more reliable secondary check, use the `gh search` command to look for commits from the author before the reporting period.
+    ```shell
+    gh search commits --author-date "..<START_DATE>" --author="<LOGIN>" --repo "flutter/flutter"
+    ```
+    If this command returns any commits, the author is **not** a first-time contributor.
+5.  **Manual Verification (ULTIMATE SOURCE OF TRUTH):** The automated checks above can be unreliable. **If there is any doubt, you must manually verify the author's history.** This can be done by visiting their GitHub profile and looking at their contribution history to the `flutter/flutter` repository. If you are an AI agent, you must ask the user to perform this manual verification.
+6.  **Verify First-Time Status:** Compare the commit date to the start of the reporting window. If the date is within the window, and all checks (including manual verification) confirm it, the author is a **first-time contributor**. If it is before the window, they are an existing contributor who was missing from `known_authors.md`.
+7.  **Get PR for First Contribution:** For each verified first-time contributor, find the commit hash and PR number of their first contribution to write the summary.
     ```shell
     # Get the commit hash and subject line for their first commit
-    git log --author="<Full Name <email@example.com>>" --reverse --pretty=format:"%H - %s" | head -n 1
+    git log --author="<LOGIN>" --reverse --pretty=format:"%H - %s" | head -n 1
     ```
     Extract the PR number from the subject line (e.g., the number in `(#12345)`). This ensures you are crediting the correct work.
 
@@ -111,6 +122,10 @@ Assemble the gathered information into a new file named `notable_changes_YYYY-MM
     *   For **every unique author** who contributed this week (both new and existing), add their full name and GitHub login to the `known_authors.md` file if they are not already listed. **This is not just for first-time contributors.**
     *   Use the format: `- [Full Name](https://github.com/login)`
     *   Retrieve the correct login using `gh pr view <PR_NUMBER> --json author -q '.author.login'`. Do not guess.
+    *   After adding new authors, ensure the file is alphabetized and contains no duplicates. You can do this with the following command:
+        ```shell
+        sort -u -o known_authors.md known_authors.md
+        ```
 
 2.  **Final Audit and Validation (CRITICAL):**
     *   Read through the entire generated `notable_changes_YYYY-MM-DD.md` file one last time.

@@ -140,4 +140,4 @@ Assemble the gathered information into a new file named `notable_changes_YYYY-MM
 3.  **Commit (With Permission):**
     *   Stage both the new `notable_changes_YYYY-MM-DD.md` and the updated `known_authors.md`.
     *   **CRITICAL:** Ask the user for explicit permission before creating a commit.
-    *   If permission is granted, use a descriptive commit message like: `docs: Create weekly notable changes report for YYYY-MM-DD`.
+    *   If permission is granted, use a descriptive commit message like: `docs: Create weekly notable changes report for YYYY-MM-DD`. Then halt and await further instruction.

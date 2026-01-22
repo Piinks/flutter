@@ -1473,14 +1473,29 @@ class TabBar extends StatefulWidget implements PreferredSizeWidget {
   /// [AppBar] uses this size to compute its own preferred size.
   @override
   Size get preferredSize {
-    double maxHeight = _kTabHeight;
+    // Return a ContextAwareSize effectively, but since we can't easily iterate tabs with context here for default...
+    // Wait, we need to return ContextAwareSize to allow context access.
+    // The previous implementation calculated height from tabs immediately.
+    // Tabs might rely on context (our new feature).
+    // So we must return a ContextAwareSize.
+    
+    double maxFallbackHeight = _kTabHeight;
     for (final Widget item in tabs) {
       if (item is PreferredSizeWidget) {
-        final double itemHeight = item.preferredSize.height;
-        maxHeight = math.max(itemHeight, maxHeight);
+        maxFallbackHeight = math.max(item.preferredSize.height, maxFallbackHeight);
       }
     }
-    return Size.fromHeight(maxHeight + indicatorWeight);
+
+    return ContextAwareSize((BuildContext context) {
+      double maxHeight = _kTabHeight;
+      for (final Widget item in tabs) {
+        if (item is PreferredSizeWidget) {
+          final double itemHeight = item.preferredSize.resolve(context).height;
+          maxHeight = math.max(itemHeight, maxHeight);
+        }
+      }
+      return Size.fromHeight(maxHeight + indicatorWeight);
+    }, 0.0, maxFallbackHeight + indicatorWeight);
   }
 
   /// Returns whether the [TabBar] contains a tab with both text and icon.

@@ -31,6 +31,11 @@ abstract class PreferredSizeWidget implements Widget {
   /// For example the [Scaffold] only depends on its app bar's preferred
   /// height. In that case implementations of this method can just return
   /// `Size.fromHeight(myAppBarHeight)`.
+  ///
+  /// Implementations can return a [ContextAwareSize] if the preferred size
+  /// depends on the [BuildContext] (e.g. [MediaQuery] or [Theme]).
+  /// Consumers of this widget should use the [ContextAwareSizeResolution.resolve]
+  /// extension method to resolve the size with a context.
   Size get preferredSize;
 }
 
@@ -77,4 +82,47 @@ class PreferredSize extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) => child;
+}
+
+/// A [Size] that can be resolved with a [BuildContext].
+///
+/// This custom [Size] subclass allows [PreferredSizeWidget]s to depend on the
+/// [BuildContext] (and thus inherited widgets like [MediaQuery] or [Theme])
+/// when their preferred size is queried.
+///
+/// While [PreferredSizeWidget.preferredSize] returns a [Size], widgets that
+/// support context-aware sizing (like [Scaffold] or [AppBar]) will call
+/// [resolve] on the returned size. If the size is a [ContextAwareSize], the
+/// [resolver] callback is invoked with the context.
+///
+/// See also:
+///
+/// * [ContextAwareSizeResolution], an extension that adds the [resolve] method to [Size].
+class ContextAwareSize extends Size {
+  /// Creates a [Size] that is resolved using the provided [resolver] callback.
+  ///
+  /// The [width] and [height] are used as fallbacks if [resolve] is never
+  /// called (e.g. by a parent widget that does not support context-aware sizing).
+  /// They default to 0.0.
+  const ContextAwareSize(this.resolver, [double width = 0.0, double height = 0.0]) : super(width, height);
+
+  /// A callback that returns the actual [Size] given a [BuildContext].
+  final Size Function(BuildContext context) resolver;
+
+  @override
+  String toString() => 'ContextAwareSize($resolver)';
+}
+
+/// Utility extension to resolve a [Size] with a [BuildContext].
+extension ContextAwareSizeResolution on Size {
+  /// Resolves this [Size] using the provided [context].
+  ///
+  /// If this [Size] is a [ContextAwareSize], its [ContextAwareSize.resolver]
+  /// is called. Otherwise, returns `this`.
+  Size resolve(BuildContext context) {
+    if (this is ContextAwareSize) {
+      return (this as ContextAwareSize).resolver(context);
+    }
+    return this;
+  }
 }

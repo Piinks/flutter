@@ -1028,10 +1028,11 @@ to actually desugar the generator into something that uses an iterator class.
 Embrace code duplication in tests. It makes it easier to make new tests by copying and pasting them and
 tweaking a few things.
 
-Avoid test-global variables or other state shared between tests. They make writing tests easier but make
-maintaining them, debugging them, and refactoring code much harder. Prefer using `addTearDown` over
-`setUp` and `tearDown`. Using `addTearDown` instead can be called while the test is running at the point
-where the resources that need cleanup are created.
+Avoid test-global variables or state shared between tests; these make maintaining, debugging, and refactoring
+significantly harder. Instead of `setUp`, use local helper functions called within each test block to
+initialize state. To handle cleanup, prefer `addTearDown` over the global `tearDown` callback. `addTearDown`
+allows you to register cleanup logic at the exact point where a resource is created, ensuring it only runs
+if the initialization was successful.
 
 Specifically, we are trying to avoid shared state, which could persist across tests, and non-local
 side-effects, which would prevent being able to move a test to another file without breaking the test.

@@ -217,6 +217,7 @@ class SliverList extends SliverMultiBoxAdaptorWidget {
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
     int semanticIndexOffset = 0,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
   }) : super(
          delegate: SliverChildBuilderDelegate(
            itemBuilder,
@@ -226,6 +227,7 @@ class SliverList extends SliverMultiBoxAdaptorWidget {
            addRepaintBoundaries: addRepaintBoundaries,
            addSemanticIndexes: addSemanticIndexes,
            semanticIndexOffset: semanticIndexOffset,
+           onVisibleChildrenChanged: onVisibleChildrenChanged,
          ),
        );
 
@@ -294,6 +296,7 @@ class SliverList extends SliverMultiBoxAdaptorWidget {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
   }) : assert(
          findItemIndexCallback == null || findChildIndexCallback == null,
          'Cannot provide both findItemIndexCallback and findChildIndexCallback. '
@@ -330,6 +333,7 @@ class SliverList extends SliverMultiBoxAdaptorWidget {
            semanticIndexCallback: (Widget _, int index) {
              return index.isEven ? index ~/ 2 : null;
            },
+           onVisibleChildrenChanged: onVisibleChildrenChanged,
          ),
        );
 
@@ -364,12 +368,14 @@ class SliverList extends SliverMultiBoxAdaptorWidget {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
   }) : super(
          delegate: SliverChildListDelegate(
            children,
            addAutomaticKeepAlives: addAutomaticKeepAlives,
            addRepaintBoundaries: addRepaintBoundaries,
            addSemanticIndexes: addSemanticIndexes,
+           onVisibleChildrenChanged: onVisibleChildrenChanged,
          ),
        );
 
@@ -494,6 +500,7 @@ class SliverFixedExtentList extends SliverMultiBoxAdaptorWidget {
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
     int semanticIndexOffset = 0,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
   }) : super(
          delegate: SliverChildBuilderDelegate(
            itemBuilder,
@@ -503,6 +510,7 @@ class SliverFixedExtentList extends SliverMultiBoxAdaptorWidget {
            addRepaintBoundaries: addRepaintBoundaries,
            addSemanticIndexes: addSemanticIndexes,
            semanticIndexOffset: semanticIndexOffset,
+           onVisibleChildrenChanged: onVisibleChildrenChanged,
          ),
        );
 
@@ -544,12 +552,14 @@ class SliverFixedExtentList extends SliverMultiBoxAdaptorWidget {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
   }) : super(
          delegate: SliverChildListDelegate(
            children,
            addAutomaticKeepAlives: addAutomaticKeepAlives,
            addRepaintBoundaries: addRepaintBoundaries,
            addSemanticIndexes: addSemanticIndexes,
+           onVisibleChildrenChanged: onVisibleChildrenChanged,
          ),
        );
 
@@ -625,6 +635,7 @@ class SliverVariedExtentList extends SliverMultiBoxAdaptorWidget {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
   }) : super(
          delegate: SliverChildBuilderDelegate(
            itemBuilder,
@@ -633,6 +644,7 @@ class SliverVariedExtentList extends SliverMultiBoxAdaptorWidget {
            addAutomaticKeepAlives: addAutomaticKeepAlives,
            addRepaintBoundaries: addRepaintBoundaries,
            addSemanticIndexes: addSemanticIndexes,
+           onVisibleChildrenChanged: onVisibleChildrenChanged,
          ),
        );
 
@@ -652,12 +664,14 @@ class SliverVariedExtentList extends SliverMultiBoxAdaptorWidget {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
   }) : super(
          delegate: SliverChildListDelegate(
            children,
            addAutomaticKeepAlives: addAutomaticKeepAlives,
            addRepaintBoundaries: addRepaintBoundaries,
            addSemanticIndexes: addSemanticIndexes,
+           onVisibleChildrenChanged: onVisibleChildrenChanged,
          ),
        );
 
@@ -769,6 +783,7 @@ class SliverGrid extends SliverMultiBoxAdaptorWidget {
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
     int semanticIndexOffset = 0,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
   }) : super(
          delegate: SliverChildBuilderDelegate(
            itemBuilder,
@@ -778,6 +793,7 @@ class SliverGrid extends SliverMultiBoxAdaptorWidget {
            addRepaintBoundaries: addRepaintBoundaries,
            addSemanticIndexes: addSemanticIndexes,
            semanticIndexOffset: semanticIndexOffset,
+           onVisibleChildrenChanged: onVisibleChildrenChanged,
          ),
        );
 
@@ -797,13 +813,14 @@ class SliverGrid extends SliverMultiBoxAdaptorWidget {
     double crossAxisSpacing = 0.0,
     double childAspectRatio = 1.0,
     List<Widget> children = const <Widget>[],
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
   }) : gridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
          crossAxisCount: crossAxisCount,
          mainAxisSpacing: mainAxisSpacing,
          crossAxisSpacing: crossAxisSpacing,
          childAspectRatio: childAspectRatio,
        ),
-       super(delegate: SliverChildListDelegate(children));
+       super(delegate: SliverChildListDelegate(children, onVisibleChildrenChanged: onVisibleChildrenChanged));
 
   /// Creates a sliver that places multiple box children in a two dimensional
   /// arrangement with tiles that each have a maximum cross-axis extent.
@@ -821,13 +838,14 @@ class SliverGrid extends SliverMultiBoxAdaptorWidget {
     double crossAxisSpacing = 0.0,
     double childAspectRatio = 1.0,
     List<Widget> children = const <Widget>[],
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
   }) : gridDelegate = SliverGridDelegateWithMaxCrossAxisExtent(
          maxCrossAxisExtent: maxCrossAxisExtent,
          mainAxisSpacing: mainAxisSpacing,
          crossAxisSpacing: crossAxisSpacing,
          childAspectRatio: childAspectRatio,
        ),
-       super(delegate: SliverChildListDelegate(children));
+       super(delegate: SliverChildListDelegate(children, onVisibleChildrenChanged: onVisibleChildrenChanged));
 
   /// Creates a sliver that places multiple box children in a two dimensional
   /// arrangement.
@@ -873,6 +891,7 @@ class SliverGrid extends SliverMultiBoxAdaptorWidget {
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
     int semanticIndexOffset = 0,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
   }) : super(
          delegate: SliverChildListDelegate(
            children,
@@ -880,6 +899,7 @@ class SliverGrid extends SliverMultiBoxAdaptorWidget {
            addRepaintBoundaries: addRepaintBoundaries,
            addSemanticIndexes: addSemanticIndexes,
            semanticIndexOffset: semanticIndexOffset,
+           onVisibleChildrenChanged: onVisibleChildrenChanged,
          ),
        );
 
@@ -1218,11 +1238,14 @@ class SliverMultiBoxAdaptorElement extends RenderObjectElement
   }
 
   @override
-  void didFinishLayout() {
+  @override
+  void didFinishLayout({int firstIndex = 0, int lastIndex = 0, Iterable<VisibleChildData>? visibleChildren}) {
     assert(debugAssertChildListLocked());
-    final int firstIndex = _childElements.firstKey() ?? 0;
-    final int lastIndex = _childElements.lastKey() ?? 0;
-    (widget as SliverMultiBoxAdaptorWidget).delegate.didFinishLayout(firstIndex, lastIndex);
+    (widget as SliverMultiBoxAdaptorWidget).delegate.didFinishLayout(
+      firstIndex: firstIndex,
+      lastIndex: lastIndex,
+      visibleChildren: visibleChildren,
+    );
   }
 
   int? _currentlyUpdatingChildIndex;

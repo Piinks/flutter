@@ -227,6 +227,69 @@ void main() {
         expect(builderDelegate.shouldRebuild(builderDelegate), isTrue);
       }, variant: TargetPlatformVariant.all());
 
+      testWidgets('onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+        List<TwoDimensionalVisibleChildData>? visibleChildren;
+        final horizontalController = ScrollController();
+        final verticalController = ScrollController();
+        addTearDown(horizontalController.dispose);
+        addTearDown(verticalController.dispose);
+
+        final delegate = TwoDimensionalChildBuilderDelegate(
+          maxXIndex: 10,
+          maxYIndex: 10,
+          onVisibleChildrenChanged: (Iterable<TwoDimensionalVisibleChildData> children) {
+            visibleChildren = children.toList();
+          },
+          builder: (BuildContext context, ChildVicinity vicinity) {
+            return SizedBox(
+              height: 200,
+              width: 200,
+              child: Center(child: Text('C${vicinity.xIndex}:R${vicinity.yIndex}')),
+            );
+          },
+        );
+        addTearDown(delegate.dispose);
+
+        await tester.pumpWidget(
+          simpleBuilderTest(
+            delegate: delegate,
+            horizontalDetails: ScrollableDetails.horizontal(controller: horizontalController),
+            verticalDetails: ScrollableDetails.vertical(controller: verticalController),
+          ),
+        );
+        // simpleBuilderTest sets viewport to 800x600.
+        // items are 200x200.
+        // x indices: 0, 1, 2, 3 (4 items)
+        // y indices: 0, 1, 2 (3 items)
+        // Total: 12 items.
+        expect(visibleChildren!.length, 12);
+        expect(visibleChildren![0].vicinity, const ChildVicinity(xIndex: 0, yIndex: 0));
+        expect(visibleChildren![0].visibleAreaFraction, 1.0);
+
+        // Scroll horizontal by 100.
+        horizontalController.jumpTo(100.0);
+        await tester.pump();
+
+        // horizontal:
+        // Item x=0: -100 to 100 (visible 100, fraction 0.5)
+        // Item x=1,2,3: fully visible.
+        // Item x=4: 700 to 900 (visible 100, fraction 0.5)
+        // vertical remains same (3 items).
+        // Total x items: 5. Total y items: 3. Total: 15 items.
+        expect(visibleChildren!.length, 15);
+        final List<TwoDimensionalVisibleChildData> column0 = visibleChildren!.where((c) => c.vicinity.xIndex == 0).toList();
+        expect(column0.length, 3);
+        expect(column0[0].visibleFractionX, 0.5);
+        expect(column0[0].visibleFractionY, 1.0);
+        expect(column0[0].visibleAreaFraction, 0.5);
+
+        final List<TwoDimensionalVisibleChildData> column4 = visibleChildren!.where((c) => c.vicinity.xIndex == 4).toList();
+        expect(column4.length, 3);
+        expect(column4[0].visibleFractionX, 0.5);
+        expect(column4[0].visibleFractionY, 1.0);
+        expect(column4[0].visibleAreaFraction, 0.5);
+      });
+
       testWidgets('builder delegate supports automatic keep alive - default true', (
         WidgetTester tester,
       ) async {

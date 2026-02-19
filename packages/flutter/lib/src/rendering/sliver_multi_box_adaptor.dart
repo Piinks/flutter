@@ -8,6 +8,7 @@
 /// @docImport 'sliver_list.dart';
 library;
 
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:vector_math/vector_math_64.dart';
 
@@ -15,6 +16,55 @@ import 'box.dart';
 import 'object.dart';
 import 'sliver.dart';
 import 'sliver_fixed_extent_list.dart';
+
+/// The visibility metadata for a child that is currently visible in a [Viewport].
+@immutable
+class VisibleChildData {
+  /// Creates a [VisibleChildData].
+  const VisibleChildData({
+    required this.index,
+    required this.visibleExtent,
+    required this.totalExtent,
+    required this.viewportOffset,
+  });
+
+  /// The index of the child.
+  final int index;
+
+  /// The extent of the child that is currently visible in the viewport.
+  final double visibleExtent;
+
+  /// The total extent of the child in the main axis.
+  final double totalExtent;
+
+  /// The offset of the child's leading edge relative to the viewport's leading
+  /// edge.
+  ///
+  /// This value is negative if the child is partially scrolled off the leading
+  /// edge of the viewport.
+  final double viewportOffset;
+
+  /// The fraction of the child's extent that is currently visible.
+  double get visibleFraction => totalExtent == 0 ? 0 : visibleExtent / totalExtent;
+
+  @override
+  bool operator ==(Object other) {
+    if (other.runtimeType != runtimeType) {
+      return false;
+    }
+    return other is VisibleChildData
+        && other.index == index
+        && other.visibleExtent == visibleExtent
+        && other.totalExtent == totalExtent
+        && other.viewportOffset == viewportOffset;
+  }
+
+  @override
+  int get hashCode => Object.hash(index, visibleExtent, totalExtent, viewportOffset);
+
+  @override
+  String toString() => 'VisibleChildData(index: $index, visibleFraction: ${visibleFraction.toStringAsFixed(2)})';
+}
 
 /// A delegate used by [RenderSliverMultiBoxAdaptor] to manage its children.
 ///
@@ -123,7 +173,7 @@ abstract class RenderSliverBoxChildManager {
   void didStartLayout() {}
 
   /// Called at the end of layout to indicate that layout is now complete.
-  void didFinishLayout() {}
+  void didFinishLayout({int firstIndex = 0, int lastIndex = 0, Iterable<VisibleChildData>? visibleChildren}) {}
 
   /// In debug mode, asserts that this manager is not expecting any
   /// modifications to the [RenderSliverMultiBoxAdaptor]'s child list.
@@ -756,6 +806,39 @@ abstract class RenderSliverMultiBoxAdaptor extends RenderSliver
             : 'no children current live',
       ),
     );
+  }
+
+  /// Returns rich metadata about the children that are currently visible.
+  ///
+  /// The returned iterable provides information about each child that is
+  /// currently visible (even if only partially) in the viewport, including
+  /// its index, visibility extent, and position.
+  Iterable<VisibleChildData> calculateVisibleRange() {
+    final visibleChildren = <VisibleChildData>[];
+    RenderBox? child = firstChild;
+    final double viewportStart = constraints.scrollOffset;
+    final double viewportEnd = viewportStart + constraints.remainingPaintExtent;
+
+    while (child != null) {
+      final double childStart = childScrollOffset(child)!;
+      final double totalExtent = paintExtentOf(child);
+      final double childEnd = childStart + totalExtent;
+
+      if (childStart < viewportEnd && childEnd > viewportStart) {
+        final double visibleStart = math.max(childStart, viewportStart);
+        final double visibleEnd = math.min(childEnd, viewportEnd);
+        visibleChildren.add(VisibleChildData(
+          index: indexOf(child),
+          visibleExtent: math.max(0.0, visibleEnd - visibleStart),
+          totalExtent: totalExtent,
+          viewportOffset: childStart - viewportStart,
+        ));
+      } else if (visibleChildren.isNotEmpty) {
+        break;
+      }
+      child = childAfter(child);
+    }
+    return visibleChildren;
   }
 
   /// Asserts that the reified child list is not empty and has a contiguous

@@ -15,6 +15,7 @@ import 'box.dart';
 import 'layer.dart';
 import 'object.dart';
 import 'proxy_box.dart';
+import 'sliver_multi_box_adaptor.dart';
 import 'viewport.dart';
 import 'viewport_offset.dart';
 
@@ -52,6 +53,9 @@ abstract class ListWheelChildManager {
 
   /// Removes the child element corresponding with the given RenderBox.
   void removeChild(RenderBox child);
+
+  /// Called at the end of layout to indicate that layout is now complete.
+  void didFinishLayout({Iterable<VisibleChildData>? visibleChildren}) {}
 }
 
 /// [ParentData] for use with [RenderListWheelViewport].
@@ -784,6 +788,25 @@ class RenderListWheelViewport extends RenderBox
         ? _maxEstimatedScrollExtent
         : indexToScrollOffset(targetLastIndex);
     offset.applyContentDimensions(minScrollExtent, maxScrollExtent);
+
+    final visibleChildren = <VisibleChildData>[];
+    child = firstChild;
+    while (child != null) {
+      final int index = indexOf(child);
+      final double childViewportOffset = _getUntransformedPaintingCoordinateY(index * _itemExtent);
+      if (childViewportOffset < size.height && childViewportOffset + _itemExtent > 0) {
+        final double visibleStart = math.max(0.0, childViewportOffset);
+        final double visibleEnd = math.min(size.height, childViewportOffset + _itemExtent);
+        visibleChildren.add(VisibleChildData(
+          index: index,
+          visibleExtent: math.max(0.0, visibleEnd - visibleStart),
+          totalExtent: _itemExtent,
+          viewportOffset: childViewportOffset,
+        ));
+      }
+      child = childAfter(child);
+    }
+    childManager.didFinishLayout(visibleChildren: visibleChildren);
   }
 
   bool _shouldClipAtCurrentOffset() {

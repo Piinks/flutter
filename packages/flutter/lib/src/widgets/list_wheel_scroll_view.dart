@@ -21,6 +21,7 @@ import 'notification_listener.dart';
 import 'scroll_configuration.dart';
 import 'scroll_context.dart';
 import 'scroll_controller.dart';
+import 'scroll_delegate.dart';
 import 'scroll_metrics.dart';
 import 'scroll_notification.dart';
 import 'scroll_physics.dart';
@@ -74,6 +75,13 @@ abstract class ListWheelChildDelegate {
   /// Called to check whether this and the old delegate are actually 'different',
   /// so that the caller can decide to rebuild or not.
   bool shouldRebuild(covariant ListWheelChildDelegate oldDelegate);
+
+  /// Called at the end of layout to indicate the children that are currently
+  /// visible in the viewport.
+  ///
+  /// The [visibleChildren] argument provides rich metadata about each child
+  /// that is currently visible (even if only partially) in the viewport.
+  void didFinishLayout({Iterable<VisibleChildData>? visibleChildren}) {}
 }
 
 /// A delegate that supplies children for [ListWheelScrollView] using an
@@ -98,10 +106,22 @@ abstract class ListWheelChildDelegate {
 /// conditions.
 class ListWheelChildListDelegate extends ListWheelChildDelegate {
   /// Constructs the delegate from a concrete list of children.
-  ListWheelChildListDelegate({required this.children});
+  ListWheelChildListDelegate({
+    required this.children,
+    this.onVisibleChildrenChanged,
+  });
 
   /// The list containing all children that can be supplied.
   final List<Widget> children;
+
+  /// Called at the end of layout to indicate the children that are currently
+  /// visible in the viewport.
+  final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
+
+  @override
+  void didFinishLayout({Iterable<VisibleChildData>? visibleChildren}) {
+    onVisibleChildrenChanged?.call(visibleChildren ?? const <VisibleChildData>[]);
+  }
 
   @override
   int get estimatedChildCount => children.length;
@@ -142,10 +162,22 @@ class ListWheelChildListDelegate extends ListWheelChildDelegate {
 /// conditions.
 class ListWheelChildLoopingListDelegate extends ListWheelChildDelegate {
   /// Constructs the delegate from a concrete list of children.
-  ListWheelChildLoopingListDelegate({required this.children});
+  ListWheelChildLoopingListDelegate({
+    required this.children,
+    this.onVisibleChildrenChanged,
+  });
 
   /// The list containing all children that can be supplied.
   final List<Widget> children;
+
+  /// Called at the end of layout to indicate the children that are currently
+  /// visible in the viewport.
+  final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
+
+  @override
+  void didFinishLayout({Iterable<VisibleChildData>? visibleChildren}) {
+    onVisibleChildrenChanged?.call(visibleChildren ?? const <VisibleChildData>[]);
+  }
 
   @override
   int? get estimatedChildCount => null;
@@ -176,10 +208,18 @@ class ListWheelChildLoopingListDelegate extends ListWheelChildDelegate {
 /// not have to be built until they are displayed.
 class ListWheelChildBuilderDelegate extends ListWheelChildDelegate {
   /// Constructs the delegate from a builder callback.
-  ListWheelChildBuilderDelegate({required this.builder, this.childCount});
+  ListWheelChildBuilderDelegate({
+    required this.builder,
+    this.childCount,
+    this.onVisibleChildrenChanged,
+  });
 
   /// Called lazily to build children.
   final NullableIndexedWidgetBuilder builder;
+
+  /// Called at the end of layout to indicate the children that are currently
+  /// visible in the viewport.
+  final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
 
   /// {@template flutter.widgets.ListWheelChildBuilderDelegate.childCount}
   /// If non-null, [childCount] is the maximum number of children that can be
@@ -209,6 +249,11 @@ class ListWheelChildBuilderDelegate extends ListWheelChildDelegate {
   @override
   bool shouldRebuild(covariant ListWheelChildBuilderDelegate oldDelegate) {
     return builder != oldDelegate.builder || childCount != oldDelegate.childCount;
+  }
+
+  @override
+  void didFinishLayout({Iterable<VisibleChildData>? visibleChildren}) {
+    onVisibleChildrenChanged?.call(visibleChildren ?? const <VisibleChildData>[]);
   }
 }
 
@@ -597,6 +642,7 @@ class ListWheelScrollView extends StatefulWidget {
     this.scrollBehavior,
     this.dragStartBehavior = DragStartBehavior.start,
     this.changeReportingBehavior = ChangeReportingBehavior.onScrollUpdate,
+    this.onVisibleChildrenChanged,
     required List<Widget> children,
   }) : assert(diameterRatio > 0.0, RenderListWheelViewport.diameterRatioZeroMessage),
        assert(perspective > 0),
@@ -609,7 +655,7 @@ class ListWheelScrollView extends StatefulWidget {
          !renderChildrenOutsideViewport || clipBehavior == Clip.none,
          RenderListWheelViewport.clipBehaviorAndRenderChildrenOutsideViewportConflict,
        ),
-       childDelegate = ListWheelChildListDelegate(children: children);
+       childDelegate = ListWheelChildListDelegate(children: children, onVisibleChildrenChanged: onVisibleChildrenChanged);
 
   /// Constructs a list in which children are scrolled a wheel. Its children
   /// are managed by a delegate and are lazily built during layout.
@@ -633,6 +679,7 @@ class ListWheelScrollView extends StatefulWidget {
     this.scrollBehavior,
     this.dragStartBehavior = DragStartBehavior.start,
     this.changeReportingBehavior = ChangeReportingBehavior.onScrollUpdate,
+    this.onVisibleChildrenChanged,
     required this.childDelegate,
   }) : assert(diameterRatio > 0.0, RenderListWheelViewport.diameterRatioZeroMessage),
        assert(perspective > 0),
@@ -739,6 +786,9 @@ class ListWheelScrollView extends StatefulWidget {
   /// This determines when the [onSelectedItemChanged] callback is called.
   /// Defaults to [ChangeReportingBehavior.onScrollUpdate].
   final ChangeReportingBehavior changeReportingBehavior;
+
+  /// {@macro flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
+  final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
 
   @override
   State<ListWheelScrollView> createState() => _ListWheelScrollViewState();
@@ -944,6 +994,11 @@ class ListWheelElement extends RenderObjectElement implements ListWheelChildMana
     }
 
     return newChild;
+  }
+
+  @override
+  void didFinishLayout({Iterable<VisibleChildData>? visibleChildren}) {
+    (widget as ListWheelViewport).childDelegate.didFinishLayout(visibleChildren: visibleChildren);
   }
 
   @override

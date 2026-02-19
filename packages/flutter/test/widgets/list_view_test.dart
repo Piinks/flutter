@@ -15,7 +15,7 @@ class TestSliverChildListDelegate extends SliverChildListDelegate {
   final List<String> log = <String>[];
 
   @override
-  void didFinishLayout(int firstIndex, int lastIndex) {
+  void didFinishLayout({int firstIndex = 0, int lastIndex = 0, Iterable<VisibleChildData>? visibleChildren}) {
     log.add('didFinishLayout firstIndex=$firstIndex lastIndex=$lastIndex');
   }
 }
@@ -1173,5 +1173,60 @@ void main() {
       ),
       throwsAssertionError,
     );
+  });
+
+  testWidgets('ListView onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+    List<VisibleChildData>? visibleChildren;
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: ListView.builder(
+          itemExtent: 100.0,
+          itemCount: 20,
+          onVisibleChildrenChanged: (Iterable<VisibleChildData> children) {
+            visibleChildren = children.toList();
+          },
+          itemBuilder: (BuildContext context, int index) {
+            return SizedBox(height: 100.0, child: Text('$index'));
+          },
+        ),
+      ),
+    );
+
+    // Default viewport height is 600.
+    // Visible: 0, 1, 2, 3, 4, 5 (6 items)
+    expect(visibleChildren!.length, 6);
+    expect(visibleChildren![0].index, 0);
+    expect(visibleChildren![0].visibleFraction, 1.0);
+    expect(visibleChildren![5].index, 5);
+    expect(visibleChildren![5].visibleFraction, 1.0);
+
+    await tester.drag(find.byType(ListView), const Offset(0.0, -50.0));
+    await tester.pump();
+
+    // Scrolled by 50.
+    // Item 0: -50 to 50 (partially visible, 0.5 fraction)
+    // Item 6: 550 to 650 (partially visible: 550 to 600 is on screen, 0.5 fraction)
+    expect(visibleChildren!.length, 7);
+    expect(visibleChildren![0].index, 0);
+    expect(visibleChildren![0].visibleFraction, 0.5);
+    expect(visibleChildren![0].viewportOffset, -50.0);
+    expect(visibleChildren![6].index, 6);
+    expect(visibleChildren![6].visibleFraction, 0.5);
+    expect(visibleChildren![6].viewportOffset, 550.0);
+
+    await tester.drag(find.byType(ListView), const Offset(0.0, -100.0));
+    await tester.pump();
+
+    // Scrolled by 150 total.
+    // Item 0: -150 to -50 (off screen)
+    // Item 1: -50 to 50 (partially visible, 0.5 fraction)
+    // Item 7: 550 to 650 (partially visible, 0.5 fraction)
+    expect(visibleChildren!.length, 7);
+    expect(visibleChildren![0].index, 1);
+    expect(visibleChildren![0].visibleFraction, 0.5);
+    expect(visibleChildren![6].index, 7);
+    expect(visibleChildren![6].visibleFraction, 0.5);
   });
 }

@@ -1307,6 +1307,8 @@ class ListView extends BoxScrollView {
   /// `addSemanticIndexes` argument corresponds to the
   /// [SliverChildListDelegate.addSemanticIndexes] property. None
   /// may be null.
+  ///
+  /// {@macro flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
   ListView({
     super.key,
     super.scrollDirection,
@@ -1322,6 +1324,7 @@ class ListView extends BoxScrollView {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
     @Deprecated(
       'Use scrollCacheExtent instead. '
       'This feature was deprecated after v3.41.0-0.0.pre.',
@@ -1346,6 +1349,7 @@ class ListView extends BoxScrollView {
          addAutomaticKeepAlives: addAutomaticKeepAlives,
          addRepaintBoundaries: addRepaintBoundaries,
          addSemanticIndexes: addSemanticIndexes,
+         onVisibleChildrenChanged: onVisibleChildrenChanged,
        ),
        super(semanticChildCount: semanticChildCount ?? children.length);
 
@@ -1387,6 +1391,8 @@ class ListView extends BoxScrollView {
   /// `addSemanticIndexes` argument corresponds to the
   /// [SliverChildBuilderDelegate.addSemanticIndexes] property. None may be
   /// null.
+  ///
+  /// {@macro flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
   ListView.builder({
     super.key,
     super.scrollDirection,
@@ -1405,6 +1411,7 @@ class ListView extends BoxScrollView {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
     @Deprecated(
       'Use scrollCacheExtent instead. '
       'This feature was deprecated after v3.41.0-0.0.pre.',
@@ -1432,6 +1439,7 @@ class ListView extends BoxScrollView {
          addAutomaticKeepAlives: addAutomaticKeepAlives,
          addRepaintBoundaries: addRepaintBoundaries,
          addSemanticIndexes: addSemanticIndexes,
+         onVisibleChildrenChanged: onVisibleChildrenChanged,
        ),
        super(semanticChildCount: semanticChildCount ?? itemCount);
 
@@ -1500,6 +1508,8 @@ class ListView extends BoxScrollView {
   /// `addSemanticIndexes` argument corresponds to the
   /// [SliverChildBuilderDelegate.addSemanticIndexes] property. None may be
   /// null.
+  ///
+  /// {@macro flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
   ListView.separated({
     super.key,
     super.scrollDirection,
@@ -1525,6 +1535,7 @@ class ListView extends BoxScrollView {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
     @Deprecated(
       'Use scrollCacheExtent instead. '
       'This feature was deprecated after v3.41.0-0.0.pre.',
@@ -1566,6 +1577,7 @@ class ListView extends BoxScrollView {
          semanticIndexCallback: (Widget widget, int index) {
            return index.isEven ? index ~/ 2 : null;
          },
+         onVisibleChildrenChanged: onVisibleChildrenChanged,
        ),
        super(semanticChildCount: itemCount);
 
@@ -2110,6 +2122,8 @@ class GridView extends BoxScrollView {
   /// See also:
   ///
   ///  * [SliverGrid.count], the equivalent constructor for [SliverGrid].
+  ///
+  /// {@macro flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
   GridView.count({
     super.key,
     super.scrollDirection,
@@ -2127,6 +2141,7 @@ class GridView extends BoxScrollView {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
     @Deprecated(
       'Use scrollCacheExtent instead. '
       'This feature was deprecated after v3.41.0-0.0.pre.',
@@ -2152,6 +2167,7 @@ class GridView extends BoxScrollView {
          addAutomaticKeepAlives: addAutomaticKeepAlives,
          addRepaintBoundaries: addRepaintBoundaries,
          addSemanticIndexes: addSemanticIndexes,
+         onVisibleChildrenChanged: onVisibleChildrenChanged,
        ),
        super(semanticChildCount: semanticChildCount ?? children.length);
 
@@ -2169,6 +2185,8 @@ class GridView extends BoxScrollView {
   /// See also:
   ///
   ///  * [SliverGrid.extent], the equivalent constructor for [SliverGrid].
+  ///
+  /// {@macro flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
   GridView.extent({
     super.key,
     super.scrollDirection,
@@ -2186,6 +2204,7 @@ class GridView extends BoxScrollView {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
     @Deprecated(
       'Use scrollCacheExtent instead. '
       'This feature was deprecated after v3.41.0-0.0.pre.',
@@ -2211,6 +2230,7 @@ class GridView extends BoxScrollView {
          addAutomaticKeepAlives: addAutomaticKeepAlives,
          addRepaintBoundaries: addRepaintBoundaries,
          addSemanticIndexes: addSemanticIndexes,
+         onVisibleChildrenChanged: onVisibleChildrenChanged,
        ),
        super(semanticChildCount: semanticChildCount ?? children.length);
 

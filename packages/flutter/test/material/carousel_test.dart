@@ -40,6 +40,64 @@ void main() {
     );
   });
 
+  testWidgets('CarouselView onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+    List<VisibleChildData>? visibleChildren;
+    final controller = CarouselController();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CarouselView(
+            controller: controller,
+            itemExtent: 200,
+            onVisibleChildrenChanged: (Iterable<VisibleChildData> children) {
+              visibleChildren = children.toList();
+            },
+            children: List<Widget>.generate(10, (int index) {
+              return SizedBox(height: 200.0, width: 200.0, child: Text('Item $index'));
+            }),
+          ),
+        ),
+      ),
+    );
+
+    // Viewport width is 800. itemExtent is 200.
+    // Visible: 0, 1, 2, 3
+    expect(visibleChildren!.length, 4);
+    expect(visibleChildren![0].index, 0);
+    expect(visibleChildren![0].visibleFraction, 1.0);
+
+    controller.jumpTo(100.0);
+    await tester.pump();
+
+    // Scrolled by 100.
+    // In CarouselView, item 0 and the last visible item (item 4) shrink
+    // instead of scrolling off until they reach minExtent.
+    // So they remain fully visible (visibleFraction 1.0).
+    expect(visibleChildren!.length, 5);
+    expect(visibleChildren![0].index, 0);
+    expect(visibleChildren![0].visibleFraction, 1.0);
+    expect(visibleChildren![0].totalExtent, 100.0);
+    expect(visibleChildren![4].index, 4);
+    expect(visibleChildren![4].visibleFraction, 1.0);
+    expect(visibleChildren![4].totalExtent, 100.0);
+
+    controller.jumpTo(300.0);
+    await tester.pump();
+
+    // Scrolled by 300 total.
+    // In CarouselView, the first visible item (item 1) and the last visible item (item 5)
+    // shrink instead of scrolling off until they reach minExtent.
+    // So they remain fully visible (visibleFraction 1.0).
+    expect(visibleChildren!.length, 5);
+    expect(visibleChildren![0].index, 1);
+    expect(visibleChildren![0].visibleFraction, 1.0);
+    expect(visibleChildren![0].totalExtent, 100.0);
+    expect(visibleChildren![4].index, 5);
+    expect(visibleChildren![4].visibleFraction, 1.0);
+    expect(visibleChildren![4].totalExtent, 100.0);
+  });
+
   testWidgets('CarouselView items customization', (WidgetTester tester) async {
     final Key key = UniqueKey();
     final theme = ThemeData();

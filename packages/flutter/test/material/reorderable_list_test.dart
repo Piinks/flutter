@@ -2774,6 +2774,55 @@ void main() {
     );
     expect(tester.getSize(find.byType(ReorderableListView)), Size.zero);
   });
+
+  testWidgets('ReorderableListView onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+    List<VisibleChildData>? visibleChildren;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 600,
+            child: ReorderableListView.builder(
+              itemExtent: 100,
+              onVisibleChildrenChanged: (Iterable<VisibleChildData> children) {
+                visibleChildren = children.toList();
+              },
+              itemBuilder: (BuildContext context, int index) {
+                return SizedBox(
+                  key: ValueKey<int>(index),
+                  height: 100.0,
+                  child: Text('Item $index'),
+                );
+              },
+              itemCount: 20,
+              onReorderItem: (_, _) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Viewport height is 600. itemExtent is 100.
+    // Visible: 0, 1, 2, 3, 4, 5
+    expect(visibleChildren!.length, 6);
+    expect(visibleChildren![0].index, 0);
+    expect(visibleChildren![0].visibleFraction, 1.0);
+
+    await tester.drag(find.byType(ReorderableListView), const Offset(0.0, -50.0));
+    await tester.pump();
+
+    // Scrolled by 30 (50 total - 20 drag slop).
+    // Item 0: -30 to 70 (visible, 0.7 fraction)
+    // Item 6: 570 to 670 (visible: 570 to 600 is on screen, 0.3 fraction)
+    expect(visibleChildren!.length, 7);
+    expect(visibleChildren![0].index, 0);
+    expect(visibleChildren![0].visibleFraction, 0.7);
+    expect(visibleChildren![0].viewportOffset, -30.0);
+    expect(visibleChildren![6].index, 6);
+    expect(visibleChildren![6].visibleFraction, closeTo(0.3, 0.001));
+    expect(visibleChildren![6].viewportOffset, 570.0);
+  });
 }
 
 Future<void> longPressDrag(WidgetTester tester, Offset start, Offset end) async {

@@ -336,6 +336,10 @@ class RenderSliverList extends RenderSliverMultiBoxAdaptor {
     if (estimatedMaxScrollOffset == endScrollOffset) {
       childManager.setDidUnderflow(true);
     }
-    childManager.didFinishLayout();
+    childManager.didFinishLayout(
+      firstIndex: indexOf(firstChild!),
+      lastIndex: indexOf(lastChild!),
+      visibleChildren: calculateVisibleRange(),
+    );
   }
 }

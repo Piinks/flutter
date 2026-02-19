@@ -591,6 +591,14 @@ class RenderSliverGrid extends RenderSliverMultiBoxAdaptor {
   }
 
   @override
+  double paintExtentOf(RenderBox child) {
+    assert(child.hasSize);
+    return _currentLayout.getGeometryForChildIndex(indexOf(child)).mainAxisExtent;
+  }
+
+  late SliverGridLayout _currentLayout;
+
+  @override
   void performLayout() {
     final SliverConstraints constraints = this.constraints;
     childManager.didStartLayout();
@@ -602,7 +610,8 @@ class RenderSliverGrid extends RenderSliverMultiBoxAdaptor {
     assert(remainingExtent >= 0.0);
     final double targetEndScrollOffset = scrollOffset + remainingExtent;
 
-    final SliverGridLayout layout = _gridDelegate.getLayout(constraints);
+    _currentLayout = _gridDelegate.getLayout(constraints);
+    final SliverGridLayout layout = _currentLayout;
 
     final int firstIndex = layout.getMinChildIndexForScrollOffset(scrollOffset);
     final int? targetLastIndex = targetEndScrollOffset.isFinite
@@ -724,6 +733,10 @@ class RenderSliverGrid extends RenderSliverMultiBoxAdaptor {
     if (estimatedTotalExtent == trailingScrollOffset) {
       childManager.setDidUnderflow(true);
     }
-    childManager.didFinishLayout();
+    childManager.didFinishLayout(
+      firstIndex: indexOf(firstChild!),
+      lastIndex: indexOf(lastChild!),
+      visibleChildren: calculateVisibleRange(),
+    );
   }
 }

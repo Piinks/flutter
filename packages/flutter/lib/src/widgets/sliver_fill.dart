@@ -39,7 +39,71 @@ class SliverFillViewport extends StatelessWidget {
     required this.delegate,
     this.viewportFraction = 1.0,
     this.padEnds = true,
+    this.onVisibleChildrenChanged,
   }) : assert(viewportFraction > 0.0);
+
+  /// Creates a sliver whose box children each fill the viewport from an
+  /// explicit [List] of widgets.
+  ///
+  /// This constructor is appropriate for slivers with a small number of
+  /// children because constructing the [List] requires doing work for every
+  /// child that could possibly be displayed in the sliver, instead of just
+  /// those children that are actually visible.
+  ///
+  /// Like other widgets in the framework, this widget expects that
+  /// the [children] list will not be mutated after it has been passed in here.
+  /// See the documentation at [SliverChildListDelegate.children] for more details.
+  SliverFillViewport.list({
+    super.key,
+    required List<Widget> children,
+    this.viewportFraction = 1.0,
+    this.padEnds = true,
+    bool addAutomaticKeepAlives = true,
+    bool addRepaintBoundaries = true,
+    bool addSemanticIndexes = true,
+    this.onVisibleChildrenChanged,
+  }) : delegate = SliverChildListDelegate(
+         children,
+         addAutomaticKeepAlives: addAutomaticKeepAlives,
+         addRepaintBoundaries: addRepaintBoundaries,
+         addSemanticIndexes: addSemanticIndexes,
+         onVisibleChildrenChanged: onVisibleChildrenChanged,
+       ),
+       assert(viewportFraction > 0.0);
+
+  /// Creates a sliver whose box children each fill the viewport using widgets
+  /// that are created on demand.
+  ///
+  /// This constructor is appropriate for slivers with a large (or infinite)
+  /// number of children because the builder is called only for those children
+  /// that are actually visible.
+  ///
+  /// Providing a non-null [itemCount] lets the [SliverFillViewport] compute the
+  /// maximum scroll extent.
+  ///
+  /// [itemBuilder] will be called only with indices greater than or equal to
+  /// zero and less than [itemCount].
+  ///
+  /// {@macro flutter.widgets.ListView.builder.itemBuilder}
+  SliverFillViewport.builder({
+    super.key,
+    required NullableIndexedWidgetBuilder itemBuilder,
+    int? itemCount,
+    this.viewportFraction = 1.0,
+    this.padEnds = true,
+    bool addAutomaticKeepAlives = true,
+    bool addRepaintBoundaries = true,
+    bool addSemanticIndexes = true,
+    this.onVisibleChildrenChanged,
+  }) : delegate = SliverChildBuilderDelegate(
+         itemBuilder,
+         childCount: itemCount,
+         addAutomaticKeepAlives: addAutomaticKeepAlives,
+         addRepaintBoundaries: addRepaintBoundaries,
+         addSemanticIndexes: addSemanticIndexes,
+         onVisibleChildrenChanged: onVisibleChildrenChanged,
+       ),
+       assert(viewportFraction > 0.0);
 
   /// The fraction of the viewport that each child should fill in the main axis.
   ///
@@ -64,16 +128,52 @@ class SliverFillViewport extends StatelessWidget {
   /// {@macro flutter.widgets.SliverMultiBoxAdaptorWidget.delegate}
   final SliverChildDelegate delegate;
 
+  /// {@macro flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
+  final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
+
   @override
   Widget build(BuildContext context) {
     return _SliverFractionalPadding(
       viewportFraction: padEnds ? clampDouble(1 - viewportFraction, 0, 1) / 2 : 0,
       sliver: _SliverFillViewportRenderObjectWidget(
         viewportFraction: viewportFraction,
-        delegate: delegate,
+        delegate: onVisibleChildrenChanged != null ? _DelegateWithCallback(delegate, onVisibleChildrenChanged!) : delegate,
       ),
     );
   }
+}
+
+class _DelegateWithCallback extends SliverChildDelegate {
+  _DelegateWithCallback(this.delegate, this.onVisibleChildrenChanged);
+
+  final SliverChildDelegate delegate;
+  final VisibleChildrenChangedCallback onVisibleChildrenChanged;
+
+  @override
+  Widget? build(BuildContext context, int index) => delegate.build(context, index);
+
+  @override
+  int? get estimatedChildCount => delegate.estimatedChildCount;
+
+  @override
+  double? estimateMaxScrollOffset(
+    int firstIndex,
+    int lastIndex,
+    double leadingScrollOffset,
+    double trailingScrollOffset,
+  ) => delegate.estimateMaxScrollOffset(firstIndex, lastIndex, leadingScrollOffset, trailingScrollOffset);
+
+  @override
+  void didFinishLayout({int firstIndex = 0, int lastIndex = 0, Iterable<VisibleChildData>? visibleChildren}) {
+    onVisibleChildrenChanged(visibleChildren ?? const <VisibleChildData>[]);
+    delegate.didFinishLayout(firstIndex: firstIndex, lastIndex: lastIndex, visibleChildren: visibleChildren);
+  }
+
+  @override
+  bool shouldRebuild(covariant _DelegateWithCallback oldDelegate) => delegate.shouldRebuild(oldDelegate.delegate) || onVisibleChildrenChanged != oldDelegate.onVisibleChildrenChanged;
+
+  @override
+  int? findIndexByKey(Key key) => delegate.findIndexByKey(key);
 }
 
 class _SliverFillViewportRenderObjectWidget extends SliverMultiBoxAdaptorWidget {

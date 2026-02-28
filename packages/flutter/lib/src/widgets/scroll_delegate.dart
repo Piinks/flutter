@@ -537,8 +537,19 @@ class SliverChildBuilderDelegate extends SliverChildDelegate {
   /// {@template flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
   /// The `onVisibleChildrenChanged` callback is called whenever the layout
   /// finishes and the set of visible items or their visibility metadata might
-  /// have changed. It provides rich metadata about each child that is
-  /// currently visible (even if only partially) in the viewport.
+  /// have changed.
+  ///
+  /// The `onVisibleChildrenChanged` callback provides rich metadata about
+  /// each child that is currently visible (even if only partially) in the
+  /// viewport.
+  ///
+  /// ## Performance
+  ///
+  /// This callback updates the list of visible children during the layout phase,
+  /// which may happen multiple times per frame (e.g., during scrolling).
+  /// Avoid performing expensive operations directly in this callback.
+  /// If you need to trigger side effects, consider scheduling them for the next
+  /// frame or throttling the updates.
   /// {@endtemplate}
   final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
 

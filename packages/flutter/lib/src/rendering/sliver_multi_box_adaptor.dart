@@ -41,7 +41,8 @@ class VisibleChildData {
   /// edge.
   ///
   /// This value is negative if the child is partially scrolled off the leading
-  /// edge of the viewport.
+  /// edge of the viewport. For example, if the child is at the top of the
+  /// viewport and scrolled up by 10 pixels, this value will be -10.0.
   final double viewportOffset;
 
   /// The fraction of the child's extent that is currently visible.

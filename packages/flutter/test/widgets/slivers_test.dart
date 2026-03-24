@@ -7,7 +7,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-
 import 'semantics_tester.dart';
 import 'widgets_app_tester.dart';
 
@@ -1350,7 +1349,9 @@ void main() {
     expect(secondTapped, 1);
   });
 
-  testWidgets('SliverFixedExtentList.builder onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+  testWidgets('SliverFixedExtentList.builder onVisibleChildrenChanged reports rich metadata', (
+    WidgetTester tester,
+  ) async {
     List<VisibleChildData>? visibleChildren;
 
     await tester.pumpWidget(

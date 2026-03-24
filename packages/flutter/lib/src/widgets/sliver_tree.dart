@@ -738,8 +738,8 @@ class _TreeSliverState<T> extends State<TreeSliver<T>>
       findChildIndexCallback: widget.findChildIndexCallback,
       indentation: widget.indentation.value,
       onVisibleChildrenChanged: widget.onVisibleChildrenChanged,
-      );
-      }
+    );
+  }
   // TreeStateMixin Implementation
 
   @override

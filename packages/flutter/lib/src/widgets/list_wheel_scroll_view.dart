@@ -106,10 +106,7 @@ abstract class ListWheelChildDelegate {
 /// conditions.
 class ListWheelChildListDelegate extends ListWheelChildDelegate {
   /// Constructs the delegate from a concrete list of children.
-  ListWheelChildListDelegate({
-    required this.children,
-    this.onVisibleChildrenChanged,
-  });
+  ListWheelChildListDelegate({required this.children, this.onVisibleChildrenChanged});
 
   /// The list containing all children that can be supplied.
   final List<Widget> children;
@@ -162,10 +159,7 @@ class ListWheelChildListDelegate extends ListWheelChildDelegate {
 /// conditions.
 class ListWheelChildLoopingListDelegate extends ListWheelChildDelegate {
   /// Constructs the delegate from a concrete list of children.
-  ListWheelChildLoopingListDelegate({
-    required this.children,
-    this.onVisibleChildrenChanged,
-  });
+  ListWheelChildLoopingListDelegate({required this.children, this.onVisibleChildrenChanged});
 
   /// The list containing all children that can be supplied.
   final List<Widget> children;
@@ -655,7 +649,10 @@ class ListWheelScrollView extends StatefulWidget {
          !renderChildrenOutsideViewport || clipBehavior == Clip.none,
          RenderListWheelViewport.clipBehaviorAndRenderChildrenOutsideViewportConflict,
        ),
-       childDelegate = ListWheelChildListDelegate(children: children, onVisibleChildrenChanged: onVisibleChildrenChanged);
+       childDelegate = ListWheelChildListDelegate(
+         children: children,
+         onVisibleChildrenChanged: onVisibleChildrenChanged,
+       );
 
   /// Constructs a list in which children are scrolled a wheel. Its children
   /// are managed by a delegate and are lazily built during layout.

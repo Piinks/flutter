@@ -40,7 +40,9 @@ void main() {
     );
   });
 
-  testWidgets('CarouselView onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+  testWidgets('CarouselView onVisibleChildrenChanged reports rich metadata', (
+    WidgetTester tester,
+  ) async {
     List<VisibleChildData>? visibleChildren;
     final controller = CarouselController();
 
@@ -2478,7 +2480,9 @@ void main() {
     expect(position.pixels, 0.0);
   });
 
-  testWidgets('CarouselView.weighted onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+  testWidgets('CarouselView.weighted onVisibleChildrenChanged reports rich metadata', (
+    WidgetTester tester,
+  ) async {
     List<VisibleChildData>? visibleChildren;
     final controller = CarouselController();
 

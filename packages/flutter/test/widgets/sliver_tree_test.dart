@@ -1008,7 +1008,9 @@ void main() {
     expect(tester.getTopLeft(find.byType(ColoredBox)), const Offset(0, -5));
   });
 
-  testWidgets('TreeSliver onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+  testWidgets('TreeSliver onVisibleChildrenChanged reports rich metadata', (
+    WidgetTester tester,
+  ) async {
     List<VisibleChildData>? visibleChildren;
 
     await tester.pumpWidget(
@@ -1025,12 +1027,18 @@ void main() {
                 onVisibleChildrenChanged: (Iterable<VisibleChildData> children) {
                   visibleChildren = children.toList();
                 },
-                treeNodeBuilder: (BuildContext context, TreeSliverNode<Object?> node, AnimationStyle animationStyle) {
-                  return SizedBox(height: 100.0, child: Text('Node ${node.content}'));
-                },
-                treeRowExtentBuilder: (TreeSliverNode<Object?> node, SliverLayoutDimensions dimensions) {
-                  return 100.0;
-                },
+                treeNodeBuilder:
+                    (
+                      BuildContext context,
+                      TreeSliverNode<Object?> node,
+                      AnimationStyle animationStyle,
+                    ) {
+                      return SizedBox(height: 100.0, child: Text('Node ${node.content}'));
+                    },
+                treeRowExtentBuilder:
+                    (TreeSliverNode<Object?> node, SliverLayoutDimensions dimensions) {
+                      return 100.0;
+                    },
               ),
             ],
           ),

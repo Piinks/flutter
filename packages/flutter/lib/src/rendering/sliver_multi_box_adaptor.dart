@@ -53,18 +53,19 @@ class VisibleChildData {
     if (other.runtimeType != runtimeType) {
       return false;
     }
-    return other is VisibleChildData
-        && other.index == index
-        && other.visibleExtent == visibleExtent
-        && other.totalExtent == totalExtent
-        && other.viewportOffset == viewportOffset;
+    return other is VisibleChildData &&
+        other.index == index &&
+        other.visibleExtent == visibleExtent &&
+        other.totalExtent == totalExtent &&
+        other.viewportOffset == viewportOffset;
   }
 
   @override
   int get hashCode => Object.hash(index, visibleExtent, totalExtent, viewportOffset);
 
   @override
-  String toString() => 'VisibleChildData(index: $index, visibleFraction: ${visibleFraction.toStringAsFixed(2)})';
+  String toString() =>
+      'VisibleChildData(index: $index, visibleFraction: ${visibleFraction.toStringAsFixed(2)})';
 }
 
 /// A delegate used by [RenderSliverMultiBoxAdaptor] to manage its children.
@@ -174,7 +175,11 @@ abstract class RenderSliverBoxChildManager {
   void didStartLayout() {}
 
   /// Called at the end of layout to indicate that layout is now complete.
-  void didFinishLayout({int firstIndex = 0, int lastIndex = 0, Iterable<VisibleChildData>? visibleChildren}) {}
+  void didFinishLayout({
+    int firstIndex = 0,
+    int lastIndex = 0,
+    Iterable<VisibleChildData>? visibleChildren,
+  }) {}
 
   /// In debug mode, asserts that this manager is not expecting any
   /// modifications to the [RenderSliverMultiBoxAdaptor]'s child list.
@@ -828,12 +833,14 @@ abstract class RenderSliverMultiBoxAdaptor extends RenderSliver
       if (childStart < viewportEnd && childEnd > viewportStart) {
         final double visibleStart = math.max(childStart, viewportStart);
         final double visibleEnd = math.min(childEnd, viewportEnd);
-        visibleChildren.add(VisibleChildData(
-          index: indexOf(child),
-          visibleExtent: math.max(0.0, visibleEnd - visibleStart),
-          totalExtent: totalExtent,
-          viewportOffset: childStart - viewportStart,
-        ));
+        visibleChildren.add(
+          VisibleChildData(
+            index: indexOf(child),
+            visibleExtent: math.max(0.0, visibleEnd - visibleStart),
+            totalExtent: totalExtent,
+            viewportOffset: childStart - viewportStart,
+          ),
+        );
       } else if (visibleChildren.isNotEmpty) {
         break;
       }

@@ -274,13 +274,17 @@ void main() {
         // vertical remains same (3 items).
         // Total x items: 5. Total y items: 3. Total: 15 items.
         expect(visibleChildren!.length, 15);
-        final List<TwoDimensionalVisibleChildData> column0 = visibleChildren!.where((c) => c.vicinity.xIndex == 0).toList();
+        final List<TwoDimensionalVisibleChildData> column0 = visibleChildren!
+            .where((c) => c.vicinity.xIndex == 0)
+            .toList();
         expect(column0.length, 3);
         expect(column0[0].visibleFractionX, 0.5);
         expect(column0[0].visibleFractionY, 1.0);
         expect(column0[0].visibleAreaFraction, 0.5);
 
-        final List<TwoDimensionalVisibleChildData> column4 = visibleChildren!.where((c) => c.vicinity.xIndex == 4).toList();
+        final List<TwoDimensionalVisibleChildData> column4 = visibleChildren!
+            .where((c) => c.vicinity.xIndex == 4)
+            .toList();
         expect(column4.length, 3);
         expect(column4[0].visibleFractionX, 0.5);
         expect(column4[0].visibleFractionY, 1.0);

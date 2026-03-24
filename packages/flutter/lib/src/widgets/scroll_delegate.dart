@@ -182,7 +182,11 @@ abstract class SliverChildDelegate {
   ///
   /// The [visibleChildren] argument provides rich metadata about each child
   /// that is currently visible (even if only partially) in the viewport.
-  void didFinishLayout({int firstIndex = 0, int lastIndex = 0, Iterable<VisibleChildData>? visibleChildren}) {}
+  void didFinishLayout({
+    int firstIndex = 0,
+    int lastIndex = 0,
+    Iterable<VisibleChildData>? visibleChildren,
+  }) {}
 
   /// Called whenever a new instance of the child delegate class is
 
@@ -569,7 +573,11 @@ class SliverChildBuilderDelegate extends SliverChildDelegate {
   }
 
   @override
-  void didFinishLayout({int firstIndex = 0, int lastIndex = 0, Iterable<VisibleChildData>? visibleChildren}) {
+  void didFinishLayout({
+    int firstIndex = 0,
+    int lastIndex = 0,
+    Iterable<VisibleChildData>? visibleChildren,
+  }) {
     onVisibleChildrenChanged?.call(visibleChildren ?? const <VisibleChildData>[]);
   }
 
@@ -723,7 +731,11 @@ class SliverChildListDelegate extends SliverChildDelegate {
   final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
 
   @override
-  void didFinishLayout({int firstIndex = 0, int lastIndex = 0, Iterable<VisibleChildData>? visibleChildren}) {
+  void didFinishLayout({
+    int firstIndex = 0,
+    int lastIndex = 0,
+    Iterable<VisibleChildData>? visibleChildren,
+  }) {
     onVisibleChildrenChanged?.call(visibleChildren ?? const <VisibleChildData>[]);
   }
 
@@ -1032,7 +1044,8 @@ abstract class TwoDimensionalChildDelegate extends ChangeNotifier {
 ///
 /// Used by [TwoDimensionalChildBuilderDelegate.onVisibleChildrenChanged] and
 /// [TwoDimensionalChildListDelegate.onVisibleChildrenChanged].
-typedef TwoDimensionalVisibleChildrenChangedCallback = void Function(Iterable<TwoDimensionalVisibleChildData> visibleChildren);
+typedef TwoDimensionalVisibleChildrenChangedCallback =
+    void Function(Iterable<TwoDimensionalVisibleChildData> visibleChildren);
 
 /// The visibility metadata for a child that is currently visible in a
 /// [TwoDimensionalViewport].
@@ -1087,21 +1100,23 @@ class TwoDimensionalVisibleChildData {
   double get visibleFractionY => totalExtentY == 0 ? 0 : visibleExtentY / totalExtentY;
 
   /// The fraction of the child's total area that is currently visible.
-  double get visibleAreaFraction => (totalExtentX * totalExtentY) == 0 ? 0 : (visibleExtentX * visibleExtentY) / (totalExtentX * totalExtentY);
+  double get visibleAreaFraction => (totalExtentX * totalExtentY) == 0
+      ? 0
+      : (visibleExtentX * visibleExtentY) / (totalExtentX * totalExtentY);
 
   @override
   bool operator ==(Object other) {
     if (other.runtimeType != runtimeType) {
       return false;
     }
-    return other is TwoDimensionalVisibleChildData
-        && other.vicinity == vicinity
-        && other.visibleExtentX == visibleExtentX
-        && other.totalExtentX == totalExtentX
-        && other.viewportOffsetX == viewportOffsetX
-        && other.visibleExtentY == visibleExtentY
-        && other.totalExtentY == totalExtentY
-        && other.viewportOffsetY == viewportOffsetY;
+    return other is TwoDimensionalVisibleChildData &&
+        other.vicinity == vicinity &&
+        other.visibleExtentX == visibleExtentX &&
+        other.totalExtentX == totalExtentX &&
+        other.viewportOffsetX == viewportOffsetX &&
+        other.visibleExtentY == visibleExtentY &&
+        other.totalExtentY == totalExtentY &&
+        other.viewportOffsetY == viewportOffsetY;
   }
 
   @override
@@ -1116,7 +1131,8 @@ class TwoDimensionalVisibleChildData {
   );
 
   @override
-  String toString() => 'TwoDimensionalVisibleChildData(vicinity: $vicinity, visibleFraction: ${visibleAreaFraction.toStringAsFixed(2)})';
+  String toString() =>
+      'TwoDimensionalVisibleChildData(vicinity: $vicinity, visibleFraction: ${visibleAreaFraction.toStringAsFixed(2)})';
 }
 
 /// A delegate that supplies children for a [TwoDimensionalScrollView] using a

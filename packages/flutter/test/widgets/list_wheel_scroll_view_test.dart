@@ -12,7 +12,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-
 import '../rendering/rendering_tester.dart' show TestCallbackPainter, TestClipPaintingContext;
 import 'widgets_app_tester.dart';
 
@@ -2064,7 +2063,9 @@ void main() {
     },
   );
 
-  testWidgets('ListWheelScrollView onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+  testWidgets('ListWheelScrollView onVisibleChildrenChanged reports rich metadata', (
+    WidgetTester tester,
+  ) async {
     List<VisibleChildData>? visibleChildren;
 
     await tester.pumpWidget(
@@ -2079,10 +2080,7 @@ void main() {
                 visibleChildren = children.toList();
               },
               children: List<Widget>.generate(10, (int index) {
-                return SizedBox(
-                  height: 100.0,
-                  child: Text('Item $index'),
-                );
+                return SizedBox(height: 100.0, child: Text('Item $index'));
               }),
             ),
           ),

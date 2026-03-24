@@ -6,7 +6,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('ListView onVisibleChildrenChanged reports correct visible children', (WidgetTester tester) async {
+  testWidgets('ListView onVisibleChildrenChanged reports correct visible children', (
+    WidgetTester tester,
+  ) async {
     final visibleChildrenLog = <VisibleChildData>[];
 
     await tester.pumpWidget(
@@ -82,7 +84,9 @@ void main() {
     expect(visibleChildrenLog[0].viewportOffset, 0.0);
   });
 
-  testWidgets('ListView onVisibleChildrenChanged works with varying item sizes', (WidgetTester tester) async {
+  testWidgets('ListView onVisibleChildrenChanged works with varying item sizes', (
+    WidgetTester tester,
+  ) async {
     final visibleChildrenLog = <VisibleChildData>[];
 
     await tester.pumpWidget(
@@ -96,10 +100,7 @@ void main() {
           },
           itemBuilder: (BuildContext context, int index) {
             // Even items are 100, odd items are 200.
-            return SizedBox(
-              height: index.isEven ? 100.0 : 200.0,
-              child: Text('Item $index'),
-            );
+            return SizedBox(height: index.isEven ? 100.0 : 200.0, child: Text('Item $index'));
           },
         ),
       ),

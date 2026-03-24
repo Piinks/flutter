@@ -8,7 +8,6 @@
 /// @docImport 'sliver_prototype_extent_list.dart';
 library;
 
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 
@@ -150,7 +149,9 @@ class SliverFillViewport extends StatelessWidget {
       sliver: _SliverFillViewportRenderObjectWidget(
         viewportFraction: viewportFraction,
         allowImplicitScrolling: allowImplicitScrolling,
-        delegate: onVisibleChildrenChanged != null ? _DelegateWithCallback(delegate, onVisibleChildrenChanged!) : delegate,
+        delegate: onVisibleChildrenChanged != null
+            ? _DelegateWithCallback(delegate, onVisibleChildrenChanged!)
+            : delegate,
       ),
     );
   }
@@ -166,16 +167,36 @@ class _DelegateWithCallback extends SliverChildDelegate {
   Widget? build(BuildContext context, int index) => delegate.build(context, index);
 
   @override
-  double? estimateMaxScrollOffset(int firstIndex, int lastIndex, double leadingScrollOffset, double trailingScrollOffset) => delegate.estimateMaxScrollOffset(firstIndex, lastIndex, leadingScrollOffset, trailingScrollOffset);
+  double? estimateMaxScrollOffset(
+    int firstIndex,
+    int lastIndex,
+    double leadingScrollOffset,
+    double trailingScrollOffset,
+  ) => delegate.estimateMaxScrollOffset(
+    firstIndex,
+    lastIndex,
+    leadingScrollOffset,
+    trailingScrollOffset,
+  );
 
   @override
-  void didFinishLayout({int firstIndex = 0, int lastIndex = 0, Iterable<VisibleChildData>? visibleChildren}) {
+  void didFinishLayout({
+    int firstIndex = 0,
+    int lastIndex = 0,
+    Iterable<VisibleChildData>? visibleChildren,
+  }) {
     onVisibleChildrenChanged(visibleChildren ?? const <VisibleChildData>[]);
-    delegate.didFinishLayout(firstIndex: firstIndex, lastIndex: lastIndex, visibleChildren: visibleChildren);
+    delegate.didFinishLayout(
+      firstIndex: firstIndex,
+      lastIndex: lastIndex,
+      visibleChildren: visibleChildren,
+    );
   }
 
   @override
-  bool shouldRebuild(covariant _DelegateWithCallback oldDelegate) => delegate.shouldRebuild(oldDelegate.delegate) || onVisibleChildrenChanged != oldDelegate.onVisibleChildrenChanged;
+  bool shouldRebuild(covariant _DelegateWithCallback oldDelegate) =>
+      delegate.shouldRebuild(oldDelegate.delegate) ||
+      onVisibleChildrenChanged != oldDelegate.onVisibleChildrenChanged;
 
   @override
   int? findIndexByKey(Key key) => delegate.findIndexByKey(key);

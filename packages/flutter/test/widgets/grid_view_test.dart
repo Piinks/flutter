@@ -1012,7 +1012,9 @@ void main() {
     );
   });
 
-  testWidgets('GridView.builder onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+  testWidgets('GridView.builder onVisibleChildrenChanged reports rich metadata', (
+    WidgetTester tester,
+  ) async {
     List<VisibleChildData>? visibleChildren;
 
     await tester.pumpWidget(

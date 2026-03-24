@@ -15,7 +15,11 @@ class TestSliverChildListDelegate extends SliverChildListDelegate {
   final List<String> log = <String>[];
 
   @override
-  void didFinishLayout({int firstIndex = 0, int lastIndex = 0, Iterable<VisibleChildData>? visibleChildren}) {
+  void didFinishLayout({
+    int firstIndex = 0,
+    int lastIndex = 0,
+    Iterable<VisibleChildData>? visibleChildren,
+  }) {
     log.add('didFinishLayout firstIndex=$firstIndex lastIndex=$lastIndex');
   }
 }
@@ -1175,7 +1179,9 @@ void main() {
     );
   });
 
-  testWidgets('ListView onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+  testWidgets('ListView onVisibleChildrenChanged reports rich metadata', (
+    WidgetTester tester,
+  ) async {
     List<VisibleChildData>? visibleChildren;
 
     await tester.pumpWidget(

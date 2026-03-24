@@ -820,7 +820,12 @@ class SliverGrid extends SliverMultiBoxAdaptorWidget {
          crossAxisSpacing: crossAxisSpacing,
          childAspectRatio: childAspectRatio,
        ),
-       super(delegate: SliverChildListDelegate(children, onVisibleChildrenChanged: onVisibleChildrenChanged));
+       super(
+         delegate: SliverChildListDelegate(
+           children,
+           onVisibleChildrenChanged: onVisibleChildrenChanged,
+         ),
+       );
 
   /// Creates a sliver that places multiple box children in a two dimensional
   /// arrangement with tiles that each have a maximum cross-axis extent.
@@ -845,7 +850,12 @@ class SliverGrid extends SliverMultiBoxAdaptorWidget {
          crossAxisSpacing: crossAxisSpacing,
          childAspectRatio: childAspectRatio,
        ),
-       super(delegate: SliverChildListDelegate(children, onVisibleChildrenChanged: onVisibleChildrenChanged));
+       super(
+         delegate: SliverChildListDelegate(
+           children,
+           onVisibleChildrenChanged: onVisibleChildrenChanged,
+         ),
+       );
 
   /// Creates a sliver that places multiple box children in a two dimensional
   /// arrangement.
@@ -1239,7 +1249,11 @@ class SliverMultiBoxAdaptorElement extends RenderObjectElement
 
   @override
   @override
-  void didFinishLayout({int firstIndex = 0, int lastIndex = 0, Iterable<VisibleChildData>? visibleChildren}) {
+  void didFinishLayout({
+    int firstIndex = 0,
+    int lastIndex = 0,
+    Iterable<VisibleChildData>? visibleChildren,
+  }) {
     assert(debugAssertChildListLocked());
     (widget as SliverMultiBoxAdaptorWidget).delegate.didFinishLayout(
       firstIndex: firstIndex,

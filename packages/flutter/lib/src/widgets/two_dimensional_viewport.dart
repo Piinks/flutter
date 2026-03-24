@@ -429,22 +429,26 @@ class _TwoDimensionalViewportElement extends RenderObjectElement
         final double totalExtentY = childRenderObject.size.height;
         final double childEndY = childStartY + totalExtentY;
 
-        if (childStartX < viewportWidth && childEndX > 0 &&
-            childStartY < viewportHeight && childEndY > 0) {
+        if (childStartX < viewportWidth &&
+            childEndX > 0 &&
+            childStartY < viewportHeight &&
+            childEndY > 0) {
           final double visibleStartX = math.max(childStartX, 0.0);
           final double visibleEndX = math.min(childEndX, viewportWidth);
           final double visibleStartY = math.max(childStartY, 0.0);
           final double visibleEndY = math.min(childEndY, viewportHeight);
 
-          visibleChildren.add(TwoDimensionalVisibleChildData(
-            vicinity: vicinity,
-            visibleExtentX: math.max(0.0, visibleEndX - visibleStartX),
-            totalExtentX: totalExtentX,
-            viewportOffsetX: childStartX,
-            visibleExtentY: math.max(0.0, visibleEndY - visibleStartY),
-            totalExtentY: totalExtentY,
-            viewportOffsetY: childStartY,
-          ));
+          visibleChildren.add(
+            TwoDimensionalVisibleChildData(
+              vicinity: vicinity,
+              visibleExtentX: math.max(0.0, visibleEndX - visibleStartX),
+              totalExtentX: totalExtentX,
+              viewportOffsetX: childStartX,
+              visibleExtentY: math.max(0.0, visibleEndY - visibleStartY),
+              totalExtentY: totalExtentY,
+              viewportOffsetY: childStartY,
+            ),
+          );
         }
       }
     }

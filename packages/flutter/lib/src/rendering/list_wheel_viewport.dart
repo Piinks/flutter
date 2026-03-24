@@ -797,12 +797,14 @@ class RenderListWheelViewport extends RenderBox
       if (childViewportOffset < size.height && childViewportOffset + _itemExtent > 0) {
         final double visibleStart = math.max(0.0, childViewportOffset);
         final double visibleEnd = math.min(size.height, childViewportOffset + _itemExtent);
-        visibleChildren.add(VisibleChildData(
-          index: index,
-          visibleExtent: math.max(0.0, visibleEnd - visibleStart),
-          totalExtent: _itemExtent,
-          viewportOffset: childViewportOffset,
-        ));
+        visibleChildren.add(
+          VisibleChildData(
+            index: index,
+            visibleExtent: math.max(0.0, visibleEnd - visibleStart),
+            totalExtent: _itemExtent,
+            viewportOffset: childViewportOffset,
+          ),
+        );
       }
       child = childAfter(child);
     }

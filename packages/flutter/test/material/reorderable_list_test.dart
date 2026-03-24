@@ -2770,7 +2770,9 @@ void main() {
     expect(tester.getSize(find.byType(ReorderableListView)), Size.zero);
   });
 
-  testWidgets('ReorderableListView onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+  testWidgets('ReorderableListView onVisibleChildrenChanged reports rich metadata', (
+    WidgetTester tester,
+  ) async {
     List<VisibleChildData>? visibleChildren;
 
     await tester.pumpWidget(

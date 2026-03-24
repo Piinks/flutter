@@ -7,6 +7,7 @@
 @Tags(<String>['reduced-test-set'])
 library;
 
+import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1005,5 +1006,44 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(find.byKey(key), matchesGoldenFile('sliver_tree.scrolling.1.png'));
     expect(tester.getTopLeft(find.byType(ColoredBox)), const Offset(0, -5));
+  });
+
+  testWidgets('TreeSliver onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+    List<VisibleChildData>? visibleChildren;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CustomScrollView(
+            slivers: <Widget>[
+              TreeSliver<String>(
+                tree: <TreeSliverNode<String>>[
+                  TreeSliverNode<String>('0'),
+                  TreeSliverNode<String>('1'),
+                  TreeSliverNode<String>('2'),
+                ],
+                onVisibleChildrenChanged: (Iterable<VisibleChildData> children) {
+                  visibleChildren = children.toList();
+                },
+                treeNodeBuilder: (BuildContext context, TreeSliverNode<Object?> node, AnimationStyle animationStyle) {
+                  return SizedBox(height: 100.0, child: Text('Node ${node.content}'));
+                },
+                treeRowExtentBuilder: (TreeSliverNode<Object?> node, SliverLayoutDimensions dimensions) {
+                  return 100.0;
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Default viewport height is 600.
+    // Visible: 0, 1, 2
+    expect(visibleChildren!.length, 3);
+    expect(visibleChildren![0].index, 0);
+    expect(visibleChildren![0].visibleFraction, 1.0);
+    expect(visibleChildren![2].index, 2);
+    expect(visibleChildren![2].visibleFraction, 1.0);
   });
 }

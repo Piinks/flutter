@@ -12,6 +12,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+
 import '../rendering/rendering_tester.dart' show TestCallbackPainter, TestClipPaintingContext;
 import 'widgets_app_tester.dart';
 
@@ -2062,4 +2063,58 @@ void main() {
       expect(tester.getSize(find.byType(ListWheelViewport)), Size.zero);
     },
   );
+
+  testWidgets('ListWheelScrollView onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+    List<VisibleChildData>? visibleChildren;
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(
+          child: SizedBox(
+            height: 300,
+            child: ListWheelScrollView(
+              itemExtent: 100,
+              onVisibleChildrenChanged: (Iterable<VisibleChildData> children) {
+                visibleChildren = children.toList();
+              },
+              children: List<Widget>.generate(10, (int index) {
+                return SizedBox(
+                  height: 100.0,
+                  child: Text('Item $index'),
+                );
+              }),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Viewport height is 300. itemExtent is 100.
+    // Offset 0: item 0 is at center (100 to 200 in viewport coords).
+    // Item 1: 200 to 300.
+    // Total visible children: 0 and 1.
+    expect(visibleChildren!.length, 2);
+    expect(visibleChildren![0].index, 0);
+    expect(visibleChildren![0].visibleFraction, 1.0);
+    expect(visibleChildren![0].viewportOffset, 100.0);
+    expect(visibleChildren![1].index, 1);
+    expect(visibleChildren![1].visibleFraction, 1.0);
+    expect(visibleChildren![1].viewportOffset, 200.0);
+
+    await tester.drag(find.byType(ListWheelScrollView), const Offset(0.0, -100.0));
+    await tester.pump();
+
+    // Scrolled by 100. offset.pixels = 100.
+    // Item 0 is now 0 to 100 in viewport.
+    // Item 1 is 100 to 200.
+    // Item 2 is 200 to 300.
+    expect(visibleChildren!.length, 3);
+    expect(visibleChildren![0].index, 0);
+    expect(visibleChildren![0].visibleFraction, 1.0);
+    expect(visibleChildren![0].viewportOffset, 0.0);
+    expect(visibleChildren![2].index, 2);
+    expect(visibleChildren![2].visibleFraction, 1.0);
+    expect(visibleChildren![2].viewportOffset, 200.0);
+  });
 }

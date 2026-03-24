@@ -87,6 +87,7 @@ class AnimatedList extends _AnimatedScrollView {
     super.shrinkWrap = false,
     super.padding,
     super.clipBehavior = Clip.hardEdge,
+    super.onVisibleChildrenChanged,
   }) : assert(initialItemCount >= 0);
 
   /// A scrolling container that animates items with separators when they are inserted or removed.
@@ -163,6 +164,7 @@ class AnimatedList extends _AnimatedScrollView {
     super.shrinkWrap = false,
     super.padding,
     super.clipBehavior = Clip.hardEdge,
+    super.onVisibleChildrenChanged,
   }) : assert(initialItemCount >= 0),
        super(
          initialItemCount: _computeChildCountWithSeparators(initialItemCount),
@@ -309,6 +311,7 @@ class AnimatedListState extends _AnimatedScrollViewState<AnimatedList> {
         key: _sliverAnimatedMultiBoxKey,
         itemBuilder: widget.itemBuilder,
         initialItemCount: widget.initialItemCount,
+        onVisibleChildrenChanged: widget.onVisibleChildrenChanged,
       ),
       widget.scrollDirection,
     );
@@ -386,6 +389,7 @@ class AnimatedGrid extends _AnimatedScrollView {
     super.physics,
     super.padding,
     super.clipBehavior = Clip.hardEdge,
+    super.onVisibleChildrenChanged,
   }) : assert(initialItemCount >= 0);
 
   /// {@template flutter.widgets.AnimatedGrid.gridDelegate}
@@ -521,6 +525,7 @@ class AnimatedGridState extends _AnimatedScrollViewState<AnimatedGrid> {
         gridDelegate: widget.gridDelegate,
         itemBuilder: widget.itemBuilder,
         initialItemCount: widget.initialItemCount,
+        onVisibleChildrenChanged: widget.onVisibleChildrenChanged,
       ),
       widget.scrollDirection,
     );
@@ -543,6 +548,7 @@ abstract class _AnimatedScrollView extends StatefulWidget {
     this.shrinkWrap = false,
     this.padding,
     this.clipBehavior = Clip.hardEdge,
+    this.onVisibleChildrenChanged,
   }) : assert(initialItemCount >= 0);
 
   /// {@template flutter.widgets.AnimatedScrollView.itemBuilder}
@@ -632,7 +638,7 @@ abstract class _AnimatedScrollView extends StatefulWidget {
   /// How the scroll view should respond to user input.
   ///
   /// For example, this determines how the scroll view continues to animate after the
-  /// user stops dragging the scroll view.
+  /// user stops dragging the page view.
   ///
   /// Defaults to matching platform conventions.
   final ScrollPhysics? physics;
@@ -660,6 +666,9 @@ abstract class _AnimatedScrollView extends StatefulWidget {
   ///
   /// Defaults to [Clip.hardEdge].
   final Clip clipBehavior;
+
+  /// {@macro flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
+  final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
 }
 
 abstract class _AnimatedScrollViewState<T extends _AnimatedScrollView> extends State<T>
@@ -965,6 +974,7 @@ class SliverAnimatedList extends _SliverAnimatedMultiBoxAdaptor {
     required super.itemBuilder,
     super.findChildIndexCallback,
     super.initialItemCount = 0,
+    super.onVisibleChildrenChanged,
   }) : assert(initialItemCount >= 0);
 
   @override
@@ -1112,6 +1122,7 @@ class SliverAnimatedGrid extends _SliverAnimatedMultiBoxAdaptor {
     required this.gridDelegate,
     super.findChildIndexCallback,
     super.initialItemCount = 0,
+    super.onVisibleChildrenChanged,
   }) : assert(initialItemCount >= 0);
 
   @override
@@ -1233,6 +1244,7 @@ abstract class _SliverAnimatedMultiBoxAdaptor extends StatefulWidget {
     required this.itemBuilder,
     this.findChildIndexCallback,
     this.initialItemCount = 0,
+    this.onVisibleChildrenChanged,
   }) : assert(initialItemCount >= 0);
 
   /// {@macro flutter.widgets.AnimatedScrollView.itemBuilder}
@@ -1243,6 +1255,9 @@ abstract class _SliverAnimatedMultiBoxAdaptor extends StatefulWidget {
 
   /// {@macro flutter.widgets.AnimatedScrollView.initialItemCount}
   final int initialItemCount;
+
+  /// {@macro flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
+  final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
 }
 
 abstract class _SliverAnimatedMultiBoxAdaptorState<T extends _SliverAnimatedMultiBoxAdaptor>
@@ -1318,6 +1333,7 @@ abstract class _SliverAnimatedMultiBoxAdaptorState<T extends _SliverAnimatedMult
               final int? index = widget.findChildIndexCallback!(key);
               return index != null ? _indexToItemIndex(index) : null;
             },
+      onVisibleChildrenChanged: widget.onVisibleChildrenChanged,
     );
   }
 

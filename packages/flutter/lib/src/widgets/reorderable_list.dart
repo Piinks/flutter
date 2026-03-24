@@ -174,6 +174,7 @@ class ReorderableList extends StatefulWidget {
     this.keyboardDismissBehavior,
     this.restorationId,
     this.clipBehavior = Clip.hardEdge,
+    this.onVisibleChildrenChanged,
     this.autoScrollerVelocityScalar,
     this.dragBoundaryProvider,
   }) : assert(itemCount >= 0),
@@ -358,6 +359,9 @@ class ReorderableList extends StatefulWidget {
   /// {@macro flutter.widgets.list_view.prototypeItem}
   final Widget? prototypeItem;
 
+  /// {@macro flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
+  final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
+
   /// {@macro flutter.widgets.EdgeDraggingAutoScroller.velocityScalar}
   ///
   /// {@macro flutter.widgets.SliverReorderableList.autoScrollerVelocityScalar.default}
@@ -538,6 +542,7 @@ class ReorderableListState extends State<ReorderableList> {
             proxyDecorator: widget.proxyDecorator,
             autoScrollerVelocityScalar: widget.autoScrollerVelocityScalar,
             dragBoundaryProvider: widget.dragBoundaryProvider,
+            onVisibleChildrenChanged: widget.onVisibleChildrenChanged,
           ),
         ),
       ],
@@ -591,6 +596,7 @@ class SliverReorderableList extends StatefulWidget {
     this.prototypeItem,
     this.proxyDecorator,
     this.dragBoundaryProvider,
+    this.onVisibleChildrenChanged,
     double? autoScrollerVelocityScalar,
   }) : autoScrollerVelocityScalar = autoScrollerVelocityScalar ?? _kDefaultAutoScrollVelocityScalar,
        assert(itemCount >= 0),
@@ -647,6 +653,9 @@ class SliverReorderableList extends StatefulWidget {
 
   /// {@macro flutter.widgets.list_view.prototypeItem}
   final Widget? prototypeItem;
+
+  /// {@macro flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
+  final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
 
   /// {@macro flutter.widgets.EdgeDraggingAutoScroller.velocityScalar}
   ///
@@ -1210,6 +1219,7 @@ class SliverReorderableListState extends State<SliverReorderableList>
       _itemBuilder,
       childCount: widget.itemCount,
       findChildIndexCallback: widget.findChildIndexCallback,
+      onVisibleChildrenChanged: widget.onVisibleChildrenChanged,
     );
     if (widget.itemExtent != null) {
       return SliverFixedExtentList(delegate: childrenDelegate, itemExtent: widget.itemExtent!);

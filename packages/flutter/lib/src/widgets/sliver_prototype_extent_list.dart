@@ -103,6 +103,7 @@ class SliverPrototypeExtentList extends SliverMultiBoxAdaptorWidget {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
   }) : super(
          delegate: SliverChildBuilderDelegate(
            itemBuilder,
@@ -111,6 +112,7 @@ class SliverPrototypeExtentList extends SliverMultiBoxAdaptorWidget {
            addAutomaticKeepAlives: addAutomaticKeepAlives,
            addRepaintBoundaries: addRepaintBoundaries,
            addSemanticIndexes: addSemanticIndexes,
+           onVisibleChildrenChanged: onVisibleChildrenChanged,
          ),
        );
 
@@ -147,12 +149,14 @@ class SliverPrototypeExtentList extends SliverMultiBoxAdaptorWidget {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
   }) : super(
          delegate: SliverChildListDelegate(
            children,
            addAutomaticKeepAlives: addAutomaticKeepAlives,
            addRepaintBoundaries: addRepaintBoundaries,
            addSemanticIndexes: addSemanticIndexes,
+           onVisibleChildrenChanged: onVisibleChildrenChanged,
          ),
        );
 

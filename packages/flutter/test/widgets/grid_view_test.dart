@@ -1011,4 +1011,57 @@ void main() {
       ),
     );
   });
+
+  testWidgets('GridView.builder onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+    List<VisibleChildData>? visibleChildren;
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisExtent: 100.0,
+          ),
+          itemCount: 20,
+          onVisibleChildrenChanged: (Iterable<VisibleChildData> children) {
+            visibleChildren = children.toList();
+          },
+          itemBuilder: (BuildContext context, int index) {
+            return SizedBox(height: 100.0, child: Text('$index'));
+          },
+        ),
+      ),
+    );
+
+    // Default viewport height is 600. crossAxisCount is 2.
+    // Each row is 100.0 high. 6 rows fit exactly.
+    // Row 0: 0, 1
+    // Row 1: 2, 3
+    // Row 2: 4, 5
+    // Row 3: 6, 7
+    // Row 4: 8, 9
+    // Row 5: 10, 11
+    // Total 12 items visible.
+    expect(visibleChildren!.length, 12);
+    expect(visibleChildren![0].index, 0);
+    expect(visibleChildren![0].visibleFraction, 1.0);
+    expect(visibleChildren![11].index, 11);
+    expect(visibleChildren![11].visibleFraction, 1.0);
+
+    await tester.drag(find.byType(GridView), const Offset(0.0, -50.0));
+    await tester.pump();
+
+    // Scrolled by 50.
+    // Row 0 (0, 1): -50 to 50 (partially visible, 0.5 fraction)
+    // Row 6 (12, 13): 550 to 650 (partially visible: 550 to 600 is on screen, 0.5 fraction)
+    // Total 14 items visible.
+    expect(visibleChildren!.length, 14);
+    expect(visibleChildren![0].index, 0);
+    expect(visibleChildren![0].visibleFraction, 0.5);
+    expect(visibleChildren![0].viewportOffset, -50.0);
+    expect(visibleChildren![12].index, 12);
+    expect(visibleChildren![12].visibleFraction, 0.5);
+    expect(visibleChildren![12].viewportOffset, 550.0);
+  });
 }

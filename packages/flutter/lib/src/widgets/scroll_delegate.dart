@@ -180,15 +180,12 @@ abstract class SliverChildDelegate {
 
   /// Called at the end of layout to indicate that layout is now complete.
   ///
-  /// The `firstIndex` argument is the index of the first child that was
-  /// included in the current layout. The `lastIndex` argument is the index of
-  /// the last child that was included in the current layout.
-  ///
-  /// Useful for subclasses that wish to track which children are included in
-  /// the underlying render tree.
-  void didFinishLayout(int firstIndex, int lastIndex) {}
+  /// The [visibleChildren] argument provides rich metadata about each child
+  /// that is currently visible (even if only partially) in the viewport.
+  void didFinishLayout({int firstIndex = 0, int lastIndex = 0, Iterable<VisibleChildData>? visibleChildren}) {}
 
   /// Called whenever a new instance of the child delegate class is
+
   /// provided to the sliver.
   ///
   /// If the new instance represents different information than the old
@@ -244,6 +241,13 @@ class _SaltedValueKey extends ValueKey<Key> {
 ///
 /// Used by [SliverChildBuilderDelegate.findChildIndexCallback].
 typedef ChildIndexGetter = int? Function(Key key);
+
+/// Signature for a callback that reports the children that are visible in a
+/// sliver.
+///
+/// Used by [SliverChildBuilderDelegate.onVisibleChildrenChanged] and
+/// [SliverChildListDelegate.onVisibleChildrenChanged].
+typedef VisibleChildrenChangedCallback = void Function(Iterable<VisibleChildData> visibleChildren);
 
 /// A delegate that supplies children for slivers using a builder callback.
 ///
@@ -370,6 +374,7 @@ class SliverChildBuilderDelegate extends SliverChildDelegate {
     this.addSemanticIndexes = true,
     this.semanticIndexCallback = _kDefaultSemanticIndexCallback,
     this.semanticIndexOffset = 0,
+    this.onVisibleChildrenChanged,
   });
 
   /// Called to build children for the sliver.
@@ -526,6 +531,28 @@ class SliverChildBuilderDelegate extends SliverChildDelegate {
   /// {@endtemplate}
   final ChildIndexGetter? findChildIndexCallback;
 
+  /// Called at the end of layout to indicate the children that are currently
+  /// visible in the viewport.
+  ///
+  /// {@template flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
+  /// The `onVisibleChildrenChanged` callback is called whenever the layout
+  /// finishes and the set of visible items or their visibility metadata might
+  /// have changed.
+  ///
+  /// The `onVisibleChildrenChanged` callback provides rich metadata about
+  /// each child that is currently visible (even if only partially) in the
+  /// viewport.
+  ///
+  /// ## Performance
+  ///
+  /// This callback updates the list of visible children during the layout phase,
+  /// which may happen multiple times per frame (e.g., during scrolling).
+  /// Avoid performing expensive operations directly in this callback.
+  /// If you need to trigger side effects, consider scheduling them for the next
+  /// frame or throttling the updates.
+  /// {@endtemplate}
+  final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
+
   @override
   int? findIndexByKey(Key key) {
     if (findChildIndexCallback == null) {
@@ -539,6 +566,11 @@ class SliverChildBuilderDelegate extends SliverChildDelegate {
       childKey = key;
     }
     return findChildIndexCallback!(childKey);
+  }
+
+  @override
+  void didFinishLayout({int firstIndex = 0, int lastIndex = 0, Iterable<VisibleChildData>? visibleChildren}) {
+    onVisibleChildrenChanged?.call(visibleChildren ?? const <VisibleChildData>[]);
   }
 
   @override
@@ -647,6 +679,7 @@ class SliverChildListDelegate extends SliverChildDelegate {
     this.addSemanticIndexes = true,
     this.semanticIndexCallback = _kDefaultSemanticIndexCallback,
     this.semanticIndexOffset = 0,
+    this.onVisibleChildrenChanged,
   }) : _keyToIndex = <Key?, int>{null: 0};
 
   /// Creates a constant version of the delegate that supplies children for
@@ -665,6 +698,7 @@ class SliverChildListDelegate extends SliverChildDelegate {
     this.addSemanticIndexes = true,
     this.semanticIndexCallback = _kDefaultSemanticIndexCallback,
     this.semanticIndexOffset = 0,
+    this.onVisibleChildrenChanged,
   }) : _keyToIndex = null;
 
   /// {@macro flutter.widgets.SliverChildBuilderDelegate.addAutomaticKeepAlives}
@@ -681,6 +715,17 @@ class SliverChildListDelegate extends SliverChildDelegate {
 
   /// {@macro flutter.widgets.SliverChildBuilderDelegate.semanticIndexCallback}
   final SemanticIndexCallback semanticIndexCallback;
+
+  /// Called at the end of layout to indicate the children that are currently
+  /// visible in the viewport.
+  ///
+  /// {@macro flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
+  final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
+
+  @override
+  void didFinishLayout({int firstIndex = 0, int lastIndex = 0, Iterable<VisibleChildData>? visibleChildren}) {
+    onVisibleChildrenChanged?.call(visibleChildren ?? const <VisibleChildData>[]);
+  }
 
   /// The widgets to display.
   ///
@@ -973,6 +1018,105 @@ abstract class TwoDimensionalChildDelegate extends ChangeNotifier {
   /// If the method returns false, then the [build] call might be optimized
   /// away.
   bool shouldRebuild(covariant TwoDimensionalChildDelegate oldDelegate);
+
+  /// Called at the end of layout to indicate the children that are currently
+  /// visible in the viewport.
+  ///
+  /// The [visibleChildren] argument provides rich metadata about each child
+  /// that is currently visible (even if only partially) in the viewport.
+  void didFinishLayout({Iterable<TwoDimensionalVisibleChildData>? visibleChildren}) {}
+}
+
+/// Signature for a callback that reports the children that are visible in a
+/// two-dimensional sliver.
+///
+/// Used by [TwoDimensionalChildBuilderDelegate.onVisibleChildrenChanged] and
+/// [TwoDimensionalChildListDelegate.onVisibleChildrenChanged].
+typedef TwoDimensionalVisibleChildrenChangedCallback = void Function(Iterable<TwoDimensionalVisibleChildData> visibleChildren);
+
+/// The visibility metadata for a child that is currently visible in a
+/// [TwoDimensionalViewport].
+@immutable
+class TwoDimensionalVisibleChildData {
+  /// Creates a [TwoDimensionalVisibleChildData].
+  const TwoDimensionalVisibleChildData({
+    required this.vicinity,
+    required this.visibleExtentX,
+    required this.totalExtentX,
+    required this.viewportOffsetX,
+    required this.visibleExtentY,
+    required this.totalExtentY,
+    required this.viewportOffsetY,
+  });
+
+  /// The vicinity of the child.
+  final ChildVicinity vicinity;
+
+  /// The extent of the child that is currently visible in the horizontal
+  /// dimension.
+  final double visibleExtentX;
+
+  /// The total extent of the child in the horizontal dimension.
+  final double totalExtentX;
+
+  /// The offset of the child's leading edge relative to the viewport's leading
+  /// edge in the horizontal dimension.
+  ///
+  /// This value is negative if the child is partially scrolled off the leading
+  /// edge of the viewport.
+  final double viewportOffsetX;
+
+  /// The extent of the child that is currently visible in the vertical
+  /// dimension.
+  final double visibleExtentY;
+
+  /// The total extent of the child in the vertical dimension.
+  final double totalExtentY;
+
+  /// The offset of the child's leading edge relative to the viewport's leading
+  /// edge in the vertical dimension.
+  ///
+  /// This value is negative if the child is partially scrolled off the leading
+  /// edge of the viewport.
+  final double viewportOffsetY;
+
+  /// The fraction of the child's horizontal extent that is currently visible.
+  double get visibleFractionX => totalExtentX == 0 ? 0 : visibleExtentX / totalExtentX;
+
+  /// The fraction of the child's vertical extent that is currently visible.
+  double get visibleFractionY => totalExtentY == 0 ? 0 : visibleExtentY / totalExtentY;
+
+  /// The fraction of the child's total area that is currently visible.
+  double get visibleAreaFraction => (totalExtentX * totalExtentY) == 0 ? 0 : (visibleExtentX * visibleExtentY) / (totalExtentX * totalExtentY);
+
+  @override
+  bool operator ==(Object other) {
+    if (other.runtimeType != runtimeType) {
+      return false;
+    }
+    return other is TwoDimensionalVisibleChildData
+        && other.vicinity == vicinity
+        && other.visibleExtentX == visibleExtentX
+        && other.totalExtentX == totalExtentX
+        && other.viewportOffsetX == viewportOffsetX
+        && other.visibleExtentY == visibleExtentY
+        && other.totalExtentY == totalExtentY
+        && other.viewportOffsetY == viewportOffsetY;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    vicinity,
+    visibleExtentX,
+    totalExtentX,
+    viewportOffsetX,
+    visibleExtentY,
+    totalExtentY,
+    viewportOffsetY,
+  );
+
+  @override
+  String toString() => 'TwoDimensionalVisibleChildData(vicinity: $vicinity, visibleFraction: ${visibleAreaFraction.toStringAsFixed(2)})';
 }
 
 /// A delegate that supplies children for a [TwoDimensionalScrollView] using a
@@ -999,6 +1143,7 @@ class TwoDimensionalChildBuilderDelegate extends TwoDimensionalChildDelegate {
     int? maxYIndex,
     this.addRepaintBoundaries = true,
     this.addAutomaticKeepAlives = true,
+    this.onVisibleChildrenChanged,
   }) : assert(maxYIndex == null || maxYIndex >= -1),
        assert(maxXIndex == null || maxXIndex >= -1),
        _maxYIndex = maxYIndex,
@@ -1018,6 +1163,17 @@ class TwoDimensionalChildBuilderDelegate extends TwoDimensionalChildDelegate {
   /// The delegate wraps the children returned by this builder in
   /// [RepaintBoundary] widgets if [addRepaintBoundaries] is true.
   final TwoDimensionalIndexedWidgetBuilder builder;
+
+  /// Called at the end of layout to indicate the children that are currently
+  /// visible in the viewport.
+  ///
+  /// {@template flutter.widgets.TwoDimensionalChildBuilderDelegate.onVisibleChildrenChanged}
+  /// The `onVisibleChildrenChanged` callback is called whenever the layout
+  /// finishes and the set of visible items or their visibility metadata might
+  /// have changed. It provides rich metadata about each child that is
+  /// currently visible (even if only partially) in the viewport.
+  /// {@endtemplate}
+  final TwoDimensionalVisibleChildrenChangedCallback? onVisibleChildrenChanged;
 
   /// The maximum [ChildVicinity.xIndex] for children in the x axis.
   ///
@@ -1129,6 +1285,11 @@ class TwoDimensionalChildBuilderDelegate extends TwoDimensionalChildDelegate {
 
   @override
   bool shouldRebuild(covariant TwoDimensionalChildDelegate oldDelegate) => true;
+
+  @override
+  void didFinishLayout({Iterable<TwoDimensionalVisibleChildData>? visibleChildren}) {
+    onVisibleChildrenChanged?.call(visibleChildren ?? const <TwoDimensionalVisibleChildData>[]);
+  }
 }
 
 /// A delegate that supplies children for a [TwoDimensionalViewport] using an
@@ -1171,6 +1332,7 @@ class TwoDimensionalChildListDelegate extends TwoDimensionalChildDelegate {
     this.addRepaintBoundaries = true,
     this.addAutomaticKeepAlives = true,
     required this.children,
+    this.onVisibleChildrenChanged,
   });
 
   /// The widgets to display.
@@ -1185,6 +1347,12 @@ class TwoDimensionalChildListDelegate extends TwoDimensionalChildDelegate {
   /// [ChildVicinity.xIndex] of the [TwoDimensionalViewport] as
   /// `children[vicinity.yIndex][vicinity.xIndex]`.
   final List<List<Widget>> children;
+
+  /// Called at the end of layout to indicate the children that are currently
+  /// visible in the viewport.
+  ///
+  /// {@macro flutter.widgets.TwoDimensionalChildBuilderDelegate.onVisibleChildrenChanged}
+  final TwoDimensionalVisibleChildrenChangedCallback? onVisibleChildrenChanged;
 
   /// {@macro flutter.widgets.SliverChildBuilderDelegate.addRepaintBoundaries}
   final bool addRepaintBoundaries;
@@ -1215,5 +1383,10 @@ class TwoDimensionalChildListDelegate extends TwoDimensionalChildDelegate {
   @override
   bool shouldRebuild(covariant TwoDimensionalChildListDelegate oldDelegate) {
     return children != oldDelegate.children;
+  }
+
+  @override
+  void didFinishLayout({Iterable<TwoDimensionalVisibleChildData>? visibleChildren}) {
+    onVisibleChildrenChanged?.call(visibleChildren ?? const <TwoDimensionalVisibleChildData>[]);
   }
 }

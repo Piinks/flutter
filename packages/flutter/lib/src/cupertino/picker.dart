@@ -629,4 +629,9 @@ class _CupertinoPickerListWheelChildDelegateWrapper implements ListWheelChildDel
 
   @override
   int trueIndexOf(int index) => _wrapped.trueIndexOf(index);
+
+  @override
+  void didFinishLayout({Iterable<VisibleChildData>? visibleChildren}) {
+    _wrapped.didFinishLayout(visibleChildren: visibleChildren);
+  }
 }

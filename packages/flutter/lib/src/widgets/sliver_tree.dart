@@ -413,6 +413,7 @@ class TreeSliver<T> extends StatefulWidget {
     this.semanticIndexCallback = _kDefaultSemanticIndexCallback,
     this.semanticIndexOffset = 0,
     this.findChildIndexCallback,
+    this.onVisibleChildrenChanged,
   });
 
   /// The list of [TreeSliverNode]s that may be displayed in the [TreeSliver].
@@ -487,6 +488,9 @@ class TreeSliver<T> extends StatefulWidget {
 
   /// {@macro flutter.widgets.SliverChildBuilderDelegate.findChildIndexCallback}
   final int? Function(Key)? findChildIndexCallback;
+
+  /// {@macro flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
+  final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
 
   /// The default [AnimationStyle] used for node expand and collapse animations,
   /// when one has not been provided in [toggleAnimationStyle].
@@ -733,9 +737,9 @@ class _TreeSliverState<T> extends State<TreeSliver<T>>
       addAutomaticKeepAlives: widget.addAutomaticKeepAlives,
       findChildIndexCallback: widget.findChildIndexCallback,
       indentation: widget.indentation.value,
-    );
-  }
-
+      onVisibleChildrenChanged: widget.onVisibleChildrenChanged,
+      );
+      }
   // TreeStateMixin Implementation
 
   @override
@@ -980,6 +984,7 @@ class _SliverTree extends SliverVariedExtentList {
     ChildIndexGetter? findChildIndexCallback,
     required int itemCount,
     bool addAutomaticKeepAlives = true,
+    VisibleChildrenChangedCallback? onVisibleChildrenChanged,
   }) : super(
          delegate: SliverChildBuilderDelegate(
            itemBuilder,
@@ -988,6 +993,7 @@ class _SliverTree extends SliverVariedExtentList {
            addAutomaticKeepAlives: addAutomaticKeepAlives,
            addRepaintBoundaries: false, // Added in the _SliverTreeState
            addSemanticIndexes: false, // Added in the _SliverTreeState
+           onVisibleChildrenChanged: onVisibleChildrenChanged,
          ),
        );
 

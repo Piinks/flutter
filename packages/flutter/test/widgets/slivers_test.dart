@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+
 import 'semantics_tester.dart';
 import 'widgets_app_tester.dart';
 
@@ -1347,6 +1348,49 @@ void main() {
     await tester.tap(find.text('Index 1'));
     expect(firstTapped, 0);
     expect(secondTapped, 1);
+  });
+
+  testWidgets('SliverFixedExtentList.builder onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+    List<VisibleChildData>? visibleChildren;
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: CustomScrollView(
+          slivers: <Widget>[
+            SliverFixedExtentList.builder(
+              itemCount: 20,
+              itemExtent: 100,
+              onVisibleChildrenChanged: (Iterable<VisibleChildData> children) {
+                visibleChildren = children.toList();
+              },
+              itemBuilder: (BuildContext context, int index) {
+                return SizedBox(height: 100.0, child: Text('$index'));
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+
+    // Default viewport height is 600.
+    // Visible: 0, 1, 2, 3, 4, 5
+    expect(visibleChildren!.length, 6);
+    expect(visibleChildren![0].index, 0);
+    expect(visibleChildren![0].visibleFraction, 1.0);
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0.0, -150.0));
+    await tester.pump();
+
+    // Scrolled by 150.
+    // Item 0: -150 to -50 (off screen)
+    // Item 1: -50 to 50 (partially visible, 0.5 fraction)
+    // Item 7: 550 to 650 (partially visible, 0.5 fraction)
+    expect(visibleChildren!.length, 7);
+    expect(visibleChildren![0].index, 1);
+    expect(visibleChildren![0].visibleFraction, 0.5);
+    expect(visibleChildren![6].index, 7);
+    expect(visibleChildren![6].visibleFraction, 0.5);
   });
 
   testWidgets('SliverFixedExtentList.builder can build children', (WidgetTester tester) async {

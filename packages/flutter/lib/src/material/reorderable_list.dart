@@ -91,6 +91,7 @@ class ReorderableListView extends StatefulWidget {
     this.itemExtentBuilder,
     this.prototypeItem,
     this.proxyDecorator,
+    this.onVisibleChildrenChanged,
     this.buildDefaultDragHandles = true,
     this.padding,
     this.header,
@@ -179,6 +180,7 @@ class ReorderableListView extends StatefulWidget {
     this.itemExtentBuilder,
     this.prototypeItem,
     this.proxyDecorator,
+    this.onVisibleChildrenChanged,
     this.buildDefaultDragHandles = true,
     this.padding,
     this.header,
@@ -242,6 +244,9 @@ class ReorderableListView extends StatefulWidget {
 
   /// {@macro flutter.widgets.reorderable_list.proxyDecorator}
   final ReorderItemProxyDecorator? proxyDecorator;
+
+  /// {@macro flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
+  final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
 
   /// If true: on desktop platforms, a drag handle is stacked over the
   /// center of each item's trailing edge; on mobile platforms, a long
@@ -541,6 +546,7 @@ class _ReorderableListViewState extends State<ReorderableListView> {
             proxyDecorator: widget.proxyDecorator ?? _proxyDecorator,
             autoScrollerVelocityScalar: widget.autoScrollerVelocityScalar,
             dragBoundaryProvider: widget.dragBoundaryProvider,
+            onVisibleChildrenChanged: widget.onVisibleChildrenChanged,
           ),
         ),
         if (widget.footer != null)

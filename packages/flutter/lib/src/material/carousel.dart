@@ -146,6 +146,7 @@ class CarouselView extends StatefulWidget {
     required double this.itemExtent,
     required this.children,
     this.onIndexChanged,
+    this.onVisibleChildrenChanged,
   }) : consumeMaxWeight = true,
        flexWeights = null,
        itemBuilder = null,
@@ -211,6 +212,7 @@ class CarouselView extends StatefulWidget {
     required List<int> this.flexWeights,
     required this.children,
     this.onIndexChanged,
+    this.onVisibleChildrenChanged,
   }) : itemExtent = null,
        itemBuilder = null,
        itemCount = null;
@@ -255,6 +257,7 @@ class CarouselView extends StatefulWidget {
     required this.itemBuilder,
     this.itemCount,
     this.onIndexChanged,
+    this.onVisibleChildrenChanged,
   }) : consumeMaxWeight = true,
        flexWeights = null,
        children = const <Widget>[];
@@ -313,6 +316,7 @@ class CarouselView extends StatefulWidget {
     required this.itemBuilder,
     this.itemCount,
     this.onIndexChanged,
+    this.onVisibleChildrenChanged,
   }) : itemExtent = null,
        children = const <Widget>[];
 
@@ -479,6 +483,9 @@ class CarouselView extends StatefulWidget {
   /// )
   /// ```
   final ValueChanged<int>? onIndexChanged;
+
+  /// {@macro flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
+  final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
 
   /// Called to build carousel item on demand.
   ///
@@ -654,7 +661,11 @@ class _CarouselViewState extends State<CarouselView> {
       return _SliverFixedExtentCarousel(
         itemExtent: _itemExtent!,
         minExtent: widget.shrinkExtent,
-        delegate: SliverChildBuilderDelegate(effectiveBuilder, childCount: childCount),
+        delegate: SliverChildBuilderDelegate(
+          effectiveBuilder,
+          childCount: childCount,
+          onVisibleChildrenChanged: widget.onVisibleChildrenChanged,
+        ),
       );
     }
 
@@ -666,7 +677,11 @@ class _CarouselViewState extends State<CarouselView> {
       consumeMaxWeight: _consumeMaxWeight,
       shrinkExtent: widget.shrinkExtent,
       weights: _flexWeights!,
-      delegate: SliverChildBuilderDelegate(effectiveBuilder, childCount: childCount),
+      delegate: SliverChildBuilderDelegate(
+        effectiveBuilder,
+        childCount: childCount,
+        onVisibleChildrenChanged: widget.onVisibleChildrenChanged,
+      ),
     );
   }
 
@@ -1215,7 +1230,9 @@ class _RenderSliverWeightedCarousel extends RenderSliverFixedExtentBoxAdaptor {
     final double remainingExtent = constraints.remainingCacheExtent;
     assert(remainingExtent >= 0.0);
     final double targetEndScrollOffset = scrollOffset + remainingExtent;
+
     // TODO(Piinks): Clean up when deprecation expires.
+
     const double deprecatedExtraItemExtent = -1;
 
     final int firstIndex = getMinChildIndexForScrollOffset(scrollOffset, deprecatedExtraItemExtent);
@@ -1379,7 +1396,11 @@ class _RenderSliverWeightedCarousel extends RenderSliverFixedExtentBoxAdaptor {
     if (estimatedMaxScrollOffset == trailingScrollOffset) {
       childManager.setDidUnderflow(true);
     }
-    childManager.didFinishLayout();
+    childManager.didFinishLayout(
+      firstIndex: firstIndex,
+      lastIndex: lastIndex,
+      visibleChildren: calculateVisibleRange(),
+    );
   }
 
   @override

@@ -97,6 +97,49 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('CupertinoPicker onVisibleChildrenChanged reports rich metadata', (WidgetTester tester) async {
+    final List<Iterable<VisibleChildData>> logs = <Iterable<VisibleChildData>>[];
+
+    await tester.pumpWidget(
+      CupertinoApp(
+        home: Center(
+          child: SizedBox(
+            height: 300.0,
+            width: 300.0,
+            child: CupertinoPicker(
+              itemExtent: 50.0,
+              onSelectedItemChanged: (_) {},
+              onVisibleChildrenChanged: logs.add,
+              children: List<Widget>.generate(10, (int index) {
+                return SizedBox(key: ValueKey<int>(index), height: 50.0, width: 300.0, child: Text(index.toString()));
+              }),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Initial layout.
+    // Viewport height is 300, itemExtent is 50.
+    // 300 / 50 = 6 items *possible* to be visible.
+    // But since item 0 is in the middle, only 0, 1, 2, 3 are visible.
+    expect(logs.length, 1);
+    expect(logs.last.length, greaterThanOrEqualTo(4));
+    expect(logs.last.first.index, 0);
+
+    // Scroll down by 50 pixels (one item).
+    final FixedExtentScrollController controller = tester.widget<ListWheelScrollView>(find.byType(ListWheelScrollView)).controller! as FixedExtentScrollController;
+    controller.jumpToItem(1);
+    await tester.pump();
+
+    expect(logs.length, 2);
+    expect(logs.last.any((VisibleChildData child) => child.index == 1), isTrue);
+
+    controller.jumpToItem(5);
+    await tester.pump();
+    expect(logs.last.any((VisibleChildData child) => child.index == 5), isTrue);
+  });
+
   testWidgets('Picker semantics excludes current item with empty label', (
     WidgetTester tester,
   ) async {

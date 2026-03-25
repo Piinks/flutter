@@ -79,7 +79,11 @@ class RenderSliverList extends RenderSliverMultiBoxAdaptor {
       if (!addInitialChild()) {
         // There are no children.
         geometry = SliverGeometry.zero;
-        childManager.didFinishLayout();
+        childManager.didFinishLayout(
+          firstIndex: 0,
+          lastIndex: 0,
+          visibleChildren: const <VisibleChildData>[],
+        );
         return;
       }
     }
@@ -113,7 +117,11 @@ class RenderSliverList extends RenderSliverMultiBoxAdaptor {
         if (!addInitialChild()) {
           // There are no children.
           geometry = SliverGeometry.zero;
-          childManager.didFinishLayout();
+          childManager.didFinishLayout(
+          firstIndex: 0,
+          lastIndex: 0,
+          visibleChildren: const <VisibleChildData>[],
+        );
           return;
         }
       }

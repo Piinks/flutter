@@ -95,13 +95,14 @@ class CupertinoPicker extends StatefulWidget {
     required List<Widget> children,
     this.selectionOverlay = const CupertinoPickerDefaultSelectionOverlay(),
     bool looping = false,
+    this.onVisibleChildrenChanged,
   }) : assert(diameterRatio > 0.0, RenderListWheelViewport.diameterRatioZeroMessage),
        assert(magnification > 0),
        assert(itemExtent > 0),
        assert(squeeze > 0),
        childDelegate = looping
-           ? ListWheelChildLoopingListDelegate(children: children)
-           : ListWheelChildListDelegate(children: children);
+           ? ListWheelChildLoopingListDelegate(children: children, onVisibleChildrenChanged: onVisibleChildrenChanged)
+           : ListWheelChildListDelegate(children: children, onVisibleChildrenChanged: onVisibleChildrenChanged);
 
   /// Creates a picker from an [IndexedWidgetBuilder] callback where the builder
   /// is dynamically invoked during layout.
@@ -135,11 +136,12 @@ class CupertinoPicker extends StatefulWidget {
     required NullableIndexedWidgetBuilder itemBuilder,
     int? childCount,
     this.selectionOverlay = const CupertinoPickerDefaultSelectionOverlay(),
+    this.onVisibleChildrenChanged,
   }) : assert(diameterRatio > 0.0, RenderListWheelViewport.diameterRatioZeroMessage),
        assert(magnification > 0),
        assert(itemExtent > 0),
        assert(squeeze > 0),
-       childDelegate = ListWheelChildBuilderDelegate(builder: itemBuilder, childCount: childCount);
+       childDelegate = ListWheelChildBuilderDelegate(builder: itemBuilder, childCount: childCount, onVisibleChildrenChanged: onVisibleChildrenChanged);
 
   /// Relative ratio between this picker's height and the simulated cylinder's diameter.
   ///
@@ -202,6 +204,9 @@ class CupertinoPicker extends StatefulWidget {
   ///
   /// The timing of this callback is controlled by [changeReportingBehavior].
   final ValueChanged<int>? onSelectedItemChanged;
+
+  /// {@macro flutter.widgets.SliverChildBuilderDelegate.onVisibleChildrenChanged}
+  final VisibleChildrenChangedCallback? onVisibleChildrenChanged;
 
   /// A delegate that lazily instantiates children.
   final ListWheelChildDelegate childDelegate;

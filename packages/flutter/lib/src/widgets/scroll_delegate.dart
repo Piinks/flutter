@@ -1002,10 +1002,27 @@ Widget _createErrorWidget(Object exception, StackTrace stackTrace) {
 ///     uses a two dimensional array to layout children.
 abstract class TwoDimensionalChildDelegate extends ChangeNotifier {
   /// Creates a delegate that supplies children for scrolling in two dimensions.
-  TwoDimensionalChildDelegate() {
+  TwoDimensionalChildDelegate({this.onVisibleChildrenChanged}) {
     if (kFlutterMemoryAllocationsEnabled) {
       ChangeNotifier.maybeDispatchObjectCreation(this);
     }
+  }
+
+  /// The `onVisibleChildrenChanged` callback is called whenever the layout
+  /// of the viewport changes.
+  ///
+  /// This callback provides rich metadata about currently visible items,
+  /// including their vicinity, visible extent, and viewport offset.
+  ///
+  /// This can be used for analytics, data fetching, or other state-driven UI
+  /// updates based on what is currently shown to the user.
+  final TwoDimensionalVisibleChildrenChangedCallback? onVisibleChildrenChanged;
+
+  /// Called at the end of layout to indicate that layout is now complete.
+  @protected
+  @visibleForTesting
+  void didFinishLayout({Iterable<TwoDimensionalVisibleChildData>? visibleChildren}) {
+    onVisibleChildrenChanged?.call(visibleChildren ?? const <TwoDimensionalVisibleChildData>[]);
   }
 
   /// Returns the child with the given [ChildVicinity], which is described in
@@ -1030,13 +1047,6 @@ abstract class TwoDimensionalChildDelegate extends ChangeNotifier {
   /// If the method returns false, then the [build] call might be optimized
   /// away.
   bool shouldRebuild(covariant TwoDimensionalChildDelegate oldDelegate);
-
-  /// Called at the end of layout to indicate the children that are currently
-  /// visible in the viewport.
-  ///
-  /// The [visibleChildren] argument provides rich metadata about each child
-  /// that is currently visible (even if only partially) in the viewport.
-  void didFinishLayout({Iterable<TwoDimensionalVisibleChildData>? visibleChildren}) {}
 }
 
 /// Signature for a callback that reports the children that are visible in a
@@ -1159,7 +1169,7 @@ class TwoDimensionalChildBuilderDelegate extends TwoDimensionalChildDelegate {
     int? maxYIndex,
     this.addRepaintBoundaries = true,
     this.addAutomaticKeepAlives = true,
-    this.onVisibleChildrenChanged,
+    super.onVisibleChildrenChanged,
   }) : assert(maxYIndex == null || maxYIndex >= -1),
        assert(maxXIndex == null || maxXIndex >= -1),
        _maxYIndex = maxYIndex,
@@ -1179,17 +1189,6 @@ class TwoDimensionalChildBuilderDelegate extends TwoDimensionalChildDelegate {
   /// The delegate wraps the children returned by this builder in
   /// [RepaintBoundary] widgets if [addRepaintBoundaries] is true.
   final TwoDimensionalIndexedWidgetBuilder builder;
-
-  /// Called at the end of layout to indicate the children that are currently
-  /// visible in the viewport.
-  ///
-  /// {@template flutter.widgets.TwoDimensionalChildBuilderDelegate.onVisibleChildrenChanged}
-  /// The `onVisibleChildrenChanged` callback is called whenever the layout
-  /// finishes and the set of visible items or their visibility metadata might
-  /// have changed. It provides rich metadata about each child that is
-  /// currently visible (even if only partially) in the viewport.
-  /// {@endtemplate}
-  final TwoDimensionalVisibleChildrenChangedCallback? onVisibleChildrenChanged;
 
   /// The maximum [ChildVicinity.xIndex] for children in the x axis.
   ///
@@ -1348,7 +1347,7 @@ class TwoDimensionalChildListDelegate extends TwoDimensionalChildDelegate {
     this.addRepaintBoundaries = true,
     this.addAutomaticKeepAlives = true,
     required this.children,
-    this.onVisibleChildrenChanged,
+    super.onVisibleChildrenChanged,
   });
 
   /// The widgets to display.
@@ -1363,12 +1362,6 @@ class TwoDimensionalChildListDelegate extends TwoDimensionalChildDelegate {
   /// [ChildVicinity.xIndex] of the [TwoDimensionalViewport] as
   /// `children[vicinity.yIndex][vicinity.xIndex]`.
   final List<List<Widget>> children;
-
-  /// Called at the end of layout to indicate the children that are currently
-  /// visible in the viewport.
-  ///
-  /// {@macro flutter.widgets.TwoDimensionalChildBuilderDelegate.onVisibleChildrenChanged}
-  final TwoDimensionalVisibleChildrenChangedCallback? onVisibleChildrenChanged;
 
   /// {@macro flutter.widgets.SliverChildBuilderDelegate.addRepaintBoundaries}
   final bool addRepaintBoundaries;
@@ -1399,10 +1392,5 @@ class TwoDimensionalChildListDelegate extends TwoDimensionalChildDelegate {
   @override
   bool shouldRebuild(covariant TwoDimensionalChildListDelegate oldDelegate) {
     return children != oldDelegate.children;
-  }
-
-  @override
-  void didFinishLayout({Iterable<TwoDimensionalVisibleChildData>? visibleChildren}) {
-    onVisibleChildrenChanged?.call(visibleChildren ?? const <TwoDimensionalVisibleChildData>[]);
   }
 }

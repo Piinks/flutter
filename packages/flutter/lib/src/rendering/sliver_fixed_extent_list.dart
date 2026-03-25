@@ -347,7 +347,11 @@ abstract class RenderSliverFixedExtentBoxAdaptor extends RenderSliverMultiBoxAda
           max = computeMaxScrollOffset(constraints, deprecatedExtraItemExtent);
         }
         geometry = SliverGeometry(scrollExtent: max, maxPaintExtent: max);
-        childManager.didFinishLayout();
+        childManager.didFinishLayout(
+          firstIndex: 0,
+          lastIndex: 0,
+          visibleChildren: const <VisibleChildData>[],
+        );
         return;
       }
     }

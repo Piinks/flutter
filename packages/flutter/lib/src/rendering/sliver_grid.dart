@@ -634,7 +634,11 @@ class RenderSliverGrid extends RenderSliverMultiBoxAdaptor {
         // There are either no children, or we are past the end of all our children.
         final double max = layout.computeMaxScrollOffset(childManager.childCount);
         geometry = SliverGeometry(scrollExtent: max, maxPaintExtent: max);
-        childManager.didFinishLayout();
+        childManager.didFinishLayout(
+          firstIndex: 0,
+          lastIndex: 0,
+          visibleChildren: const <VisibleChildData>[],
+        );
         return;
       }
     }

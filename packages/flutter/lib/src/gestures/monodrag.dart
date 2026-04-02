@@ -1046,6 +1046,62 @@ class HorizontalDragGestureRecognizer extends DragGestureRecognizer {
   String get debugDescription => 'horizontal drag';
 }
 
+/// Recognizes movement both horizontally and vertically, specifically for
+/// [TwoDimensionalScrollable].
+///
+/// This recognizer is similar to [PanGestureRecognizer], but it uses
+/// [computeHitSlop] instead of [computePanSlop] to determine when to accept the
+/// gesture, making it as sensitive as 1D drag recognizers.
+class TwoDimensionalDragGestureRecognizer extends DragGestureRecognizer {
+  /// Create a gesture recognizer for tracking movement on a plane.
+  TwoDimensionalDragGestureRecognizer({
+    super.debugOwner,
+    super.supportedDevices,
+    super.allowedButtonsFilter,
+  });
+
+  @override
+  bool isFlingGesture(VelocityEstimate estimate, PointerDeviceKind kind) {
+    final double minVelocity = minFlingVelocity ?? kMinFlingVelocity;
+    final double minDistance = minFlingDistance ?? computeHitSlop(kind, gestureSettings);
+    return estimate.pixelsPerSecond.distanceSquared > minVelocity * minVelocity &&
+        estimate.offset.distanceSquared > minDistance * minDistance;
+  }
+
+  @override
+  DragEndDetails? considerFling(VelocityEstimate estimate, PointerDeviceKind kind) {
+    if (!isFlingGesture(estimate, kind)) {
+      return null;
+    }
+    final Velocity velocity = Velocity(
+      pixelsPerSecond: estimate.pixelsPerSecond,
+    ).clampMagnitude(minFlingVelocity ?? kMinFlingVelocity, maxFlingVelocity ?? kMaxFlingVelocity);
+    return DragEndDetails(
+      velocity: velocity,
+      globalPosition: lastPosition.global,
+      localPosition: lastPosition.local,
+    );
+  }
+
+  @override
+  bool hasSufficientGlobalDistanceToAccept(
+    PointerDeviceKind pointerDeviceKind,
+    double? deviceTouchSlop,
+  ) {
+    final double slop = computeHitSlop(pointerDeviceKind, gestureSettings);
+    return globalDistanceMoved.abs() > slop;
+  }
+
+  @override
+  Offset _getDeltaForDetails(Offset delta) => delta;
+
+  @override
+  double? _getPrimaryValueFromOffset(Offset value) => null;
+
+  @override
+  String get debugDescription => 'two dimensional drag';
+}
+
 /// Recognizes movement both horizontally and vertically.
 ///
 /// See also:

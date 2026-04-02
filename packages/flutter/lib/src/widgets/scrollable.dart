@@ -2004,6 +2004,8 @@ class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
   ScrollController? _horizontalFallbackController;
   final GlobalKey<ScrollableState> _verticalOuterScrollableKey = GlobalKey<ScrollableState>();
   final GlobalKey<ScrollableState> _horizontalInnerScrollableKey = GlobalKey<ScrollableState>();
+  final GestureArenaTeam _verticalGestureTeam = GestureArenaTeam();
+  final GestureArenaTeam _horizontalGestureTeam = GestureArenaTeam();
 
   /// The [ScrollableState] of the vertical axis.
   ///
@@ -2098,6 +2100,7 @@ class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
         key: _verticalOuterScrollableKey,
         // For gesture forwarding
         horizontalKey: _horizontalInnerScrollableKey,
+        gestureTeam: _verticalGestureTeam,
         axisDirection: widget.verticalDetails.direction,
         controller: widget.verticalDetails.controller ?? _verticalFallbackController!,
         physics: widget.verticalDetails.physics,
@@ -2115,6 +2118,7 @@ class TwoDimensionalScrollableState extends State<TwoDimensionalScrollable> {
           return _HorizontalInnerDimension(
             key: _horizontalInnerScrollableKey,
             verticalOuterKey: _verticalOuterScrollableKey,
+            gestureTeam: _horizontalGestureTeam,
             axisDirection: widget.horizontalDetails.direction,
             controller: widget.horizontalDetails.controller ?? _horizontalFallbackController!,
             physics: widget.horizontalDetails.physics,
@@ -2172,6 +2176,7 @@ class _VerticalOuterDimension extends Scrollable {
   const _VerticalOuterDimension({
     super.key,
     required this.horizontalKey,
+    required this.gestureTeam,
     required super.viewportBuilder,
     required super.axisDirection,
     super.controller,
@@ -2187,6 +2192,7 @@ class _VerticalOuterDimension extends Scrollable {
 
   final DiagonalDragBehavior diagonalDragBehavior;
   final GlobalKey<ScrollableState> horizontalKey;
+  final GestureArenaTeam gestureTeam;
 
   @override
   _VerticalOuterDimensionState createState() => _VerticalOuterDimensionState();
@@ -2197,6 +2203,7 @@ class _VerticalOuterDimensionState extends ScrollableState {
       (widget as _VerticalOuterDimension).diagonalDragBehavior;
   ScrollableState get horizontalScrollable =>
       (widget as _VerticalOuterDimension).horizontalKey.currentState!;
+  GestureArenaTeam get _verticalGestureTeam => (widget as _VerticalOuterDimension).gestureTeam;
 
   Axis? lockedAxis;
   Offset? lastDragOffset;
@@ -2373,51 +2380,84 @@ class _VerticalOuterDimensionState extends ScrollableState {
 
   @override
   void setCanDrag(bool value) {
-    switch (diagonalDragBehavior) {
-      case DiagonalDragBehavior.none:
-        // If we aren't scrolling diagonally, the default drag gesture recognizer
-        // is used.
-        super.setCanDrag(value);
-        return;
-      case DiagonalDragBehavior.weightedEvent:
-      case DiagonalDragBehavior.weightedContinuous:
-      case DiagonalDragBehavior.free:
-        if (value) {
+    if (value == _lastCanDrag && (!value || widget.axis == _lastAxisDirection)) {
+      return;
+    }
+    if (!value) {
+      _gestureRecognizers = const <Type, GestureRecognizerFactory>{};
+      _handleDragCancel();
+    } else {
+      switch (diagonalDragBehavior) {
+        case DiagonalDragBehavior.none:
+          // If we aren't scrolling diagonally, the default drag gesture
+          // recognizer is used.
+          _gestureRecognizers = <Type, GestureRecognizerFactory>{
+            VerticalDragGestureRecognizer:
+                GestureRecognizerFactoryWithHandlers<VerticalDragGestureRecognizer>(
+                  () => VerticalDragGestureRecognizer(supportedDevices: _configuration.dragDevices),
+                  (VerticalDragGestureRecognizer instance) {
+                    instance
+                      ..onDown = _handleDragDown
+                      ..onStart = _handleDragStart
+                      ..onUpdate = _handleDragUpdate
+                      ..onEnd = _handleDragEnd
+                      ..onCancel = _handleDragCancel
+                      ..minFlingDistance = _physics?.minFlingDistance
+                      ..minFlingVelocity = _physics?.minFlingVelocity
+                      ..maxFlingVelocity = _physics?.maxFlingVelocity
+                      ..velocityTrackerBuilder = _configuration.velocityTrackerBuilder(context)
+                      ..dragStartBehavior = widget.dragStartBehavior
+                      ..multitouchDragStrategy = _configuration.getMultitouchDragStrategy(context)
+                      ..gestureSettings = _mediaQueryGestureSettings
+                      ..supportedDevices = _configuration.dragDevices;
+                    instance.team ??= _verticalGestureTeam;
+                    _verticalGestureTeam.captain = instance;
+                  },
+                ),
+          };
+        case DiagonalDragBehavior.weightedEvent:
+        case DiagonalDragBehavior.weightedContinuous:
+        case DiagonalDragBehavior.free:
           // Replaces the typical vertical/horizontal drag gesture recognizers
-          // with a pan gesture recognizer to allow bidirectional scrolling.
+          // with a specialized 2D drag gesture recognizer to allow bidirectional
+          // scrolling with 1D-level sensitivity.
           // Based on the diagonalDragBehavior, valid vertical deltas are
           // applied to this scrollable, while horizontal deltas are routed to
           // the horizontal scrollable.
           _gestureRecognizers = <Type, GestureRecognizerFactory>{
-            PanGestureRecognizer: GestureRecognizerFactoryWithHandlers<PanGestureRecognizer>(
-              () => PanGestureRecognizer(supportedDevices: _configuration.dragDevices),
-              (PanGestureRecognizer instance) {
-                instance
-                  ..onDown = _handleDragDown
-                  ..onStart = _handleDragStart
-                  ..onUpdate = _handleDragUpdate
-                  ..onEnd = _handleDragEnd
-                  ..onCancel = _handleDragCancel
-                  ..minFlingDistance = _physics?.minFlingDistance
-                  ..minFlingVelocity = _physics?.minFlingVelocity
-                  ..maxFlingVelocity = _physics?.maxFlingVelocity
-                  ..velocityTrackerBuilder = _configuration.velocityTrackerBuilder(context)
-                  ..dragStartBehavior = widget.dragStartBehavior
-                  ..gestureSettings = _mediaQueryGestureSettings;
-              },
-            ),
+            TwoDimensionalDragGestureRecognizer:
+                GestureRecognizerFactoryWithHandlers<TwoDimensionalDragGestureRecognizer>(
+                  () => TwoDimensionalDragGestureRecognizer(
+                    supportedDevices: _configuration.dragDevices,
+                  ),
+                  (TwoDimensionalDragGestureRecognizer instance) {
+                    instance
+                      ..onDown = _handleDragDown
+                      ..onStart = _handleDragStart
+                      ..onUpdate = _handleDragUpdate
+                      ..onEnd = _handleDragEnd
+                      ..onCancel = _handleDragCancel
+                      ..minFlingDistance = _physics?.minFlingDistance
+                      ..minFlingVelocity = _physics?.minFlingVelocity
+                      ..maxFlingVelocity = _physics?.maxFlingVelocity
+                      ..velocityTrackerBuilder = _configuration.velocityTrackerBuilder(context)
+                      ..dragStartBehavior = widget.dragStartBehavior
+                      ..gestureSettings = _mediaQueryGestureSettings;
+                    instance.team ??= _verticalGestureTeam;
+                    _verticalGestureTeam.captain = instance;
+                  },
+                ),
           };
-          // Cancel the active hold/drag (if any) because the gesture recognizers
-          // will soon be disposed by our RawGestureDetector, and we won't be
-          // receiving pointer up events to cancel the hold/drag.
-          _handleDragCancel();
-          _lastCanDrag = value;
-          _lastAxisDirection = widget.axis;
-          if (_gestureDetectorKey.currentState != null) {
-            _gestureDetectorKey.currentState!.replaceGestureRecognizers(_gestureRecognizers);
-          }
-        }
-        return;
+      }
+      // Cancel the active hold/drag (if any) because the gesture recognizers
+      // will soon be disposed by our RawGestureDetector, and we won't be
+      // receiving pointer up events to cancel the hold/drag.
+      _handleDragCancel();
+    }
+    _lastCanDrag = value;
+    _lastAxisDirection = widget.axis;
+    if (_gestureDetectorKey.currentState != null) {
+      _gestureDetectorKey.currentState!.replaceGestureRecognizers(_gestureRecognizers);
     }
   }
 
@@ -2439,6 +2479,7 @@ class _HorizontalInnerDimension extends Scrollable {
   const _HorizontalInnerDimension({
     super.key,
     required this.verticalOuterKey,
+    required this.gestureTeam,
     required super.viewportBuilder,
     required super.axisDirection,
     super.controller,
@@ -2454,6 +2495,7 @@ class _HorizontalInnerDimension extends Scrollable {
 
   final GlobalKey<ScrollableState> verticalOuterKey;
   final DiagonalDragBehavior diagonalDragBehavior;
+  final GestureArenaTeam gestureTeam;
 
   @override
   _HorizontalInnerDimensionState createState() => _HorizontalInnerDimensionState();
@@ -2466,6 +2508,7 @@ class _HorizontalInnerDimensionState extends ScrollableState {
       (widget as _HorizontalInnerDimension).verticalOuterKey;
   DiagonalDragBehavior get diagonalDragBehavior =>
       (widget as _HorizontalInnerDimension).diagonalDragBehavior;
+  GestureArenaTeam get _horizontalGestureTeam => (widget as _HorizontalInnerDimension).gestureTeam;
 
   @override
   void didChangeDependencies() {
@@ -2508,34 +2551,63 @@ class _HorizontalInnerDimensionState extends ScrollableState {
 
   @override
   void setCanDrag(bool value) {
-    switch (diagonalDragBehavior) {
-      case DiagonalDragBehavior.none:
-        // If we aren't scrolling diagonally, the default drag gesture
-        // recognizer is used.
-        super.setCanDrag(value);
-        return;
-      case DiagonalDragBehavior.weightedEvent:
-      case DiagonalDragBehavior.weightedContinuous:
-      case DiagonalDragBehavior.free:
-        if (value) {
-          // If a type of diagonal scrolling is enabled, a panning gesture
-          // recognizer will be created for the _VerticalOuterDimension. So in
-          // this case, the _HorizontalInnerDimension does not require a gesture
-          // recognizer, meanwhile we should ensure the outer dimension has
-          // updated in case it did not have enough content to enable dragging.
+    if (value == _lastCanDrag && (!value || widget.axis == _lastAxisDirection)) {
+      return;
+    }
+    if (!value) {
+      _gestureRecognizers = const <Type, GestureRecognizerFactory>{};
+      _handleDragCancel();
+    } else {
+      switch (diagonalDragBehavior) {
+        case DiagonalDragBehavior.none:
+          // If we aren't scrolling diagonally, the default drag gesture
+          // recognizer is used.
+          _gestureRecognizers = <Type, GestureRecognizerFactory>{
+            HorizontalDragGestureRecognizer:
+                GestureRecognizerFactoryWithHandlers<HorizontalDragGestureRecognizer>(
+                  () =>
+                      HorizontalDragGestureRecognizer(supportedDevices: _configuration.dragDevices),
+                  (HorizontalDragGestureRecognizer instance) {
+                    instance
+                      ..onDown = _handleDragDown
+                      ..onStart = _handleDragStart
+                      ..onUpdate = _handleDragUpdate
+                      ..onEnd = _handleDragEnd
+                      ..onCancel = _handleDragCancel
+                      ..minFlingDistance = _physics?.minFlingDistance
+                      ..minFlingVelocity = _physics?.minFlingVelocity
+                      ..maxFlingVelocity = _physics?.maxFlingVelocity
+                      ..velocityTrackerBuilder = _configuration.velocityTrackerBuilder(context)
+                      ..dragStartBehavior = widget.dragStartBehavior
+                      ..multitouchDragStrategy = _configuration.getMultitouchDragStrategy(context)
+                      ..gestureSettings = _mediaQueryGestureSettings
+                      ..supportedDevices = _configuration.dragDevices;
+                    instance.team ??= _horizontalGestureTeam;
+                    _horizontalGestureTeam.captain = instance;
+                  },
+                ),
+          };
+        case DiagonalDragBehavior.weightedEvent:
+        case DiagonalDragBehavior.weightedContinuous:
+        case DiagonalDragBehavior.free:
+          // If a type of diagonal scrolling is enabled, a specialized 2D drag
+          // gesture recognizer will be created for the _VerticalOuterDimension.
+          // So in this case, the _HorizontalInnerDimension does not require a
+          // gesture recognizer, meanwhile we should ensure the outer dimension
+          // has updated in case it did not have enough content to enable
+          // dragging.
           _gestureRecognizers = const <Type, GestureRecognizerFactory>{};
           verticalOuterKey.currentState!.setCanDrag(value);
-          // Cancel the active hold/drag (if any) because the gesture recognizers
-          // will soon be disposed by our RawGestureDetector, and we won't be
-          // receiving pointer up events to cancel the hold/drag.
-          _handleDragCancel();
-          _lastCanDrag = value;
-          _lastAxisDirection = widget.axis;
-          if (_gestureDetectorKey.currentState != null) {
-            _gestureDetectorKey.currentState!.replaceGestureRecognizers(_gestureRecognizers);
-          }
-        }
-        return;
+      }
+      // Cancel the active hold/drag (if any) because the gesture recognizers
+      // will soon be disposed by our RawGestureDetector, and we won't be
+      // receiving pointer up events to cancel the hold/drag.
+      _handleDragCancel();
+    }
+    _lastCanDrag = value;
+    _lastAxisDirection = widget.axis;
+    if (_gestureDetectorKey.currentState != null) {
+      _gestureDetectorKey.currentState!.replaceGestureRecognizers(_gestureRecognizers);
     }
   }
 

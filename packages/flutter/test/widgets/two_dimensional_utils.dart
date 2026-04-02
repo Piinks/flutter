@@ -4,7 +4,6 @@
 
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart' show clampDouble;
 import 'package:flutter/gestures.dart' show DragStartBehavior;
 import 'package:flutter/rendering.dart' show CacheExtentStyle, ViewportOffset;
 import 'package:flutter/widgets.dart';
@@ -282,12 +281,12 @@ class RenderSimpleBuilderTableViewport extends RenderTwoDimensionalViewport {
       final double verticalExtent = 200 * (maxRowIndex + 1);
       verticalOffset.applyContentDimensions(
         0.0,
-        clampDouble(verticalExtent - viewportDimension.height, 0.0, double.infinity),
+        math.max(verticalExtent - viewportDimension.height, 0.0),
       );
       final double horizontalExtent = 200 * (maxColumnIndex + 1);
       horizontalOffset.applyContentDimensions(
         0.0,
-        clampDouble(horizontalExtent - viewportDimension.width, 0.0, double.infinity),
+        math.max(horizontalExtent - viewportDimension.width, 0.0),
       );
     }
   }
